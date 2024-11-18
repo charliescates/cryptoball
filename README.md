@@ -29,3 +29,7 @@ To run the UI, just go into `cryptoball-app` and run `npm run dev`. This should 
 
 ## Running the tests
 Running the tests for hardhat is super simple, just cd into `smart-contracts` and run `npx hardhat test`
+
+## Troubleshooting
+1. If you are seeing errors implying no contract is running at the address, make sure you deployed it to the right one (i.e. you have `---network localhost` to hardhat commands)
+2. If the transaction errors out in metamask, you might need to reset your nonce or change the one for that transaction
