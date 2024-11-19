@@ -1,3 +1,7 @@
+# HI UR ERROR: https://stackoverflow.com/questions/71543451/h88-error-invalid-account-0-for-network-expected-string-received-undefined 
+# I TRIED ALL THE THINGS IN THE STACK OVERFLOW + THEY DIDNT WORK
+
+
 # Cryptoball
 ## Running in dev
 After cloning, to run the app locally you first need to npm install in all `cryptoball-app` and `smart-contracts` directories.
