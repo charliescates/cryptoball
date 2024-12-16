@@ -11,6 +11,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Header from './header.tsx'
 import GetPlayers from './get-players.tsx'
 import Games from './games.tsx'
+import Academy from './academy.tsx'
 
 globalThis.Buffer = Buffer
 
@@ -27,6 +28,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               {/* <Route path="/" element={<Home />} /> */}
               <Route path="/players" element={<GetPlayers />} />
               <Route path="/games" element={<Games />} />
+              <Route path="/academy" element={<Academy />} />
             </Routes>
           </div>
         </Router>

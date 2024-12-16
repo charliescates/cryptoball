@@ -1,17 +1,14 @@
 import * as React from 'react'
 import { BaseError, useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { playerContract } from './contracts/playerContract';
+import { academyContract } from '../contracts/academyContract';
+import { useState } from 'react';
+import { parseEther } from 'viem';
 
-type Transaction = {
-    address: string;
-    abi: any;
-    functionName: string;
-    args: any[];
-    chainId: number;
-    gas: bigint;
-};
+import './deposit.css';
 
-export function MintPlayer() {
+export function Deposit() {
+    const [amount, setAmount] = useState<number>(0);
+
     const {
         data: hash,
         error,
@@ -20,21 +17,20 @@ export function MintPlayer() {
     } = useWriteContract();
     const account = useAccount();
 
-    const transaction: Transaction = {
-        address: playerContract.address,
-        abi: playerContract.abi,
-        functionName: 'mintPlayer',
-        args: [account && account.addresses ? account.addresses[0] : '0x0'],
-        chainId: account.chainId as any,
-        gas: 3000000n, // TODO Make the thing more efficient in the future!!
-    };
-
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
         console.log('Account:', account!.addresses![0]);
 
-        writeContract(transaction as any);
+        writeContract({
+            address: academyContract.address,
+            abi: academyContract.abi,
+            args: [],
+            functionName: 'deposit',
+            chainId: account.chainId as any,
+            gas: 3000000n,
+            value: parseEther(amount.toString())
+        });
     };
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } =
@@ -43,13 +39,21 @@ export function MintPlayer() {
         })
 
     return (
-        <form onSubmit={submit}>
+        <form className='deposit-form' onSubmit={submit}>
+            <input
+                type="number"
+                id="amount"
+                name="amount"
+                required
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+            />
             <button
-                className='mint-player-button'
+                className='deposit-button'
                 disabled={isPending}
                 type="submit"
             >
-                {isPending ? 'Confirming...' : 'Mint Player'}
+                {isPending ? 'Confirming...' : 'Deposit'}
             </button>
             {hash && <div>Transaction Hash: {hash}</div>}
             {isConfirming && <div>Waiting for confirmation...</div>}

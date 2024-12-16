@@ -5,7 +5,7 @@ import FormationGrid from './formation-grid';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import PlayerCard, { Player } from './player';
-import PlayGame from './playGame';
+import PlayGame from './actions/playGame';
 
 const Games = () => {
     const [players, setPlayers] = useState<Player[]>([]);

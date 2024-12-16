@@ -9,11 +9,12 @@ function Header() {
 
   return (
     <header className="header">
-      <div className="logo">CryptoBall</div>
+      <div className="logo">CryptoBalls</div>
       <nav className="nav">
         <ul>
-          <li><NavLink to="/players" className={({ isActive }) => (isActive ? 'active' : '')}>Players</NavLink></li>
+          <li><NavLink to="/players" className={({ isActive }) => (isActive ? 'active' : '')}>Squad</NavLink></li>
           <li><NavLink to="/games" className={({ isActive }) => (isActive ? 'active' : '')}>Games</NavLink></li>
+          <li><NavLink to="/academy" className={({ isActive }) => (isActive ? 'active' : '')}>Academy</NavLink></li>
         </ul>
       </nav>
       <nav className="connection">

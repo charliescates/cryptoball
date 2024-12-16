@@ -1,22 +1,14 @@
 import { useState } from "react";
-import { Player } from "./player";
+import { Player } from "../player";
 import { BaseError, parseEther } from "viem";
-import { gameContract } from "./contracts/gameContract";
+import { gameContract } from "../contracts/gameContract";
 import { useAccount, useWaitForTransactionReceipt, useWatchContractEvent, useWriteContract } from "wagmi";
-import { getPlayerName } from "./playerName";
+import { getPlayerName } from "../playerName";
+import { Transaction } from "./transactions";
 
 type PlayGameProps = {
     home: Player[];
     away: Player[];
-};
-
-type BaseTransaction = {
-    address: string;
-    abi: any;
-    functionName: string;
-    args?: any[];
-    chainId: number;
-    gas: bigint;
 };
 
 const PlayGame = ({ home, away }: PlayGameProps) => {
@@ -28,7 +20,7 @@ const PlayGame = ({ home, away }: PlayGameProps) => {
     } = useWriteContract();
     const account = useAccount();
 
-    const transaction: BaseTransaction = {
+    const transaction: Transaction = {
         address: gameContract.address,
         abi: gameContract.abi,
         functionName: 'playMatch',

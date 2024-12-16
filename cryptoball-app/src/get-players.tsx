@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useReadContract } from 'wagmi';
 import { playerContract } from './contracts/playerContract';
-import { MintPlayer } from './mint-player';
+import { MintPlayer } from './actions/mint-player';
 import { getPlayerName } from './playerName';
 import { Player } from './player';
 
