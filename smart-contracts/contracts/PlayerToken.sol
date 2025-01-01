@@ -14,21 +14,27 @@ contract PlayerToken is ERC721 {
     uint256[101] private _distribution;
 
     struct PlayerAttributes {
+        uint originalAttack;
         uint attack;
+        uint originalDefense;
         uint defense;
         uint potential;
         uint256[101] distribution;
         uint gamesLeft;
         uint goalsScored;
+        uint owner;
     }
 
     struct Player {
         uint256 id;
+        uint originalAttack;
         uint attack;
+        uint originalDefense;
         uint defense;
         uint potential;
         uint gamesLeft;
         uint goalsScored;
+        uint owner;
     }
 
     mapping(uint256 => PlayerAttributes) public players;
@@ -97,6 +103,7 @@ contract PlayerToken is ERC721 {
         );
 
         players[newPlayerId].gamesLeft = 100;
+        players[newPlayerId].
 
         emit PlayerMinted(account, newPlayerId);
 

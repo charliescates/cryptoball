@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 describe("PlayerToken", () => {
+    // Shouldn't be able to mint a player as a non-contract address
     async function deployPlayerToken() {
         const [owner, addr1, addr2] = await ethers.getSigners();
 

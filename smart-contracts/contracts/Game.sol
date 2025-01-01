@@ -2,19 +2,22 @@
 pragma solidity 0.8.21;
 
 import "./PlayerToken.sol";
+import "./Academy.sol";
 
 /**
  * Refactor to replace uint with uint8 where possible
  */
 contract Game {
     PlayerToken playerToken;
+    Academy academy;
     uint randomCounter = 0;
 
     event MatchPlayed(uint8 homeScore, uint8 awayScore);
     event PlayerScored(uint256 playerId);
 
-    constructor(address playerTokenAddress) {
+    constructor(address playerTokenAddress, address academyAddress) {
         playerToken = PlayerToken(playerTokenAddress);
+        academy = Academy(academyAddress);
     }
 
     function playMatch(
@@ -26,37 +29,19 @@ contract Game {
         uint256[3] memory awayDefensivePlayers
     ) external payable returns (uint8 homeGoals, uint8 awayGoals){
         require(
-            msg.value >= 0.1 ether,
-            "You must wager at least 0.1 ether to play a match"
+            msg.value > 0 ether,
+            "You must wager some ether to play a match"
         );
         // require(
         //     playerToken.ownerOf(homePlayerId) == payable(homeOwnerAddress),
         //     "Home player does not belong to home owner"
+        // ACTUALLY: we should just check all players on each team are owned by one person, then send the ether to the winner 
         // );
 
-        validateTeam(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
-        validateTeam(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
+        address homeAddress = validateTeam(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
+        address awayAddress = validateTeam(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
 
-        (uint homeAttack, uint homeDefense) = calculateTeamStats(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
-        (uint awayAttack, uint awayDefense) = calculateTeamStats(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
-
-        console.log(
-            "Home team stats: Attack %d Defense %d",
-            homeAttack,
-            homeDefense
-        );
-        console.log(
-            "Away team stats: Attack %d Defense %d",
-            awayAttack,
-            awayDefense
-        );
-        
-        for (uint i = 0; i < 20; i++) {
-            homeGoals += tryAndScore(homeAttack, awayDefense);
-            awayGoals += tryAndScore(awayAttack, homeDefense);
-        }
-
-        console.log("Home: %d Away: %d", homeGoals, awayGoals);
+        (homeGoals, awayGoals) = iterateThroughGame(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers, awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
 
         for (uint i = 0; i < 3; i++) {
             if (homeAttackingPlayers[i] != 0) {
@@ -82,11 +67,46 @@ contract Game {
         assignGoals(homeGoals, homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
         assignGoals(awayGoals, awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
 
-        // if (homeGoals > awayGoals) {
-        //     playerToken.transferFrom(address(this), payable(msg.sender), homePlayerId);
-        // }
+        if (homeGoals > awayGoals) {
+            payable(homeAddress).transfer(msg.value);
+        } else if (awayGoals > homeGoals) {
+            payable(awayAddress).transfer(msg.value);
+        } else {
+            academy.deposit{value: msg.value}();
+        }
 
         emit MatchPlayed(homeGoals, awayGoals);
+
+        return (homeGoals, awayGoals);
+    }
+
+    function iterateThroughGame(
+        uint256[3] memory homeAttackingPlayers,
+        uint256[3] memory homeMidfieldPlayers,
+        uint256[3] memory homeDefensivePlayers,
+        uint256[3] memory awayAttackingPlayers,
+        uint256[3] memory awayMidfieldPlayers,
+        uint256[3] memory awayDefensivePlayers) private returns (uint8 homeGoals, uint8 awayGoals) {
+        (uint homeAttack, uint homeDefense) = calculateTeamStats(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
+        (uint awayAttack, uint awayDefense) = calculateTeamStats(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
+
+        console.log(
+            "Home team stats: Attack %d Defense %d",
+            homeAttack,
+            homeDefense
+        );
+        console.log(
+            "Away team stats: Attack %d Defense %d",
+            awayAttack,
+            awayDefense
+        );
+        
+        for (uint i = 0; i < 20; i++) {
+            homeGoals += tryAndScore(homeAttack, awayDefense);
+            awayGoals += tryAndScore(awayAttack, homeDefense);
+        }
+
+        console.log("Home: %d Away: %d", homeGoals, awayGoals);
 
         return (homeGoals, awayGoals);
     }
@@ -116,7 +136,7 @@ contract Game {
         }
     }
 
-    function validateTeam(uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) private pure {
+    function validateTeam(uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) private view returns (address owner) {
         uint[] memory team = new uint[](5);
         uint playerCount = 0;
         for (uint i = 0; i < 3; i++) {
@@ -154,6 +174,15 @@ contract Game {
             !hasDuplicates(team),
             "Each team must have unique players"
         );
+
+        owner = playerToken.ownerOf(team[0]);
+        for (uint i = 1; i < 5; i++) {
+            require(
+                playerToken.ownerOf(team[i]) == owner,
+                "Each team must be owned by a signle owner"
+            );
+        }
+        return owner;
     }
 
     function assignGoals(uint goals, uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) private {
@@ -239,5 +268,13 @@ contract Game {
     function getDefense(uint256 playerId) private view returns (uint) {
         (uint defense, , , ,) = playerToken.getPlayerAttributes(playerId);
         return defense;
+    }
+
+    function sendWagerToWinner(address winner) private {
+        uint wager = msg.value;
+        
+        wager = wager - wager / 100;
+
+        payable(winner).transfer(wager);
     }
 }
