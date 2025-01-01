@@ -103,7 +103,6 @@ contract PlayerToken is ERC721 {
         );
 
         players[newPlayerId].gamesLeft = 100;
-        players[newPlayerId].
 
         emit PlayerMinted(account, newPlayerId);
 
