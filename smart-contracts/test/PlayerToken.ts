@@ -81,7 +81,7 @@ describe("PlayerToken", () => {
         }
         
         const playerAttributes = await contract.playerToken.getPlayerAttributes(1);
-        expect(playerAttributes[0]).above(playerAttributes[1]);
+        expect(playerAttributes[1]).above(playerAttributes[3]);
     });
 
     it("should make a defender have worse attacking than defending over time", async () => {
@@ -93,7 +93,7 @@ describe("PlayerToken", () => {
         }
         
         const playerAttributes = await contract.playerToken.getPlayerAttributes(1);
-        expect(playerAttributes[0]).below(playerAttributes[1]);
+        expect(playerAttributes[1]).below(playerAttributes[3]);
     });
 
     it("should allow assigning of goals to players", async () => {

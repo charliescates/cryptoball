@@ -32,11 +32,6 @@ contract Game {
             msg.value > 0 ether,
             "You must wager some ether to play a match"
         );
-        // require(
-        //     playerToken.ownerOf(homePlayerId) == payable(homeOwnerAddress),
-        //     "Home player does not belong to home owner"
-        // ACTUALLY: we should just check all players on each team are owned by one person, then send the ether to the winner 
-        // );
 
         address homeAddress = validateTeam(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
         address awayAddress = validateTeam(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
@@ -68,10 +63,13 @@ contract Game {
         assignGoals(awayGoals, awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
 
         if (homeGoals > awayGoals) {
+            console.log("Home team wins, sending money to home team: %s", homeAddress);
             payable(homeAddress).transfer(msg.value);
         } else if (awayGoals > homeGoals) {
+            console.log("Away team wins, sending money to away team: %s", awayAddress);
             payable(awayAddress).transfer(msg.value);
         } else {
+            console.log("It's a draw, sending money to the academy");
             academy.deposit{value: msg.value}();
         }
 
@@ -126,8 +124,6 @@ contract Game {
         ) % 100;
         uint total = attack + defense;
         uint chanceOfScoring = 60 + (defense * 40) / total;
-
-        // console.log("Random: %d Chance: %d", random % 100, chanceOfScoring);
 
         if (random % 100 > chanceOfScoring) {
             return 1;
@@ -192,19 +188,19 @@ contract Game {
         for (uint i = 0; i < 3; i++) {
             if (attack[i] != 0) {
                 team[playerCount] = attack[i];
-                (uint attackStat, , , ,) = playerToken.getPlayerAttributes(attack[i]);
+                ( , uint attackStat, , , , ,) = playerToken.getPlayerAttributes(attack[i]);
                 attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
                 playerCount++;
             }
             if (midfield[i] != 0) {
                 team[playerCount] = midfield[i];
-                (uint attackStat, , , ,) = playerToken.getPlayerAttributes(midfield[i]);
+                ( , uint attackStat, , , , ,) = playerToken.getPlayerAttributes(midfield[i]);
                 attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
                 playerCount++;
             }
             if (defense[i] != 0) {
                 team[playerCount] = defense[i];
-                (uint attackStat, , , ,) = playerToken.getPlayerAttributes(defense[i]);
+                ( , uint attackStat, , , , ,) = playerToken.getPlayerAttributes(defense[i]);
                 attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
                 playerCount++;
             }
@@ -261,12 +257,12 @@ contract Game {
     }
 
     function getAttack(uint256 playerId) private view returns (uint) {
-        (uint attack, , , ,) = playerToken.getPlayerAttributes(playerId);
+        ( , uint attack, , , , ,) = playerToken.getPlayerAttributes(playerId);
         return attack;
     }
 
     function getDefense(uint256 playerId) private view returns (uint) {
-        (uint defense, , , ,) = playerToken.getPlayerAttributes(playerId);
+        ( , , , uint defense, , ,) = playerToken.getPlayerAttributes(playerId);
         return defense;
     }
 

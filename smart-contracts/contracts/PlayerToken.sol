@@ -22,7 +22,6 @@ contract PlayerToken is ERC721 {
         uint256[101] distribution;
         uint gamesLeft;
         uint goalsScored;
-        uint owner;
     }
 
     struct Player {
@@ -34,7 +33,6 @@ contract PlayerToken is ERC721 {
         uint potential;
         uint gamesLeft;
         uint goalsScored;
-        uint owner;
     }
 
     mapping(uint256 => PlayerAttributes) public players;
@@ -45,50 +43,58 @@ contract PlayerToken is ERC721 {
 
     event PlayerMinted(address indexed account, uint256 indexed playerId);
 
-    function mintPlayer(address account) external returns (uint256, uint, uint) {
+    function mintPlayer(
+        address account
+    ) external returns (uint256, uint, uint) {
         uint256 newPlayerId = _tokenIdCounter;
         _safeMint(account, newPlayerId);
         _tokenIdCounter += 1;
 
-        players[newPlayerId].attack = uint(readFromDistribution(
-            _distribution,
-            uint256(
-                keccak256(
-                    abi.encodePacked(
-                        block.timestamp,
-                        msg.sender,
-                        newPlayerId,
-                        "attack"
+        players[newPlayerId].attack = uint(
+            readFromDistribution(
+                _distribution,
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            block.timestamp,
+                            msg.sender,
+                            newPlayerId,
+                            "attack"
+                        )
                     )
                 )
             )
-        ));
-        players[newPlayerId].defense = uint(readFromDistribution(
-            _distribution,
-            uint256(
-                keccak256(
-                    abi.encodePacked(
-                        block.timestamp,
-                        msg.sender,
-                        newPlayerId,
-                        "defense"
+        );
+        players[newPlayerId].defense = uint(
+            readFromDistribution(
+                _distribution,
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            block.timestamp,
+                            msg.sender,
+                            newPlayerId,
+                            "defense"
+                        )
                     )
                 )
             )
-        ));
-        players[newPlayerId].potential = uint(Math.max(
-            uint256(
-                keccak256(
-                    abi.encodePacked(
-                        block.timestamp,
-                        msg.sender,
-                        newPlayerId,
-                        "potential"
+        );
+        players[newPlayerId].potential = uint(
+            Math.max(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(
+                            block.timestamp,
+                            msg.sender,
+                            newPlayerId,
+                            "potential"
+                        )
                     )
-                )
-            ) % 100,
-            10
-        ));
+                ) % 100,
+                10
+            )
+        );
         players[newPlayerId].distribution = createPoissonDistribution(
             players[newPlayerId].potential
         );
@@ -103,10 +109,16 @@ contract PlayerToken is ERC721 {
         );
 
         players[newPlayerId].gamesLeft = 100;
+        players[newPlayerId].originalAttack = players[newPlayerId].attack;
+        players[newPlayerId].originalDefense = players[newPlayerId].defense;
 
         emit PlayerMinted(account, newPlayerId);
 
-        return (newPlayerId, players[newPlayerId].attack , players[newPlayerId].defense);
+        return (
+            newPlayerId,
+            players[newPlayerId].attack,
+            players[newPlayerId].defense
+        );
     }
 
     function scoreGoal(uint256 id) external {
@@ -115,14 +127,27 @@ contract PlayerToken is ERC721 {
 
     function getGoals(uint256 id) external view returns (uint) {
         return players[id].goalsScored;
-        
     }
 
     function getPlayerAttributes(
         uint256 playerId
-    ) public view returns (uint attack, uint defense, uint potential, uint gamesLeft, uint goalsScored) {
+    )
+        public
+        view
+        returns (
+            uint origAttack,
+            uint attack,
+            uint origDef,
+            uint defense,
+            uint potential,
+            uint gamesLeft,
+            uint goalsScored
+        )
+    {
         return (
+            players[playerId].originalAttack,
             players[playerId].attack,
+            players[playerId].originalDefense,
             players[playerId].defense,
             players[playerId].potential,
             players[playerId].gamesLeft,
@@ -216,7 +241,7 @@ contract PlayerToken is ERC721 {
 
     /**
      * TODO: Make this not use an array by calulating the values on the fly until 100
-     * 
+     *
      * @param potential The potential of the player
      */
     function createPoissonDistribution(
@@ -267,7 +292,16 @@ contract PlayerToken is ERC721 {
         Player[] memory allPlayers = new Player[](_tokenIdCounter - 1);
 
         for (uint i = 1; i < _tokenIdCounter; i++) {
-            allPlayers[i - 1] = Player(i, players[i].attack, players[i].defense, players[i].potential, players[i].gamesLeft, players[i].goalsScored);
+            allPlayers[i - 1] = Player(
+                i,
+                players[i].originalAttack,
+                players[i].attack,
+                players[i].originalDefense,
+                players[i].defense,
+                players[i].potential,
+                players[i].gamesLeft,
+                players[i].goalsScored
+            );
         }
 
         return allPlayers;

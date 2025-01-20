@@ -106,8 +106,8 @@ describe("Game", () => {
         const homeStrikerAttackAfter = await playerToken.getPlayerAttributes(1);
         const awayStrikerAttackAfter = await playerToken.getPlayerAttributes(6);
 
-        expect(homeStrikerAttackBefore[0]).below(homeStrikerAttackAfter[0]);
-        expect(awayStrikerAttackBefore[0]).below(awayStrikerAttackAfter[0]);
+        expect(homeStrikerAttackBefore[1]).below(homeStrikerAttackAfter[1]);
+        expect(awayStrikerAttackBefore[1]).below(awayStrikerAttackAfter[1]);
     });
 
     it("should assign players goals", async () => {
@@ -143,33 +143,39 @@ describe("Game", () => {
         await expect(gameContract.playMatch([1, 0, 2], [0, 3, 0], [4, 0, 5], [6, 0, 7], [0, 8, 0], [9, 0, 10], { value })).to.be.revertedWith("Player has retired, unable to play more games");
     });
 
-    it("should send ether to the home winner", async () => {
+    it("should send ether to the winner", async () => {
         const { gameContract, homeOwner, awayOwner, academyContract } = await deployContracts();
-        const value = ethers.parseEther("0.1");
+        const value = ethers.parseEther("1");
+        const beforeHomeBalance = await ethers.provider.getBalance(homeOwner.address);
+        const beforeAwayBalance = await ethers.provider.getBalance(awayOwner.address);
+        let homeGoals;
+        let awayGoals;
 
         await new Promise<void>(async (resolve) => {
-            const listener: Listener = async (homeGoals: number, awayGoals: number) => {
-                const homeBalance = await ethers.provider.getBalance(homeOwner.address);
-                const awayBalance = await ethers.provider.getBalance(awayOwner.address);
-                console.log(`Home balance: ${homeBalance} Away balance: ${awayBalance} Result: ${homeGoals} - ${awayGoals}`);
-                console.log(`Academy balance: ${await academyContract.getBalance()}`);
-    
-                if (homeGoals > awayGoals) {
-                    console.log("Home wins");
-                    expect(homeBalance).above(awayBalance);
-                } else if (awayGoals > homeGoals) {
-                    console.log("Away wins");
-                    expect(homeBalance).above(awayBalance);
-                } else {
-                    console.log("Draw");
-                    expect(await academyContract.getBalance()).to.equal(ethers.parseEther("0.1"));
-                }
+            const listener: Listener = (hGoals: number, aGoals: number) => {
+                homeGoals = hGoals;
+                awayGoals = aGoals;
                 resolve();
             };
             await gameContract.addListener("MatchPlayed", listener);
-    
+
             await gameContract.playMatch([1, 0, 2], [0, 3, 0], [4, 0, 5], [6, 0, 7], [0, 8, 0], [9, 0, 10], { value });
         });
+
+        if (homeGoals === undefined || awayGoals === undefined) {
+            throw new Error("Goals were not defined");
+        }
+
+        const homeBalance = await ethers.provider.getBalance(homeOwner.address);
+        const awayBalance = await ethers.provider.getBalance(awayOwner.address);
+
+        if (homeGoals! > awayGoals!) {
+            expect(homeBalance).above(beforeHomeBalance);
+        } else if (awayGoals! > homeGoals!) {
+            expect(awayBalance).above(beforeAwayBalance);
+        } else {
+            expect(await academyContract.getBalance()).to.equal(ethers.parseEther("1"));
+        }
     });
 
     // it("should lose money if it is a draw")
