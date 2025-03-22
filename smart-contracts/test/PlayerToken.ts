@@ -103,6 +103,15 @@ describe("PlayerToken", () => {
         await contract.playerToken.scoreGoal(1);
         expect(await contract.playerToken.getGoals(1)).to.equal(1);
     });
+
+    it("should show me the players I own", async () => {
+        const contract = await deployPlayerToken();
+        await contract.playerToken.mintPlayer(contract.owner.address);
+        await contract.playerToken.mintPlayer(contract.owner.address);
+
+        const players = await contract.playerToken.getPlayersByOwner(contract.owner.address);
+        expect(players.length).to.equal(2);
+    });
 });
 
 function assertPlayerAttributeInRange(attribute: bigint) {

@@ -9,7 +9,7 @@ async function main() {
   await academyContract.waitForDeployment();
   console.log("Academy deployed to:", await academyContract.getAddress());
   
-  const gameContract = await ethers.deployContract("Game", [await playerToken.getAddress()]);
+  const gameContract = await ethers.deployContract("Game", [await playerToken.getAddress(), await academyContract.getAddress()]);
   await gameContract.waitForDeployment();
   console.log("Game deployed to:", await gameContract.getAddress());
 }

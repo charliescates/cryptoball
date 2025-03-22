@@ -1,13 +1,18 @@
 import { Contract } from "./types";
 
 export const gameContract: Contract = {
-    address: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as `0x${string}`,
-    abi: [
+  address: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0' as `0x${string}`,
+  abi: [
     {
       "inputs": [
         {
           "internalType": "address",
           "name": "playerTokenAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "academyAddress",
           "type": "address"
         }
       ],

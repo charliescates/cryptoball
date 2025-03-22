@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { useReadContract } from 'wagmi';
+import { useAccount, useReadContract } from 'wagmi';
 import { playerContract } from './contracts/playerContract';
-import { MintPlayer } from './actions/mint-player';
 import { getPlayerName } from './playerName';
 import { Player } from './player';
 
 const GetPlayers: React.FC = () => {
+    const account = useAccount();
     const [players, setPlayers] = useState<Player[]>([]);
 
     const { data: allPlayers, error } = useReadContract({
         abi: playerContract.abi,
         address: playerContract.address,
-        functionName: 'getAllPlayers',
+        functionName: 'getPlayersByOwner',
+        args: [ account.address! ]
     });
 
     useEffect(() => {
@@ -27,7 +28,7 @@ const GetPlayers: React.FC = () => {
 
     return (
         <div>
-            <MintPlayer />
+            {/* <MintPlayer /> */}
             <div className="player-container">
                 {players.map((player) => (
                     <div className="player-card" key={player.id.toString()}>

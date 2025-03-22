@@ -1,8 +1,8 @@
 import { Contract } from "./types";
 
 export const playerContract: Contract = {
-    address: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as `0x${string}`,
-    abi: [
+  address: '0x5FbDB2315678afecb367f032d93F642f64180aa3' as `0x${string}`,
+  abi: [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
@@ -255,7 +255,17 @@ export const playerContract: Contract = {
             },
             {
               "internalType": "uint256",
+              "name": "originalAttack",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
               "name": "attack",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "originalDefense",
               "type": "uint256"
             },
             {
@@ -356,7 +366,17 @@ export const playerContract: Contract = {
       "outputs": [
         {
           "internalType": "uint256",
+          "name": "origAttack",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
           "name": "attack",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "origDef",
           "type": "uint256"
         },
         {
@@ -378,6 +398,67 @@ export const playerContract: Contract = {
           "internalType": "uint256",
           "name": "goalsScored",
           "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "getPlayersByOwner",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "id",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "originalAttack",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "attack",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "originalDefense",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "defense",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "potential",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "gamesLeft",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "goalsScored",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct PlayerToken.Player[]",
+          "name": "",
+          "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
@@ -510,6 +591,30 @@ export const playerContract: Contract = {
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "playerIdsByOwner",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
@@ -519,7 +624,17 @@ export const playerContract: Contract = {
       "outputs": [
         {
           "internalType": "uint256",
+          "name": "originalAttack",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
           "name": "attack",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "originalDefense",
           "type": "uint256"
         },
         {
@@ -677,6 +792,29 @@ export const playerContract: Contract = {
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {

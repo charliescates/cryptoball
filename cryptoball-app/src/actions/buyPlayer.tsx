@@ -1,9 +1,14 @@
 import * as React from 'react'
 import { BaseError, useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { playerContract } from '../contracts/playerContract';
 import { Transaction } from './transactions';
+import { academyContract } from '../contracts/academyContract';
 
-export function MintPlayer() {
+export type BuyPlayerProps = {
+    playerId: bigint;
+    price: bigint;
+}
+
+export function BuyPlayer(props: BuyPlayerProps) {
     const {
         data: hash,
         error,
@@ -13,12 +18,13 @@ export function MintPlayer() {
     const account = useAccount();
 
     const transaction: Transaction = {
-        address: playerContract.address,
-        abi: playerContract.abi,
-        functionName: 'mintPlayer',
-        args: [account && account.addresses ? account.addresses[0] : '0x0'],
+        address: academyContract.address,
+        abi: academyContract.abi,
+        functionName: 'buyPlayer',
+        args: [account && account.addresses ? account.addresses[0] : '0x0', props.playerId],
         chainId: account.chainId as any,
-        gas: 3000000n, // TODO Make the thing more efficient in the future!!
+        value: props.price,
+        gas: 3000000n,
     };
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -37,11 +43,11 @@ export function MintPlayer() {
     return (
         <form onSubmit={submit}>
             <button
-                className='mint-player-button'
+                className='buy-player-button'
                 disabled={isPending}
                 type="submit"
             >
-                {isPending ? 'Confirming...' : 'Mint Player'}
+                {isPending ? 'Confirming...' : 'Buy Player'}
             </button>
             {hash && <div>Transaction Hash: {hash}</div>}
             {isConfirming && <div>Waiting for confirmation...</div>}

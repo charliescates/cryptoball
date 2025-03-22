@@ -31,8 +31,14 @@ contract Academy is IERC721Receiver {
                 0.004 ether +
                 (0.004 ether * (attack + defense)) /
                 200;
+            console.log("Player %d minted with value %d", id, playerValue[id]);
             for (uint i = 1; i < id; i++) {
                 playerValue[i] = (playerValue[i] * 9) / 10;
+                console.log(
+                    "Player %d value updated to %d",
+                    i,
+                    playerValue[i]
+                );
             }
         }
     }
@@ -52,31 +58,28 @@ contract Academy is IERC721Receiver {
             "You have not sent enough ether for the player"
         );
 
-        playerToken.safeTransferFrom(address(this), toAccount, playerId);
+        playerToken.transfer(address(this), toAccount, playerId);
         delete playerValue[playerId];
     }
 
     function getAcademyPlayers()
         public
         view
-        returns (AcademyPlayer[] memory players)
+        returns (AcademyPlayer[] memory)
     {
+        console.log("Getting academy players...");
         PlayerToken.Player[] memory allPlayers = playerToken.getAllPlayers();
         uint count = 0;
 
-        for (uint i = 1; i < allPlayers.length; i++) {
+        console.log("Total players in world: %d", allPlayers.length);
+
+        AcademyPlayer[] memory players = new AcademyPlayer[](allPlayers.length);
+        for (uint i = 0; i < allPlayers.length; i++) {
+            console.log("Checking player %d with value %d", allPlayers[i].id, playerValue[allPlayers[i].id]);
             PlayerToken.Player memory player = allPlayers[i];
 
             if (playerValue[player.id] > 0) {
-                count++;
-            }
-        }
-
-        players = new AcademyPlayer[](count);
-        for (uint i = 1; i < allPlayers.length; i++) {
-            PlayerToken.Player memory player = allPlayers[i];
-
-            if (playerValue[player.id] > 0) {
+                console.log("Adding player %d to academy list", player.id);
                 players[count++] = AcademyPlayer(
                     player.id,
                     player.attack,
@@ -86,6 +89,14 @@ contract Academy is IERC721Receiver {
                 );
             }
         }
+
+        console.log("Total players returned: %d", count);
+
+        assembly {
+            mstore(players, count)
+        }
+
+        return players;
     }
 
     function onERC721Received(

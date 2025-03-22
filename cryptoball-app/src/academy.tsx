@@ -1,24 +1,32 @@
 import { useEffect, useState } from "react";
-import { Player } from "./player";
-import { playerContract } from "./contracts/playerContract";
 import { useReadContract } from "wagmi";
 import { Deposit } from "./actions/deposit";
 import { getPlayerName } from "./playerName";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { academyContract } from "./contracts/academyContract";
+import { BuyPlayer } from "./actions/buyPlayer";
+
+type AcademyPlayer =  {
+    id: bigint;
+    attack: bigint;
+    defense: bigint;
+    potential: bigint;
+    value: bigint;
+}
 
 const Academy = () => {
-    const [players, setPlayers] = useState<Player[]>([]);
+    const [players, setPlayers] = useState<AcademyPlayer[]>([]);
 
     const { data: allPlayers, error } = useReadContract({
-        abi: playerContract.abi,
-        address: playerContract.address,
-        functionName: 'getAllPlayers',
+        abi: academyContract.abi,
+        address: academyContract.address,
+        functionName: 'getAcademyPlayers'
     });
 
     useEffect(() => {
         if (allPlayers) {
-            setPlayers(allPlayers as Player[]);
+            setPlayers(allPlayers as AcademyPlayer[]);
         }
     }, [allPlayers]);
 
@@ -39,8 +47,8 @@ const Academy = () => {
                                 <p className="player-attack">Attack: <span>{player.attack.toString()}</span></p>
                                 <p className="player-defense">Defense: <span>{player.defense.toString()}</span></p>
                                 <p className="player-potential">Potential: <span>{player.potential.toString()}</span></p>
-                                <p className="player-games-left">Games Left: <span>{player.gamesLeft.toString()}</span></p>
-                                <p className="player-goals-scored">Goals Scored: <span>{player.goalsScored.toString()}</span></p>
+                                <p className="player-value">Value: <span>{(Number(player.value) / 1e18).toFixed(4)} ETH</span></p>
+                                <BuyPlayer playerId={player.id} price={player.value} />
                             </div>
                         </div>
                     ))}

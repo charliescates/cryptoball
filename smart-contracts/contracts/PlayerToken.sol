@@ -36,6 +36,7 @@ contract PlayerToken is ERC721 {
     }
 
     mapping(uint256 => PlayerAttributes) public players;
+    mapping(address => uint256[]) public playerIdsByOwner;
 
     constructor() ERC721("PlayerToken", "FPT") {
         _distribution = createDistribution();
@@ -47,6 +48,7 @@ contract PlayerToken is ERC721 {
         address account
     ) external returns (uint256, uint, uint) {
         uint256 newPlayerId = _tokenIdCounter;
+        playerIdsByOwner[account].push(newPlayerId);
         _safeMint(account, newPlayerId);
         _tokenIdCounter += 1;
 
@@ -119,6 +121,26 @@ contract PlayerToken is ERC721 {
             players[newPlayerId].attack,
             players[newPlayerId].defense
         );
+    }
+
+    function transfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external {
+        _transfer(from, to, tokenId);
+        uint256[] storage fromPlayerIds = playerIdsByOwner[from];
+        uint256[] storage toPlayerIds = playerIdsByOwner[to];
+
+        for (uint i = 0; i < fromPlayerIds.length; i++) {
+            if (fromPlayerIds[i] == tokenId) {
+                fromPlayerIds[i] = fromPlayerIds[fromPlayerIds.length - 1];
+                fromPlayerIds.pop();
+                break;
+            }
+        }
+
+        toPlayerIds.push(tokenId);
     }
 
     function scoreGoal(uint256 id) external {
@@ -305,5 +327,27 @@ contract PlayerToken is ERC721 {
         }
 
         return allPlayers;
+    }
+
+    function getPlayersByOwner(address owner) public view returns (Player[] memory) {
+        uint[] memory playerIds = playerIdsByOwner[owner];
+
+        Player[] memory playerList = new Player[](playerIds.length);
+
+        for (uint i = 0; i < playerIds.length; i++) {
+            uint256 id = playerIds[i];
+            playerList[i] = Player(
+                id,
+                players[id].originalAttack,
+                players[id].attack,
+                players[id].originalDefense,
+                players[id].defense,
+                players[id].potential,
+                players[id].gamesLeft,
+                players[id].goalsScored
+            );
+        }
+
+        return playerList;
     }
 }
