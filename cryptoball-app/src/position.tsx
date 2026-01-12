@@ -1,52 +1,53 @@
-import { useDrop } from 'react-dnd';
 import { Player } from './player';
 import { getPlayerName } from './playerName';
+import { getPlayerTypeIcon, getPlayerTypeColor } from './playerType';
 
 type PositionProps = {
     positionName: string;
     teamColour: string;
     index: number;
     player: Player | null;
-    onPlayerDrop: (positionIndex: number, player: Player) => void;
-    };
+    onPositionClick: (index: number) => void;
+};
 
-const Position = ({ positionName, teamColour, index, player, onPlayerDrop }: PositionProps) => {
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
-    accept: 'PLAYER',
-    drop: (item: Player) => onPlayerDrop(index, item),
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-      canDrop: !!monitor.canDrop(),
-    }),
-  }));
-
+const Position = ({ positionName, teamColour, index, player, onPositionClick }: PositionProps) => {
   return (
     <div
-      ref={drop}
-      className="position"
+      className={`position ${player ? 'filled' : 'empty'}`}
+      onClick={() => player && onPositionClick(index)}
       style={{
-        backgroundColor: isOver
-          ? canDrop
-            ? '#dff0d8'
-            : '#f2dede'
-          : '#444',
-        border: '2px solid #999',
-        borderRadius: '8px',
-        padding: '10px',
-        margin: '5px',
-        minHeight: '50px',
-        textAlign: 'center',
-        color: teamColour,
+        cursor: player ? 'pointer' : 'default',
+        borderColor: player ? teamColour : '#555',
       }}
     >
       {player ? (
-        <>
-          <strong>{getPlayerName(player.id)}</strong>
-          <br />
-          Att: {player.attack.toString()} Def: {player.defense.toString()} Pot: {player.potential.toString()}
-        </>
+        <div className="position-content">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+            <strong className="player-name">{getPlayerName(player.id)}</strong>
+            <span 
+              style={{ 
+                backgroundColor: getPlayerTypeColor(player.playerType),
+                padding: '2px 5px',
+                borderRadius: '3px',
+                fontSize: '0.85em',
+                fontWeight: 'bold',
+                color: '#000'
+              }}
+            >
+              {getPlayerTypeIcon(player.playerType)}
+            </span>
+          </div>
+          <div className="position-stats">
+            <span>ATT: {player.attack.toString()}</span>
+            <span>DEF: {player.defense.toString()}</span>
+          </div>
+          <div className="click-hint">Click to remove</div>
+        </div>
       ) : (
-        <span>{positionName}</span>
+        <div className="empty-position">
+          <span className="position-name">{positionName}</span>
+          <span className="empty-hint">Empty</span>
+        </div>
       )}
     </div>
   );

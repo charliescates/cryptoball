@@ -10,10 +10,20 @@ const config: HardhatUserConfig = {
     outDir: '../frontend/src/types',
     target: 'ethers-v6'
   },
-  solidity: "0.8.21",
+  solidity: {
+    version: "0.8.21",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      },
+      viaIR: true
+    }
+  },
   networks: {
     hardhat: {
-      loggingEnabled: false
+      loggingEnabled: true,
+      chainId: 31337
     },
     ethereum: {
       chainId: 1,

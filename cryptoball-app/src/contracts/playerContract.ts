@@ -287,6 +287,11 @@ export const playerContract: Contract = {
               "internalType": "uint256",
               "name": "goalsScored",
               "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "playerType",
+              "type": "uint256"
             }
           ],
           "internalType": "struct PlayerToken.Player[]",
@@ -398,6 +403,11 @@ export const playerContract: Contract = {
           "internalType": "uint256",
           "name": "goalsScored",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "playerType",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -453,6 +463,11 @@ export const playerContract: Contract = {
             {
               "internalType": "uint256",
               "name": "goalsScored",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "playerType",
               "type": "uint256"
             }
           ],
@@ -655,6 +670,11 @@ export const playerContract: Contract = {
         {
           "internalType": "uint256",
           "name": "goalsScored",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "playerType",
           "type": "uint256"
         }
       ],

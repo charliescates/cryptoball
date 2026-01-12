@@ -20,7 +20,8 @@ const config: HardhatUserConfig = {
   solidity: "0.8.21",
   networks: {
     hardhat: {
-      loggingEnabled: false
+      loggingEnabled: true,
+      chainId: 31337
     },
     ethereum: {
       chainId: 1,

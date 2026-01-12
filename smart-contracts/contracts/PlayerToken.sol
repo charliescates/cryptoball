@@ -5,10 +5,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "hardhat/console.sol";
 
-/**
- * Refactor to replace uint with uint where possible
- * Replace distribution to do it on the fly!
- */
 contract PlayerToken is ERC721 {
     uint256 private _tokenIdCounter = 1;
     uint256[101] private _distribution;
@@ -22,6 +18,7 @@ contract PlayerToken is ERC721 {
         uint256[101] distribution;
         uint gamesLeft;
         uint goalsScored;
+        uint playerType;
     }
 
     struct Player {
@@ -33,6 +30,7 @@ contract PlayerToken is ERC721 {
         uint potential;
         uint gamesLeft;
         uint goalsScored;
+        uint playerType;
     }
 
     mapping(uint256 => PlayerAttributes) public players;
@@ -113,6 +111,9 @@ contract PlayerToken is ERC721 {
         players[newPlayerId].gamesLeft = 100;
         players[newPlayerId].originalAttack = players[newPlayerId].attack;
         players[newPlayerId].originalDefense = players[newPlayerId].defense;
+        players[newPlayerId].playerType = uint(
+            (players[newPlayerId].attack + players[newPlayerId].defense + players[newPlayerId].potential) % 4
+        );
 
         emit PlayerMinted(account, newPlayerId);
 
@@ -163,7 +164,8 @@ contract PlayerToken is ERC721 {
             uint defense,
             uint potential,
             uint gamesLeft,
-            uint goalsScored
+            uint goalsScored,
+            uint playerType
         )
     {
         return (
@@ -173,7 +175,8 @@ contract PlayerToken is ERC721 {
             players[playerId].defense,
             players[playerId].potential,
             players[playerId].gamesLeft,
-            players[playerId].goalsScored
+            players[playerId].goalsScored,
+            players[playerId].playerType
         );
     }
 
@@ -322,7 +325,8 @@ contract PlayerToken is ERC721 {
                 players[i].defense,
                 players[i].potential,
                 players[i].gamesLeft,
-                players[i].goalsScored
+                players[i].goalsScored,
+                players[i].playerType
             );
         }
 
@@ -344,7 +348,8 @@ contract PlayerToken is ERC721 {
                 players[id].defense,
                 players[id].potential,
                 players[id].gamesLeft,
-                players[id].goalsScored
+                players[id].goalsScored,
+                players[id].playerType
             );
         }
 

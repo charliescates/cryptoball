@@ -9,6 +9,7 @@ import type {
   Result,
   Interface,
   EventFragment,
+  AddressLike,
   ContractRunner,
   ContractMethod,
   Listener,
@@ -22,32 +23,112 @@ import type {
   TypedContractMethod,
 } from "../common";
 
+export declare namespace Game {
+  export type TeamStruct = {
+    attackingPlayers: [BigNumberish, BigNumberish, BigNumberish];
+    midfieldPlayers: [BigNumberish, BigNumberish, BigNumberish];
+    defensivePlayers: [BigNumberish, BigNumberish, BigNumberish];
+  };
+
+  export type TeamStructOutput = [
+    attackingPlayers: [bigint, bigint, bigint],
+    midfieldPlayers: [bigint, bigint, bigint],
+    defensivePlayers: [bigint, bigint, bigint]
+  ] & {
+    attackingPlayers: [bigint, bigint, bigint];
+    midfieldPlayers: [bigint, bigint, bigint];
+    defensivePlayers: [bigint, bigint, bigint];
+  };
+
+  export type MatchStruct = {
+    wagerRequired: BigNumberish;
+    homeAddress: AddressLike;
+    homeTeam: Game.TeamStruct;
+    awayAddress: AddressLike;
+    awayTeam: Game.TeamStruct;
+    pot: BigNumberish;
+  };
+
+  export type MatchStructOutput = [
+    wagerRequired: bigint,
+    homeAddress: string,
+    homeTeam: Game.TeamStructOutput,
+    awayAddress: string,
+    awayTeam: Game.TeamStructOutput,
+    pot: bigint
+  ] & {
+    wagerRequired: bigint;
+    homeAddress: string;
+    homeTeam: Game.TeamStructOutput;
+    awayAddress: string;
+    awayTeam: Game.TeamStructOutput;
+    pot: bigint;
+  };
+}
+
 export interface GameInterface extends Interface {
-  getFunction(nameOrSignature: "playMatch"): FunctionFragment;
+  getFunction(
+    nameOrSignature:
+      | "addTeam"
+      | "createGame"
+      | "getMatch"
+      | "getMatchList"
+      | "matches"
+  ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "MatchPlayed" | "PlayerScored"
+    nameOrSignatureOrTopic: "MatchPlayed" | "NewMatch" | "PlayerScored"
   ): EventFragment;
 
   encodeFunctionData(
-    functionFragment: "playMatch",
+    functionFragment: "addTeam",
     values: [
-      [BigNumberish, BigNumberish, BigNumberish],
-      [BigNumberish, BigNumberish, BigNumberish],
-      [BigNumberish, BigNumberish, BigNumberish],
+      BigNumberish,
       [BigNumberish, BigNumberish, BigNumberish],
       [BigNumberish, BigNumberish, BigNumberish],
       [BigNumberish, BigNumberish, BigNumberish]
     ]
   ): string;
+  encodeFunctionData(
+    functionFragment: "createGame",
+    values: [BigNumberish, AddressLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMatch",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMatchList",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "matches",
+    values: [BigNumberish]
+  ): string;
 
-  decodeFunctionResult(functionFragment: "playMatch", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "addTeam", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "createGame", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getMatch", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getMatchList",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "matches", data: BytesLike): Result;
 }
 
 export namespace MatchPlayedEvent {
-  export type InputTuple = [homeScore: BigNumberish, awayScore: BigNumberish];
-  export type OutputTuple = [homeScore: bigint, awayScore: bigint];
+  export type InputTuple = [
+    matchId: BigNumberish,
+    homeScore: BigNumberish,
+    awayScore: BigNumberish
+  ];
+  export type OutputTuple = [
+    matchId: bigint,
+    homeScore: bigint,
+    awayScore: bigint
+  ];
   export interface OutputObject {
+    matchId: bigint;
     homeScore: bigint;
     awayScore: bigint;
   }
@@ -57,10 +138,23 @@ export namespace MatchPlayedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace PlayerScoredEvent {
-  export type InputTuple = [playerId: BigNumberish];
-  export type OutputTuple = [playerId: bigint];
+export namespace NewMatchEvent {
+  export type InputTuple = [matchId: BigNumberish];
+  export type OutputTuple = [matchId: bigint];
   export interface OutputObject {
+    matchId: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace PlayerScoredEvent {
+  export type InputTuple = [matchId: BigNumberish, playerId: BigNumberish];
+  export type OutputTuple = [matchId: bigint, playerId: bigint];
+  export interface OutputObject {
+    matchId: bigint;
     playerId: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -112,17 +206,55 @@ export interface Game extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  playMatch: TypedContractMethod<
+  addTeam: TypedContractMethod<
     [
-      homeAttackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      homeMidfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      homeDefensivePlayers: [BigNumberish, BigNumberish, BigNumberish],
-      awayAttackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      awayMidfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      awayDefensivePlayers: [BigNumberish, BigNumberish, BigNumberish]
+      matchId: BigNumberish,
+      attackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
+      midfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
+      defensivePlayers: [BigNumberish, BigNumberish, BigNumberish]
     ],
-    [[bigint, bigint] & { homeGoals: bigint; awayGoals: bigint }],
+    [void],
     "payable"
+  >;
+
+  createGame: TypedContractMethod<
+    [
+      wagerRequired: BigNumberish,
+      homeAddress: AddressLike,
+      awayAddress: AddressLike
+    ],
+    [void],
+    "payable"
+  >;
+
+  getMatch: TypedContractMethod<
+    [matchId: BigNumberish],
+    [Game.MatchStructOutput],
+    "view"
+  >;
+
+  getMatchList: TypedContractMethod<[], [bigint[]], "view">;
+
+  matches: TypedContractMethod<
+    [arg0: BigNumberish],
+    [
+      [
+        bigint,
+        string,
+        Game.TeamStructOutput,
+        string,
+        Game.TeamStructOutput,
+        bigint
+      ] & {
+        wagerRequired: bigint;
+        homeAddress: string;
+        homeTeam: Game.TeamStructOutput;
+        awayAddress: string;
+        awayTeam: Game.TeamStructOutput;
+        pot: bigint;
+      }
+    ],
+    "view"
   >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
@@ -130,18 +262,60 @@ export interface Game extends BaseContract {
   ): T;
 
   getFunction(
-    nameOrSignature: "playMatch"
+    nameOrSignature: "addTeam"
   ): TypedContractMethod<
     [
-      homeAttackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      homeMidfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      homeDefensivePlayers: [BigNumberish, BigNumberish, BigNumberish],
-      awayAttackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      awayMidfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
-      awayDefensivePlayers: [BigNumberish, BigNumberish, BigNumberish]
+      matchId: BigNumberish,
+      attackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
+      midfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
+      defensivePlayers: [BigNumberish, BigNumberish, BigNumberish]
     ],
-    [[bigint, bigint] & { homeGoals: bigint; awayGoals: bigint }],
+    [void],
     "payable"
+  >;
+  getFunction(
+    nameOrSignature: "createGame"
+  ): TypedContractMethod<
+    [
+      wagerRequired: BigNumberish,
+      homeAddress: AddressLike,
+      awayAddress: AddressLike
+    ],
+    [void],
+    "payable"
+  >;
+  getFunction(
+    nameOrSignature: "getMatch"
+  ): TypedContractMethod<
+    [matchId: BigNumberish],
+    [Game.MatchStructOutput],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "getMatchList"
+  ): TypedContractMethod<[], [bigint[]], "view">;
+  getFunction(
+    nameOrSignature: "matches"
+  ): TypedContractMethod<
+    [arg0: BigNumberish],
+    [
+      [
+        bigint,
+        string,
+        Game.TeamStructOutput,
+        string,
+        Game.TeamStructOutput,
+        bigint
+      ] & {
+        wagerRequired: bigint;
+        homeAddress: string;
+        homeTeam: Game.TeamStructOutput;
+        awayAddress: string;
+        awayTeam: Game.TeamStructOutput;
+        pot: bigint;
+      }
+    ],
+    "view"
   >;
 
   getEvent(
@@ -152,6 +326,13 @@ export interface Game extends BaseContract {
     MatchPlayedEvent.OutputObject
   >;
   getEvent(
+    key: "NewMatch"
+  ): TypedContractEvent<
+    NewMatchEvent.InputTuple,
+    NewMatchEvent.OutputTuple,
+    NewMatchEvent.OutputObject
+  >;
+  getEvent(
     key: "PlayerScored"
   ): TypedContractEvent<
     PlayerScoredEvent.InputTuple,
@@ -160,7 +341,7 @@ export interface Game extends BaseContract {
   >;
 
   filters: {
-    "MatchPlayed(uint8,uint8)": TypedContractEvent<
+    "MatchPlayed(uint256,uint8,uint8)": TypedContractEvent<
       MatchPlayedEvent.InputTuple,
       MatchPlayedEvent.OutputTuple,
       MatchPlayedEvent.OutputObject
@@ -171,7 +352,18 @@ export interface Game extends BaseContract {
       MatchPlayedEvent.OutputObject
     >;
 
-    "PlayerScored(uint256)": TypedContractEvent<
+    "NewMatch(uint256)": TypedContractEvent<
+      NewMatchEvent.InputTuple,
+      NewMatchEvent.OutputTuple,
+      NewMatchEvent.OutputObject
+    >;
+    NewMatch: TypedContractEvent<
+      NewMatchEvent.InputTuple,
+      NewMatchEvent.OutputTuple,
+      NewMatchEvent.OutputObject
+    >;
+
+    "PlayerScored(uint256,uint256)": TypedContractEvent<
       PlayerScoredEvent.InputTuple,
       PlayerScoredEvent.OutputTuple,
       PlayerScoredEvent.OutputObject

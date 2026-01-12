@@ -6,6 +6,7 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { academyContract } from "./contracts/academyContract";
 import { BuyPlayer } from "./actions/buyPlayer";
+import { getPlayerTypeColor, getPlayerTypeIcon, getPlayerTypeName } from "./playerType";
 
 type AcademyPlayer =  {
     id: bigint;
@@ -13,6 +14,7 @@ type AcademyPlayer =  {
     defense: bigint;
     potential: bigint;
     value: bigint;
+    playerType: bigint;
 }
 
 const Academy = () => {
@@ -23,6 +25,8 @@ const Academy = () => {
         address: academyContract.address,
         functionName: 'getAcademyPlayers'
     });
+
+    console.log(academyContract);
 
     useEffect(() => {
         if (allPlayers) {
@@ -44,6 +48,19 @@ const Academy = () => {
                         <div className="player-card" key={player.id.toString()}>
                             <div className="player-info">
                                 <p className="player-name">Name: <span>{getPlayerName(player.id)}</span></p>
+                                {/* <p className="player-name">Type: <span 
+                                                    style={{ 
+                                                        backgroundColor: getPlayerTypeColor(player.playerType),
+                                                        padding: '2px 6px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.85em',
+                                                        fontWeight: 'bold',
+                                                        color: '#000'
+                                                    }}
+                                                    title={getPlayerTypeName(player.playerType)}
+                                                >
+                                                    {getPlayerTypeIcon(player.playerType)}
+                                                </span></p> */}
                                 <p className="player-attack">Attack: <span>{player.attack.toString()}</span></p>
                                 <p className="player-defense">Defense: <span>{player.defense.toString()}</span></p>
                                 <p className="player-potential">Potential: <span>{player.potential.toString()}</span></p>

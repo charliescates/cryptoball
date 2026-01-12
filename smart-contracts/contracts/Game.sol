@@ -3,79 +3,191 @@ pragma solidity 0.8.21;
 
 import "./PlayerToken.sol";
 import "./Academy.sol";
+import "hardhat/console.sol";
 
 /**
  * Refactor to replace uint with uint8 where possible
  */
 contract Game {
+    uint256 private _tokenIdCounter = 1;
     PlayerToken playerToken;
     Academy academy;
     uint randomCounter = 0;
 
-    event MatchPlayed(uint8 homeScore, uint8 awayScore);
-    event PlayerScored(uint256 playerId);
+    struct Match {
+        uint256 wagerRequired;
+        address homeAddress;
+        Team homeTeam;
+        address awayAddress;
+        Team awayTeam;
+        uint256 pot;
+    }
+
+    struct Team {
+        uint256[3] attackingPlayers;
+        uint256[3] midfieldPlayers;
+        uint256[3] defensivePlayers;
+    }
+
+    mapping(uint256 => Match) public matches;
+
+    event NewMatch(uint256 matchId);
+    event MatchPlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
+    event PlayerScored(uint256 matchId, uint256 playerId);
 
     constructor(address playerTokenAddress, address academyAddress) {
         playerToken = PlayerToken(playerTokenAddress);
         academy = Academy(academyAddress);
     }
 
-    function playMatch(
-        uint256[3] memory homeAttackingPlayers,
-        uint256[3] memory homeMidfieldPlayers,
-        uint256[3] memory homeDefensivePlayers,
-        uint256[3] memory awayAttackingPlayers,
-        uint256[3] memory awayMidfieldPlayers,
-        uint256[3] memory awayDefensivePlayers
-    ) external payable returns (uint8 homeGoals, uint8 awayGoals){
+    function createGame(uint wagerRequired, address homeAddress, address awayAddress) external payable {
+        console.log("Making game");
+        Match memory game;
+        game.wagerRequired = wagerRequired;
+        game.homeAddress = homeAddress;
+        game.awayAddress = awayAddress;
+        game.pot = wagerRequired * 2;
+        matches[_tokenIdCounter] = game;
+        console.log("Made game");
+
+        emit NewMatch(_tokenIdCounter++);
+    }
+
+    function getMatch(uint256 matchId) external view returns (Match memory) {
+        return matches[matchId];
+    }
+
+    function getMatchList() external view returns (uint256[] memory) {
+        uint256[] memory matchIds = new uint256[](_tokenIdCounter - 1);
+        uint256 count = 0;
+        for (uint256 i = 1; i < _tokenIdCounter; i++) {
+            if (matches[i].homeAddress != address(0)) {
+                matchIds[count] = i;
+                count++;
+            }
+        }
+        return matchIds;
+    }
+
+    function addTeam(
+        uint256 matchId,
+        uint256[3] memory attackingPlayers,
+        uint256[3] memory midfieldPlayers,
+        uint256[3] memory defensivePlayers) external payable {
+        console.log("Starting match");
+        Match storage game = matches[matchId];
         require(
-            msg.value > 0 ether,
-            "You must wager some ether to play a match"
+            msg.sender == game.homeAddress || msg.sender == game.awayAddress,
+            "You must be one of the teams playing in the match"
         );
 
-        address homeAddress = validateTeam(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
-        address awayAddress = validateTeam(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
+        require(
+            msg.value == game.wagerRequired,
+            string.concat(Strings.toString(msg.value), " does not match required wager of ", Strings.toString(game.wagerRequired))
+        );
 
-        (homeGoals, awayGoals) = iterateThroughGame(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers, awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
+        console.log("Adding team");
 
-        for (uint i = 0; i < 3; i++) {
-            if (homeAttackingPlayers[i] != 0) {
-                playerToken.playAttackGame(homeAttackingPlayers[i]);
-            }
-            if (homeMidfieldPlayers[i] != 0) {
-                playerToken.playMidfieldGame(homeMidfieldPlayers[i]);
-            }
-            if (homeDefensivePlayers[i] != 0) {
-                playerToken.playDefenseGame(homeDefensivePlayers[i]);
-            }
-            if (awayAttackingPlayers[i] != 0) {
-                playerToken.playAttackGame(awayAttackingPlayers[i]);
-            }
-            if (awayMidfieldPlayers[i] != 0) {
-                playerToken.playMidfieldGame(awayMidfieldPlayers[i]);
-            }
-            if (awayDefensivePlayers[i] != 0) {
-                playerToken.playDefenseGame(awayDefensivePlayers[i]);
-            }
-        }
-
-        assignGoals(homeGoals, homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
-        assignGoals(awayGoals, awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
-
-        if (homeGoals > awayGoals) {
-            console.log("Home team wins, sending money to home team: %s", homeAddress);
-            payable(homeAddress).transfer(msg.value);
-        } else if (awayGoals > homeGoals) {
-            console.log("Away team wins, sending money to away team: %s", awayAddress);
-            payable(awayAddress).transfer(msg.value);
+        if (msg.sender == game.homeAddress) {
+            validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
+            game.homeTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
+            console.log("Home team added");
         } else {
-            console.log("It's a draw, sending money to the academy");
-            academy.deposit{value: msg.value}();
+            validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
+            game.awayTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
+            console.log("Away team added");
         }
 
-        emit MatchPlayed(homeGoals, awayGoals);
+        console.log("Game, home team included: %s, away team included: %s", isEmpty(game.homeTeam), isEmpty(game.awayTeam));
+
+        if (!isEmpty(game.homeTeam) && !isEmpty(game.awayTeam)) {
+            console.log("Playing match");
+            playMatch(matchId);
+        }
+    }
+
+    function isEmpty(Team memory team) private pure returns (bool) {
+        return team.attackingPlayers[0] == 0
+        && team.attackingPlayers[1] == 0
+        && team.attackingPlayers[2] == 0
+        && team.midfieldPlayers[0] == 0
+        && team.midfieldPlayers[1] == 0
+        && team.midfieldPlayers[2] == 0
+        && team.defensivePlayers[0] == 0
+        && team.defensivePlayers[1] == 0
+        && team.defensivePlayers[2] == 0;
+    }
+
+    function playMatch(uint256 matchId) internal returns (uint8 homeGoals, uint8 awayGoals) {
+        Match memory game = matches[matchId];
+        
+        (homeGoals, awayGoals) = iterateThroughGame(
+            game.homeTeam.attackingPlayers,
+            game.homeTeam.midfieldPlayers,
+            game.homeTeam.defensivePlayers,
+            game.awayTeam.attackingPlayers,
+            game.awayTeam.midfieldPlayers,
+            game.awayTeam.defensivePlayers
+        );
+
+        // Update player stats
+        updatePlayerStats(game.homeTeam, game.awayTeam);
+
+        // Assign goals to scorers
+        assignGoals(matchId, homeGoals, game.homeTeam);
+        assignGoals(matchId, awayGoals, game.awayTeam);
+
+        // Distribute winnings
+        distributeWinnings(matchId, homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress);
+
+        emit MatchPlayed(matchId, homeGoals, awayGoals);
+
+        delete matches[matchId];
 
         return (homeGoals, awayGoals);
+    }
+
+    function updatePlayerStats(Team memory homeTeam, Team memory awayTeam) private {
+        for (uint i = 0; i < 3; i++) {
+            if (homeTeam.attackingPlayers[i] != 0) {
+                playerToken.playAttackGame(homeTeam.attackingPlayers[i]);
+            }
+            if (homeTeam.midfieldPlayers[i] != 0) {
+                playerToken.playMidfieldGame(homeTeam.midfieldPlayers[i]);
+            }
+            if (homeTeam.defensivePlayers[i] != 0) {
+                playerToken.playDefenseGame(homeTeam.defensivePlayers[i]);
+            }
+            if (awayTeam.attackingPlayers[i] != 0) {
+                playerToken.playAttackGame(awayTeam.attackingPlayers[i]);
+            }
+            if (awayTeam.midfieldPlayers[i] != 0) {
+                playerToken.playMidfieldGame(awayTeam.midfieldPlayers[i]);
+            }
+            if (awayTeam.defensivePlayers[i] != 0) {
+                playerToken.playDefenseGame(awayTeam.defensivePlayers[i]);
+            }
+        }
+    }
+
+    function distributeWinnings(uint256 matchId, uint8 homeGoals, uint8 awayGoals, uint256 pot, address homeAddress, address awayAddress) private {
+        uint academyShare = (pot * 5) / 100;
+        console.log("Sending money to the academy: %s wen", academyShare);
+        academy.deposit{value: academyShare}();
+        
+        uint remainingPot = pot - academyShare;
+
+        if (homeGoals > awayGoals) {
+            console.log("Home team wins, sending %s wen to home team: %s", remainingPot, homeAddress);
+            payable(homeAddress).transfer(remainingPot);
+        } else if (awayGoals > homeGoals) {
+            console.log("Away team wins, sending %s wen to away team: %s", remainingPot, awayAddress);
+            payable(awayAddress).transfer(remainingPot);
+        } else {
+            console.log("It's a draw, sending %s wen to home and away teams", remainingPot / 2);
+            payable(homeAddress).transfer(remainingPot / 2);
+            payable(awayAddress).transfer(remainingPot / 2);
+        }
     }
 
     function iterateThroughGame(
@@ -181,26 +293,26 @@ contract Game {
         return owner;
     }
 
-    function assignGoals(uint goals, uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) private {
-        uint[] memory team = new uint[](5);
+    function assignGoals(uint256 matchId, uint goals, Team memory team) private {
+        uint[] memory players = new uint[](5);
         uint[] memory attackRange = new uint[](6);
         uint playerCount = 0;
         for (uint i = 0; i < 3; i++) {
-            if (attack[i] != 0) {
-                team[playerCount] = attack[i];
-                ( , uint attackStat, , , , ,) = playerToken.getPlayerAttributes(attack[i]);
+            if (team.attackingPlayers[i] != 0) {
+                players[playerCount] = team.attackingPlayers[i];
+                ( , uint attackStat, , , , , ,) = playerToken.getPlayerAttributes(team.attackingPlayers[i]);
                 attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
                 playerCount++;
             }
-            if (midfield[i] != 0) {
-                team[playerCount] = midfield[i];
-                ( , uint attackStat, , , , ,) = playerToken.getPlayerAttributes(midfield[i]);
+            if (team.midfieldPlayers[i] != 0) {
+                players[playerCount] = team.midfieldPlayers[i];
+                ( , uint attackStat, , , , , ,) = playerToken.getPlayerAttributes(team.midfieldPlayers[i]);
                 attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
                 playerCount++;
             }
-            if (defense[i] != 0) {
-                team[playerCount] = defense[i];
-                ( , uint attackStat, , , , ,) = playerToken.getPlayerAttributes(defense[i]);
+            if (team.defensivePlayers[i] != 0) {
+                players[playerCount] = team.defensivePlayers[i];
+                ( , uint attackStat, , , , , ,) = playerToken.getPlayerAttributes(team.defensivePlayers[i]);
                 attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
                 playerCount++;
             }
@@ -220,9 +332,9 @@ contract Game {
 
             for (uint j = 0; j < 5; j++) {
                 if (random < attackRange[j + 1]) {
-                    console.log("Player %d scored a goal", team[j]);
-                    playerToken.scoreGoal(team[j]);
-                    emit PlayerScored(team[j]);
+                    console.log("Player %d scored a goal", players[j]);
+                    playerToken.scoreGoal(players[j]);
+                    emit PlayerScored(matchId, players[j]);
                     break;
                 }
             }
@@ -233,16 +345,148 @@ contract Game {
         uint teamAttack = 0;
         uint teamDefense = 0;
         for (uint8 i = 0; i < 3; i++) {
-            teamAttack += getAttack(attack[i]) * 110 / 100;
-            teamAttack += getAttack(midfield[i]);
-            teamAttack += getAttack(defense[i]) * 90 / 100;
+            // TODO Add playertype changes in here
+            teamAttack += getAttack(attack[i]) * (110 + getPlayerTypeAdjustment(attack[i], true, false, true)) / 100;
+            teamAttack += getAttack(midfield[i]) * (100 + getPlayerTypeAdjustment(midfield[i], false, false, true)) / 100;
+            teamAttack += getAttack(defense[i]) * (90 + getPlayerTypeAdjustment(defense[i], false, true, true)) / 100;
 
-            teamDefense += getDefense(attack[i]) * 90 / 100;
-            teamDefense += getDefense(midfield[i]);
-            teamDefense += getDefense(defense[i]) * 110 / 100;
+            teamDefense += getDefense(attack[i]) * (90 + getPlayerTypeAdjustment(attack[i], true, false, false)) / 100;
+            teamDefense += getDefense(midfield[i]) * (100 + getPlayerTypeAdjustment(midfield[i], false, false, false)) / 100;
+            teamDefense += getDefense(defense[i]) * (110 + getPlayerTypeAdjustment(defense[i], false, true, false)) / 100;
         }
 
+        // Calculate team chemistry bonuses
+        (uint attackBonus, uint defenseBonus) = calculateTeamChemistry(attack, midfield, defense);
+        teamAttack = teamAttack * (100 + attackBonus) / 100;
+        teamDefense = teamDefense * (100 + defenseBonus) / 100;
+
         return (teamAttack, teamDefense);
+    }
+
+    function calculateTeamChemistry(uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) private view returns (uint attackBonus, uint defenseBonus) {
+        // Get player types for all positions
+        uint8[9] memory playerTypes;
+        bool[9] memory usedInBonus;
+        
+        for (uint i = 0; i < 3; i++) {
+            if (defense[i] != 0) {
+                (, , , , , , , uint pType) = playerToken.getPlayerAttributes(defense[i]);
+                playerTypes[i] = uint8(pType);
+            }
+            if (midfield[i] != 0) {
+                (, , , , , , , uint pType) = playerToken.getPlayerAttributes(midfield[i]);
+                playerTypes[i + 3] = uint8(pType);
+            }
+            if (attack[i] != 0) {
+                (, , , , , , , uint pType) = playerToken.getPlayerAttributes(attack[i]);
+                playerTypes[i + 6] = uint8(pType);
+            }
+        }
+
+        // Indices: 0-2 = Defense, 3-5 = Midfield, 6-8 = Attack
+        // Player Types: 0=Enforcer, 1=Target Man, 2=Playmaker, 3=Anchor
+
+        // Check for 6-point bonuses first (higher priority)
+        
+        // Defense: Anchor + Enforcer + Enforcer = +6 defense
+        if (!usedInBonus[0] && !usedInBonus[1] && !usedInBonus[2]) {
+            if (playerTypes[0] == 3 && playerTypes[1] == 0 && playerTypes[2] == 0) {
+                defenseBonus += 6;
+                usedInBonus[0] = true;
+                usedInBonus[1] = true;
+                usedInBonus[2] = true;
+            }
+        }
+
+        // Midfield: Playmaker + Attack: Target Man + Target Man = +6 attack
+        if (!usedInBonus[3] && !usedInBonus[6] && !usedInBonus[7]) {
+            if (playerTypes[3] == 2 && playerTypes[6] == 1 && playerTypes[7] == 1) {
+                attackBonus += 6;
+                usedInBonus[3] = true;
+                usedInBonus[6] = true;
+                usedInBonus[7] = true;
+            }
+        }
+
+        // Defense: Enforcer + Enforcer = +3 defense
+        if (!usedInBonus[0] && !usedInBonus[1]) {
+            if (playerTypes[0] == 0 && playerTypes[1] == 0) {
+                defenseBonus += 3;
+                usedInBonus[0] = true;
+                usedInBonus[1] = true;
+            }
+        }
+
+        // Check for 3-point bonuses
+        
+        // Defense: Anchor + Enforcer = +3 defense
+        if (!usedInBonus[0] && !usedInBonus[1]) {
+            if (playerTypes[0] == 3 && playerTypes[1] == 0) {
+                defenseBonus += 3;
+                usedInBonus[0] = true;
+                usedInBonus[1] = true;
+            }
+        }
+
+        // Midfield: Playmaker + Attack: Target Man = +3 attack
+        if (!usedInBonus[3] && !usedInBonus[6]) {
+            if (playerTypes[3] == 2 && playerTypes[6] == 1) {
+                attackBonus += 3;
+                usedInBonus[3] = true;
+                usedInBonus[6] = true;
+            }
+        }
+
+        // Defense: Anchor + Midfield: Playmaker + Attack: Target Man = +3 defense, +3 attack
+        if (!usedInBonus[0] && !usedInBonus[3] && !usedInBonus[6]) {
+            if (playerTypes[0] == 3 && playerTypes[3] == 2 && playerTypes[6] == 1) {
+                defenseBonus += 3;
+                attackBonus += 3;
+                usedInBonus[0] = true;
+                usedInBonus[3] = true;
+                usedInBonus[6] = true;
+            }
+        }
+
+        // Attack: Target Man + Enforcer = +3 attack
+        if (!usedInBonus[6] && !usedInBonus[7]) {
+            if (playerTypes[6] == 1 && playerTypes[7] == 0) {
+                attackBonus += 3;
+                usedInBonus[6] = true;
+                usedInBonus[7] = true;
+            }
+        }
+
+        // Midfield: Playmaker + Anchor = +3 defense
+        if (!usedInBonus[3] && !usedInBonus[4]) {
+            if (playerTypes[3] == 2 && playerTypes[4] == 3) {
+                defenseBonus += 3;
+                usedInBonus[3] = true;
+                usedInBonus[4] = true;
+            }
+        }
+
+        // Midfield: Playmaker + Anchor + Enforcer = +3 defense, +3 attack
+        if (!usedInBonus[3] && !usedInBonus[4] && !usedInBonus[5]) {
+            if (playerTypes[3] == 2 && playerTypes[4] == 3 && playerTypes[5] == 0) {
+                defenseBonus += 3;
+                attackBonus += 3;
+                usedInBonus[3] = true;
+                usedInBonus[4] = true;
+                usedInBonus[5] = true;
+            }
+        }
+
+        // Attack: Target Man + Playmaker = +3 attack
+        if (!usedInBonus[6] && !usedInBonus[7]) {
+            if (playerTypes[6] == 1 && playerTypes[7] == 2) {
+                attackBonus += 3;
+                usedInBonus[6] = true;
+                usedInBonus[7] = true;
+            }
+        }
+
+        return (attackBonus, defenseBonus);
     }
 
     function hasDuplicates(uint256[] memory array) private pure returns (bool) {
@@ -257,13 +501,49 @@ contract Game {
     }
 
     function getAttack(uint256 playerId) private view returns (uint) {
-        ( , uint attack, , , , ,) = playerToken.getPlayerAttributes(playerId);
+        ( , uint attack, , , , , ,) = playerToken.getPlayerAttributes(playerId);
         return attack;
     }
 
     function getDefense(uint256 playerId) private view returns (uint) {
-        ( , , , uint defense, , ,) = playerToken.getPlayerAttributes(playerId);
+        ( , , , uint defense, , , ,) = playerToken.getPlayerAttributes(playerId);
         return defense;
+    }
+
+    function getPlayerTypeAdjustment(uint playerId, bool isAttack, bool isDefense, bool isAttackingStat) private view returns (uint8) {
+        ( , , , , , , , uint playerType) = playerToken.getPlayerAttributes(playerId);
+        if (playerType == 0) { // Enforcer
+            if (isAttack) {
+                return isAttackingStat ? 5 : 0; 
+            } else if (isDefense) {
+                return isAttackingStat ? 0 : 10; 
+            } else {
+                return isAttackingStat ? 0 : 5; 
+            }
+        } else if (playerType == 1) { // Target Man
+            if (isAttack) {
+                return isAttackingStat ? 10 : 0; 
+            } else {
+                return 0;
+            }
+        } else if (playerType == 2) { // Playmaker
+            if (isAttack) {
+                return isAttackingStat ? 5 : 0; 
+            } else if (isDefense) {
+                return 0;
+            } else {
+                return isAttackingStat ? 10 : 0; 
+            }
+        } else {
+            // Anchor
+            if (isAttack) {
+                return 0; 
+            } else if (isDefense) {
+                return isAttackingStat ? 0 : 10; 
+            } else {
+                return isAttackingStat ? 0 : 5; 
+            } 
+        }
     }
 
     function sendWagerToWinner(address winner) private {

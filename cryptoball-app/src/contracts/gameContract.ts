@@ -24,6 +24,12 @@ export const gameContract: Contract = {
       "inputs": [
         {
           "indexed": false,
+          "internalType": "uint256",
+          "name": "matchId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
           "internalType": "uint8",
           "name": "homeScore",
           "type": "uint8"
@@ -44,6 +50,25 @@ export const gameContract: Contract = {
         {
           "indexed": false,
           "internalType": "uint256",
+          "name": "matchId",
+          "type": "uint256"
+        }
+      ],
+      "name": "NewMatch",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "matchId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
           "name": "playerId",
           "type": "uint256"
         }
@@ -54,50 +79,228 @@ export const gameContract: Contract = {
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "matchId",
+          "type": "uint256"
+        },
+        {
           "internalType": "uint256[3]",
-          "name": "homeAttackingPlayers",
+          "name": "attackingPlayers",
           "type": "uint256[3]"
         },
         {
           "internalType": "uint256[3]",
-          "name": "homeMidfieldPlayers",
+          "name": "midfieldPlayers",
           "type": "uint256[3]"
         },
         {
           "internalType": "uint256[3]",
-          "name": "homeDefensivePlayers",
-          "type": "uint256[3]"
-        },
-        {
-          "internalType": "uint256[3]",
-          "name": "awayAttackingPlayers",
-          "type": "uint256[3]"
-        },
-        {
-          "internalType": "uint256[3]",
-          "name": "awayMidfieldPlayers",
-          "type": "uint256[3]"
-        },
-        {
-          "internalType": "uint256[3]",
-          "name": "awayDefensivePlayers",
+          "name": "defensivePlayers",
           "type": "uint256[3]"
         }
       ],
-      "name": "playMatch",
+      "name": "addTeam",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "wagerRequired",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "homeAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "awayAddress",
+          "type": "address"
+        }
+      ],
+      "name": "createGame",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "matchId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getMatch",
       "outputs": [
         {
-          "internalType": "uint8",
-          "name": "homeGoals",
-          "type": "uint8"
-        },
-        {
-          "internalType": "uint8",
-          "name": "awayGoals",
-          "type": "uint8"
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "wagerRequired",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "homeAddress",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256[3]",
+                  "name": "attackingPlayers",
+                  "type": "uint256[3]"
+                },
+                {
+                  "internalType": "uint256[3]",
+                  "name": "midfieldPlayers",
+                  "type": "uint256[3]"
+                },
+                {
+                  "internalType": "uint256[3]",
+                  "name": "defensivePlayers",
+                  "type": "uint256[3]"
+                }
+              ],
+              "internalType": "struct Game.Team",
+              "name": "homeTeam",
+              "type": "tuple"
+            },
+            {
+              "internalType": "address",
+              "name": "awayAddress",
+              "type": "address"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256[3]",
+                  "name": "attackingPlayers",
+                  "type": "uint256[3]"
+                },
+                {
+                  "internalType": "uint256[3]",
+                  "name": "midfieldPlayers",
+                  "type": "uint256[3]"
+                },
+                {
+                  "internalType": "uint256[3]",
+                  "name": "defensivePlayers",
+                  "type": "uint256[3]"
+                }
+              ],
+              "internalType": "struct Game.Team",
+              "name": "awayTeam",
+              "type": "tuple"
+            },
+            {
+              "internalType": "uint256",
+              "name": "pot",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct Game.Match",
+          "name": "",
+          "type": "tuple"
         }
       ],
-      "stateMutability": "payable",
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getMatchList",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "matches",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "wagerRequired",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "homeAddress",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256[3]",
+              "name": "attackingPlayers",
+              "type": "uint256[3]"
+            },
+            {
+              "internalType": "uint256[3]",
+              "name": "midfieldPlayers",
+              "type": "uint256[3]"
+            },
+            {
+              "internalType": "uint256[3]",
+              "name": "defensivePlayers",
+              "type": "uint256[3]"
+            }
+          ],
+          "internalType": "struct Game.Team",
+          "name": "homeTeam",
+          "type": "tuple"
+        },
+        {
+          "internalType": "address",
+          "name": "awayAddress",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint256[3]",
+              "name": "attackingPlayers",
+              "type": "uint256[3]"
+            },
+            {
+              "internalType": "uint256[3]",
+              "name": "midfieldPlayers",
+              "type": "uint256[3]"
+            },
+            {
+              "internalType": "uint256[3]",
+              "name": "defensivePlayers",
+              "type": "uint256[3]"
+            }
+          ],
+          "internalType": "struct Game.Team",
+          "name": "awayTeam",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pot",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     }
   ] as const

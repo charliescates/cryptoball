@@ -110,4 +110,88 @@ const PlayGame = ({ home, away }: PlayGameProps) => {
     );
 }
 
-export default PlayGame;
+const StartGame = () => {
+    const [homeAddress, setHomeAddress] = useState("");
+    const [awayAddress, setAwayAddress] = useState("");
+    const [wager, setWager] = useState("");
+    const [editable, setEditable] = useState(true); // Added state for editability
+
+    const {
+        data: hash,
+        error,
+        isPending,
+        writeContract
+    } = useWriteContract();
+    const account = useAccount();
+
+    const transaction = {
+        address: gameContract.address,
+        abi: gameContract.abi,
+        functionName: 'createGame',
+        chainId: account.chainId as any,
+        gas: 30000000n,
+    };
+
+    const startGame = async () => {
+        writeContract({
+            ...transaction as any,
+            account: account!.addresses![0],
+            args: [parseEther(wager), homeAddress, awayAddress],
+            value: parseEther(wager)
+        });
+    };
+
+    function submit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        setEditable(false); // Disable editing when the form is submitted
+        startGame();
+    };
+
+    const { isLoading: isConfirming, isSuccess: isConfirmed } =
+        useWaitForTransactionReceipt({
+            hash,
+        });
+
+    return (
+        <div>
+            <form onSubmit={submit}>
+                <input
+                    type="text"
+                    placeholder="Home Address"
+                    value={homeAddress}
+                    onChange={(e) => setHomeAddress(e.target.value)}
+                    disabled={!editable} // Disable input if not editable
+                />
+                <input
+                    type="text"
+                    placeholder="Away Address"
+                    value={awayAddress}
+                    onChange={(e) => setAwayAddress(e.target.value)}
+                    disabled={!editable} // Disable input if not editable
+                />
+                <input
+                    type="text"
+                    placeholder="Wager"
+                    value={wager}
+                    onChange={(e) => setWager(e.target.value)}
+                    disabled={!editable} // Disable input if not editable
+                />
+                <button
+                    className='start-game-button'
+                    disabled={isPending || !editable} // Disable button if not editable or pending
+                    type="submit"
+                >
+                    {isPending ? 'Starting Game...' : 'Start Game'}
+                </button>
+                {hash && <div>Transaction Hash: {hash}</div>}
+                {isConfirming && <div>Waiting for confirmation...</div>}
+                {isConfirmed && <div>Transaction confirmed.</div>}
+                {error && (
+                    <div>Error: {(error as BaseError).shortMessage || error.message}</div>
+                )}
+            </form>
+        </div>
+    );
+};
+
+export default StartGame;

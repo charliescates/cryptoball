@@ -1,0 +1,12 @@
+Defense 1,Defense 2,Defense 3,Midfield 1,Midfield 2,Midfield 3,Attack 1,Attack 2,Attack 3,Defense Bonus,Attack Bonus
+Anchor,Enforcer,,,,,,,,3,
+Anchor,Enforcer,Enforcer,,,,,,,6,
+,,,Playmaker,,,Target Man,,,,3
+,,,Playmaker,,,Target Man,Target Man,,,6
+Anchor,,,Playmaker,,,Target Man,,,3,3
+,,,,,,Target Man,Enforcer,,,3
+Enforcer,Enforcer,,,,,,,,3,
+,,,Playmaker,Anchor,,,,,,3
+,,,Playmaker,Anchor,Enforcer,,,,3,3
+,,,,,,Target Man,Playmaker,,,3
+Enforcer,Enforcer,Enforcer,,,,,,,6,

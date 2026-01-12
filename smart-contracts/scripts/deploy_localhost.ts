@@ -1,22 +1,29 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const playerToken = await ethers.deployContract("PlayerToken");
+  const [deployer] = await ethers.getSigners();
+  console.log("Deploying contracts with:", deployer.address);
+
+  // PlayerToken
+  const PlayerToken = await ethers.getContractFactory("PlayerToken");
+  const playerToken = await PlayerToken.deploy();
   await playerToken.waitForDeployment();
   console.log("PlayerToken deployed to:", await playerToken.getAddress());
 
-  const academyContract = await ethers.deployContract("Academy", [await playerToken.getAddress()]);
-  await academyContract.waitForDeployment();
-  console.log("Academy deployed to:", await academyContract.getAddress());
-  
-  const gameContract = await ethers.deployContract("Game", [await playerToken.getAddress(), await academyContract.getAddress()]);
-  await gameContract.waitForDeployment();
-  console.log("Game deployed to:", await gameContract.getAddress());
+  // Academy
+  const Academy = await ethers.getContractFactory("Academy");
+  const academy = await Academy.deploy(await playerToken.getAddress());
+  await academy.waitForDeployment();
+  console.log("Academy deployed to:", await academy.getAddress());
+
+  // Game
+  const Game = await ethers.getContractFactory("Game");
+  const game = await Game.deploy(await playerToken.getAddress(), await academy.getAddress());
+  await game.waitForDeployment();
+  console.log("Game deployed to:", await game.getAddress());
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
+main().catch((err) => {
+  console.error(err);
   process.exitCode = 1;
 });

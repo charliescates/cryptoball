@@ -21,81 +21,25 @@ import type {
   TypedLogDescription,
   TypedListener,
   TypedContractMethod,
-} from "../common";
+} from "../../../../common";
 
-export declare namespace PlayerToken {
-  export type PlayerStruct = {
-    id: BigNumberish;
-    originalAttack: BigNumberish;
-    attack: BigNumberish;
-    originalDefense: BigNumberish;
-    defense: BigNumberish;
-    potential: BigNumberish;
-    gamesLeft: BigNumberish;
-    goalsScored: BigNumberish;
-    playerType: BigNumberish;
-  };
-
-  export type PlayerStructOutput = [
-    id: bigint,
-    originalAttack: bigint,
-    attack: bigint,
-    originalDefense: bigint,
-    defense: bigint,
-    potential: bigint,
-    gamesLeft: bigint,
-    goalsScored: bigint,
-    playerType: bigint
-  ] & {
-    id: bigint;
-    originalAttack: bigint;
-    attack: bigint;
-    originalDefense: bigint;
-    defense: bigint;
-    potential: bigint;
-    gamesLeft: bigint;
-    goalsScored: bigint;
-    playerType: bigint;
-  };
-}
-
-export interface PlayerTokenInterface extends Interface {
+export interface IERC721Interface extends Interface {
   getFunction(
     nameOrSignature:
       | "approve"
       | "balanceOf"
-      | "getAllPlayers"
       | "getApproved"
-      | "getGamesLeft"
-      | "getGoals"
-      | "getPlayerAttributes"
-      | "getPlayersByOwner"
       | "isApprovedForAll"
-      | "mintPlayer"
-      | "name"
       | "ownerOf"
-      | "playAttackGame"
-      | "playDefenseGame"
-      | "playMidfieldGame"
-      | "playerIdsByOwner"
-      | "players"
       | "safeTransferFrom(address,address,uint256)"
       | "safeTransferFrom(address,address,uint256,bytes)"
-      | "scoreGoal"
       | "setApprovalForAll"
       | "supportsInterface"
-      | "symbol"
-      | "tokenURI"
-      | "transfer"
       | "transferFrom"
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic:
-      | "Approval"
-      | "ApprovalForAll"
-      | "PlayerMinted"
-      | "Transfer"
+    nameOrSignatureOrTopic: "Approval" | "ApprovalForAll" | "Transfer"
   ): EventFragment;
 
   encodeFunctionData(
@@ -107,60 +51,15 @@ export interface PlayerTokenInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "getAllPlayers",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "getApproved",
     values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getGamesLeft",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getGoals",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getPlayerAttributes",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getPlayersByOwner",
-    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "isApprovedForAll",
     values: [AddressLike, AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "mintPlayer",
-    values: [AddressLike]
-  ): string;
-  encodeFunctionData(functionFragment: "name", values?: undefined): string;
-  encodeFunctionData(
     functionFragment: "ownerOf",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "playAttackGame",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "playDefenseGame",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "playMidfieldGame",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "playerIdsByOwner",
-    values: [AddressLike, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "players",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -172,25 +71,12 @@ export interface PlayerTokenInterface extends Interface {
     values: [AddressLike, AddressLike, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "scoreGoal",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "setApprovalForAll",
     values: [AddressLike, boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
     values: [BytesLike]
-  ): string;
-  encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "tokenURI",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transfer",
-    values: [AddressLike, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "transferFrom",
@@ -200,50 +86,14 @@ export interface PlayerTokenInterface extends Interface {
   decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getAllPlayers",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "getApproved",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getGamesLeft",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "getGoals", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "getPlayerAttributes",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getPlayersByOwner",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "isApprovedForAll",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "mintPlayer", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "playAttackGame",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "playDefenseGame",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "playMidfieldGame",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "playerIdsByOwner",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "players", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "safeTransferFrom(address,address,uint256)",
     data: BytesLike
@@ -252,7 +102,6 @@ export interface PlayerTokenInterface extends Interface {
     functionFragment: "safeTransferFrom(address,address,uint256,bytes)",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "scoreGoal", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setApprovalForAll",
     data: BytesLike
@@ -261,9 +110,6 @@ export interface PlayerTokenInterface extends Interface {
     functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "transfer", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferFrom",
     data: BytesLike
@@ -310,19 +156,6 @@ export namespace ApprovalForAllEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace PlayerMintedEvent {
-  export type InputTuple = [account: AddressLike, playerId: BigNumberish];
-  export type OutputTuple = [account: string, playerId: bigint];
-  export interface OutputObject {
-    account: string;
-    playerId: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
 export namespace TransferEvent {
   export type InputTuple = [
     from: AddressLike,
@@ -341,11 +174,11 @@ export namespace TransferEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export interface PlayerToken extends BaseContract {
-  connect(runner?: ContractRunner | null): PlayerToken;
+export interface IERC721 extends BaseContract {
+  connect(runner?: ContractRunner | null): IERC721;
   waitForDeployment(): Promise<this>;
 
-  interface: PlayerTokenInterface;
+  interface: IERC721Interface;
 
   queryFilter<TCEvent extends TypedContractEvent>(
     event: TCEvent,
@@ -392,40 +225,7 @@ export interface PlayerToken extends BaseContract {
 
   balanceOf: TypedContractMethod<[owner: AddressLike], [bigint], "view">;
 
-  getAllPlayers: TypedContractMethod<
-    [],
-    [PlayerToken.PlayerStructOutput[]],
-    "view"
-  >;
-
   getApproved: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
-
-  getGamesLeft: TypedContractMethod<[id: BigNumberish], [bigint], "view">;
-
-  getGoals: TypedContractMethod<[id: BigNumberish], [bigint], "view">;
-
-  getPlayerAttributes: TypedContractMethod<
-    [playerId: BigNumberish],
-    [
-      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] & {
-        origAttack: bigint;
-        attack: bigint;
-        origDef: bigint;
-        defense: bigint;
-        potential: bigint;
-        gamesLeft: bigint;
-        goalsScored: bigint;
-        playerType: bigint;
-      }
-    ],
-    "view"
-  >;
-
-  getPlayersByOwner: TypedContractMethod<
-    [owner: AddressLike],
-    [PlayerToken.PlayerStructOutput[]],
-    "view"
-  >;
 
   isApprovedForAll: TypedContractMethod<
     [owner: AddressLike, operator: AddressLike],
@@ -433,52 +233,7 @@ export interface PlayerToken extends BaseContract {
     "view"
   >;
 
-  mintPlayer: TypedContractMethod<
-    [account: AddressLike],
-    [[bigint, bigint, bigint]],
-    "nonpayable"
-  >;
-
-  name: TypedContractMethod<[], [string], "view">;
-
   ownerOf: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
-
-  playAttackGame: TypedContractMethod<[id: BigNumberish], [void], "nonpayable">;
-
-  playDefenseGame: TypedContractMethod<
-    [id: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
-
-  playMidfieldGame: TypedContractMethod<
-    [id: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
-
-  playerIdsByOwner: TypedContractMethod<
-    [arg0: AddressLike, arg1: BigNumberish],
-    [bigint],
-    "view"
-  >;
-
-  players: TypedContractMethod<
-    [arg0: BigNumberish],
-    [
-      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] & {
-        originalAttack: bigint;
-        attack: bigint;
-        originalDefense: bigint;
-        defense: bigint;
-        potential: bigint;
-        gamesLeft: bigint;
-        goalsScored: bigint;
-        playerType: bigint;
-      }
-    ],
-    "view"
-  >;
 
   "safeTransferFrom(address,address,uint256)": TypedContractMethod<
     [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
@@ -497,8 +252,6 @@ export interface PlayerToken extends BaseContract {
     "nonpayable"
   >;
 
-  scoreGoal: TypedContractMethod<[id: BigNumberish], [void], "nonpayable">;
-
   setApprovalForAll: TypedContractMethod<
     [operator: AddressLike, approved: boolean],
     [void],
@@ -509,16 +262,6 @@ export interface PlayerToken extends BaseContract {
     [interfaceId: BytesLike],
     [boolean],
     "view"
-  >;
-
-  symbol: TypedContractMethod<[], [string], "view">;
-
-  tokenURI: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
-
-  transfer: TypedContractMethod<
-    [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
-    [void],
-    "nonpayable"
   >;
 
   transferFrom: TypedContractMethod<
@@ -542,42 +285,8 @@ export interface PlayerToken extends BaseContract {
     nameOrSignature: "balanceOf"
   ): TypedContractMethod<[owner: AddressLike], [bigint], "view">;
   getFunction(
-    nameOrSignature: "getAllPlayers"
-  ): TypedContractMethod<[], [PlayerToken.PlayerStructOutput[]], "view">;
-  getFunction(
     nameOrSignature: "getApproved"
   ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
-  getFunction(
-    nameOrSignature: "getGamesLeft"
-  ): TypedContractMethod<[id: BigNumberish], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getGoals"
-  ): TypedContractMethod<[id: BigNumberish], [bigint], "view">;
-  getFunction(
-    nameOrSignature: "getPlayerAttributes"
-  ): TypedContractMethod<
-    [playerId: BigNumberish],
-    [
-      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] & {
-        origAttack: bigint;
-        attack: bigint;
-        origDef: bigint;
-        defense: bigint;
-        potential: bigint;
-        gamesLeft: bigint;
-        goalsScored: bigint;
-        playerType: bigint;
-      }
-    ],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "getPlayersByOwner"
-  ): TypedContractMethod<
-    [owner: AddressLike],
-    [PlayerToken.PlayerStructOutput[]],
-    "view"
-  >;
   getFunction(
     nameOrSignature: "isApprovedForAll"
   ): TypedContractMethod<
@@ -586,52 +295,8 @@ export interface PlayerToken extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "mintPlayer"
-  ): TypedContractMethod<
-    [account: AddressLike],
-    [[bigint, bigint, bigint]],
-    "nonpayable"
-  >;
-  getFunction(
-    nameOrSignature: "name"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
     nameOrSignature: "ownerOf"
   ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
-  getFunction(
-    nameOrSignature: "playAttackGame"
-  ): TypedContractMethod<[id: BigNumberish], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "playDefenseGame"
-  ): TypedContractMethod<[id: BigNumberish], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "playMidfieldGame"
-  ): TypedContractMethod<[id: BigNumberish], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "playerIdsByOwner"
-  ): TypedContractMethod<
-    [arg0: AddressLike, arg1: BigNumberish],
-    [bigint],
-    "view"
-  >;
-  getFunction(
-    nameOrSignature: "players"
-  ): TypedContractMethod<
-    [arg0: BigNumberish],
-    [
-      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] & {
-        originalAttack: bigint;
-        attack: bigint;
-        originalDefense: bigint;
-        defense: bigint;
-        potential: bigint;
-        gamesLeft: bigint;
-        goalsScored: bigint;
-        playerType: bigint;
-      }
-    ],
-    "view"
-  >;
   getFunction(
     nameOrSignature: "safeTransferFrom(address,address,uint256)"
   ): TypedContractMethod<
@@ -652,9 +317,6 @@ export interface PlayerToken extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "scoreGoal"
-  ): TypedContractMethod<[id: BigNumberish], [void], "nonpayable">;
-  getFunction(
     nameOrSignature: "setApprovalForAll"
   ): TypedContractMethod<
     [operator: AddressLike, approved: boolean],
@@ -664,19 +326,6 @@ export interface PlayerToken extends BaseContract {
   getFunction(
     nameOrSignature: "supportsInterface"
   ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
-  getFunction(
-    nameOrSignature: "symbol"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
-    nameOrSignature: "tokenURI"
-  ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
-  getFunction(
-    nameOrSignature: "transfer"
-  ): TypedContractMethod<
-    [from: AddressLike, to: AddressLike, tokenId: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
   getFunction(
     nameOrSignature: "transferFrom"
   ): TypedContractMethod<
@@ -698,13 +347,6 @@ export interface PlayerToken extends BaseContract {
     ApprovalForAllEvent.InputTuple,
     ApprovalForAllEvent.OutputTuple,
     ApprovalForAllEvent.OutputObject
-  >;
-  getEvent(
-    key: "PlayerMinted"
-  ): TypedContractEvent<
-    PlayerMintedEvent.InputTuple,
-    PlayerMintedEvent.OutputTuple,
-    PlayerMintedEvent.OutputObject
   >;
   getEvent(
     key: "Transfer"
@@ -735,17 +377,6 @@ export interface PlayerToken extends BaseContract {
       ApprovalForAllEvent.InputTuple,
       ApprovalForAllEvent.OutputTuple,
       ApprovalForAllEvent.OutputObject
-    >;
-
-    "PlayerMinted(address,uint256)": TypedContractEvent<
-      PlayerMintedEvent.InputTuple,
-      PlayerMintedEvent.OutputTuple,
-      PlayerMintedEvent.OutputObject
-    >;
-    PlayerMinted: TypedContractEvent<
-      PlayerMintedEvent.InputTuple,
-      PlayerMintedEvent.OutputTuple,
-      PlayerMintedEvent.OutputObject
     >;
 
     "Transfer(address,address,uint256)": TypedContractEvent<

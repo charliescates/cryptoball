@@ -28,6 +28,7 @@ describe("PlayerToken", () => {
         assertPlayerAttributeInRange(playerAttributes[0]);
         assertPlayerAttributeInRange(playerAttributes[1]);
         assertPlayerAttributeInRange(playerAttributes[2]);
+        assertPlayerAttributeInRange(playerAttributes[8], 5);
     });
 
     it("should randomly increase attack player attributes", async () => {
@@ -114,7 +115,7 @@ describe("PlayerToken", () => {
     });
 });
 
-function assertPlayerAttributeInRange(attribute: bigint) {
-    expect(attribute).below(100);
+function assertPlayerAttributeInRange(attribute: bigint, max: number = 100) {
+    expect(attribute).below(max);
     expect(attribute).above(0);
 }

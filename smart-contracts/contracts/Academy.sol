@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import "./PlayerToken.sol";
+import "hardhat/console.sol";
 
 contract Academy is IERC721Receiver {
     PlayerToken playerToken;
@@ -13,6 +14,7 @@ contract Academy is IERC721Receiver {
         uint attack;
         uint defense;
         uint potential;
+        uint playerType;
         uint value;
     }
 
@@ -85,6 +87,7 @@ contract Academy is IERC721Receiver {
                     player.attack,
                     player.defense,
                     player.potential,
+                    player.playerType,
                     playerValue[player.id]
                 );
             }
