@@ -2,7 +2,7 @@
 
 .header {
     display: flex;
-    justify-content: flex-start;
+    flex-wrap: wrap;
     align-items: center;
     padding: 1px 30px;
     background-color: #181818;
@@ -12,6 +12,47 @@
     width: 100%;
     top: 0;
     z-index: 1000;
+    box-sizing: border-box;
+  }
+
+  .header-top {
+    display: contents;
+  }
+
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+  }
+
+  .hamburger-line {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: #ffffff;
+    border-radius: 2px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  .hamburger-line.open:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+
+  .hamburger-line.open:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger-line.open:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  .header-collapse {
+    display: contents;
   }
   
   .logo {
@@ -80,21 +121,59 @@
   @media (max-width: 768px) {
     .header {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
+      padding: 10px 15px;
     }
-  
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .hamburger {
+      display: flex;
+    }
+
+    .header-collapse {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .header-collapse--open {
+      display: flex;
+    }
+
     .nav ul {
       flex-direction: column;
       align-items: flex-start;
+      margin: 10px 0;
+      gap: 0;
     }
   
     .nav a {
-      padding: 10px 0;
+      display: block;
+      padding: 12px 0;
     }
 
     .nav a.active {
-        background-color: #1e90ff;
-        color: #ffffff;
-      }
+      color: #32ff7e;
+      border-bottom: none;
+    }
+
+    .connection {
+      flex-direction: column;
+      align-items: flex-start;
+      margin: 10px 0;
+      gap: 10px;
+    }
+
+    .connect-button,
+    .disconnect-button {
+      width: 100%;
+      text-align: center;
+    }
   }
   

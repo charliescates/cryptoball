@@ -824,6 +824,10 @@ form {
 }
 
 @media (max-width: 768px) {
+  body {
+    padding-top: 60px;
+  }
+
   .player-card {
     width: 90%;
     margin: 10px;
