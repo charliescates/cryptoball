@@ -43,9 +43,9 @@ const config: HardhatUserConfig = {
     },
     polygonPos: {
       chainId: 137,
-      url: "https://polygon-rpc.com",
+      url: "https://polygon.drpc.org",
       forking: {
-        url: "https://polygon-rpc.com"
+        url: "https://polygon.drpc.org"
       },
       accounts: [process.env.PRIVATE_KEY_DEPLOYER as string]
     },
