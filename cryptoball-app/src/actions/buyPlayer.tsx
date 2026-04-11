@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { BaseError, useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
-import { Transaction } from './transactions';
 import { academyContract } from '../contracts/academyContract';
 
 export type BuyPlayerProps = {
@@ -13,26 +12,26 @@ export function BuyPlayer(props: BuyPlayerProps) {
         data: hash,
         error,
         isPending,
-        writeContract
+        writeContract,
+        reset
     } = useWriteContract();
     const account = useAccount();
-
-    const transaction: Transaction = {
-        address: academyContract.address,
-        abi: academyContract.abi,
-        functionName: 'buyPlayer',
-        args: [account && account.addresses ? account.addresses[0] : '0x0', props.playerId],
-        chainId: account.chainId as any,
-        value: props.price,
-        gas: 3000000n,
-    };
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
+        // Reset any previous transaction state before submitting
+        reset();
+
         console.log('Account:', account!.addresses![0]);
 
-        writeContract(transaction as any);
+        writeContract({
+            address: academyContract.address,
+            abi: academyContract.abi,
+            functionName: 'buyPlayer',
+            args: [account && account.addresses ? account.addresses[0] : '0x0', props.playerId],
+            value: props.price,
+        });
     };
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } =
@@ -44,7 +43,7 @@ export function BuyPlayer(props: BuyPlayerProps) {
         <form onSubmit={submit}>
             <button
                 className='buy-player-button'
-                disabled={isPending}
+                disabled={isPending || isConfirming}
                 type="submit"
             >
                 {isPending ? 'Confirming...' : 'Buy Player'}

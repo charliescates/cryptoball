@@ -5,5 +5,11 @@ export type Transaction = {
     args?: any[];
     value?: bigint;
     chainId: number;
-    gas: bigint;
 };
+
+/**
+ * Check if the current chain is Polygon Amoy (chain ID 80002)
+ */
+export function isPolygonAmoy(chainId?: number): boolean {
+    return chainId === 80002;
+}

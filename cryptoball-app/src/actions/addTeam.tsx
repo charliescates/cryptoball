@@ -16,28 +16,26 @@ export const AddTeam = ({ matchId, attackingPlayers, midfieldPlayers, defensiveP
         data: hash,
         error,
         isPending,
-        writeContract
+        writeContract,
+        reset
     } = useWriteContract();
     const account = useAccount();
 
-    const transaction = {
-        address: gameContract.address,
-        abi: gameContract.abi,
-        functionName: 'addTeam',
-        chainId: account.chainId as any,
-        gas: 30000000n,
-    };
-
     const addTeam = async () => {
+        // Reset any previous transaction state before submitting
+        reset();
+
         const attackingIds = createPlayerList(attackingPlayers);
         const midfieldIds = createPlayerList(midfieldPlayers);
         const defensiveIds = createPlayerList(defensivePlayers);
 
         writeContract({
-            ...transaction as any,
-            account: account!.addresses![0],
+            address: gameContract.address,
+            abi: gameContract.abi,
+            functionName: 'addTeam',
             args: [matchId, attackingIds, midfieldIds, defensiveIds],
-            value: parseEther(wager)
+            value: parseEther(wager),
+            gas: 1000000n,
         });
     };
 
@@ -68,7 +66,7 @@ export const AddTeam = ({ matchId, attackingPlayers, midfieldPlayers, defensiveP
             <form onSubmit={submit}>
                 <button
                     className='add-team-button'
-                    disabled={isPending}
+                    disabled={isPending || isConfirming}
                     type="submit"
                 >
                     {isPending ? 'Adding Team...' : 'Add Team'}

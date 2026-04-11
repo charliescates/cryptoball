@@ -1,7 +1,7 @@
 import { Contract } from "./types";
 
 export const academyContract: Contract = {
-  address: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512' as `0x${string}`,
+  address: '0x02200404B506Fba19f20a8a50EfAb3e889837b0D' as `0x${string}`,
   abi: [
     {
       "inputs": [
@@ -63,6 +63,11 @@ export const academyContract: Contract = {
             {
               "internalType": "uint256",
               "name": "potential",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "playerType",
               "type": "uint256"
             },
             {

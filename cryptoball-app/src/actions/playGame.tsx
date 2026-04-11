@@ -4,7 +4,6 @@ import { BaseError, parseEther } from "viem";
 import { gameContract } from "../contracts/gameContract";
 import { useAccount, useWaitForTransactionReceipt, useWatchContractEvent, useWriteContract } from "wagmi";
 import { getPlayerName } from "../playerName";
-import { Transaction } from "./transactions";
 
 type PlayGameProps = {
     home: Player[];
@@ -16,28 +15,26 @@ const PlayGame = ({ home, away }: PlayGameProps) => {
         data: hash,
         error,
         isPending,
-        writeContract
+        writeContract,
+        reset
     } = useWriteContract();
     const account = useAccount();
-
-    const transaction: Transaction = {
-        address: gameContract.address,
-        abi: gameContract.abi,
-        functionName: 'playMatch',
-        chainId: account.chainId as any,
-        gas: 30000000n, // TODO Make the thing more efficient in the future!!
-    };
 
     const [homeScore, setHomeScore] = useState(0);
     const [awayScore, setAwayScore] = useState(0);
     const [goalScorers, setGoalScorers] = useState<string[]>([]);
 
     const playGame = async () => {
+        // Reset any previous transaction state before submitting
+        reset();
+
         const homeIds = home.map((player) => player ? player.id : 0);
         const awayIds = away.map((player) => player ? player.id : 0);
+        
         writeContract({
-            ...transaction as any,
-            account: account!.addresses![0],
+            address: gameContract.address,
+            abi: gameContract.abi,
+            functionName: 'playMatch',
             args: [
                 homeIds.slice(0, 3),
                 homeIds.slice(3, 6),
@@ -46,7 +43,8 @@ const PlayGame = ({ home, away }: PlayGameProps) => {
                 awayIds.slice(3, 6),
                 awayIds.slice(6),
             ],
-            value: parseEther("30")
+            value: parseEther("30"),
+            gas: 5000000n, // Set a reasonable gas limit
         });
     };
 
@@ -64,7 +62,8 @@ const PlayGame = ({ home, away }: PlayGameProps) => {
         });
 
     useWatchContractEvent({
-        ...transaction as any,
+        address: gameContract.address,
+        abi: gameContract.abi,
         eventName: 'MatchPlayed',
         onLogs: (logs: any[]) => {
             console.log('GamePlayed event detected:', logs);
@@ -78,7 +77,8 @@ const PlayGame = ({ home, away }: PlayGameProps) => {
     });
 
     useWatchContractEvent({
-        ...transaction as any,
+        address: gameContract.address,
+        abi: gameContract.abi,
         eventName: 'PlayerScored',
         onLogs: (logs: any[]) => {
             console.log('PlayerScored event detected:', logs);
@@ -94,7 +94,7 @@ const PlayGame = ({ home, away }: PlayGameProps) => {
             <form onSubmit={submit}>
                 <button
                     className='mint-player-button'
-                    disabled={isPending}
+                    disabled={isPending || isConfirming}
                     type="submit"
                 >
                     {isPending ? 'Playing...' : 'Play Game'}
@@ -114,36 +114,34 @@ const StartGame = () => {
     const [homeAddress, setHomeAddress] = useState("");
     const [awayAddress, setAwayAddress] = useState("");
     const [wager, setWager] = useState("");
-    const [editable, setEditable] = useState(true); // Added state for editability
+    const [editable, setEditable] = useState(true);
 
     const {
         data: hash,
         error,
         isPending,
-        writeContract
+        writeContract,
+        reset
     } = useWriteContract();
     const account = useAccount();
 
-    const transaction = {
-        address: gameContract.address,
-        abi: gameContract.abi,
-        functionName: 'createGame',
-        chainId: account.chainId as any,
-        gas: 30000000n,
-    };
-
     const startGame = async () => {
+        // Reset any previous transaction state before submitting
+        reset();
+
         writeContract({
-            ...transaction as any,
-            account: account!.addresses![0],
+            address: gameContract.address,
+            abi: gameContract.abi,
+            functionName: 'createGame',
             args: [parseEther(wager), homeAddress, awayAddress],
-            value: parseEther(wager)
+            value: parseEther(wager),
+            gas: 1000000n,
         });
     };
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        setEditable(false); // Disable editing when the form is submitted
+        setEditable(false);
         startGame();
     };
 
@@ -160,25 +158,25 @@ const StartGame = () => {
                     placeholder="Home Address"
                     value={homeAddress}
                     onChange={(e) => setHomeAddress(e.target.value)}
-                    disabled={!editable} // Disable input if not editable
+                    disabled={!editable}
                 />
                 <input
                     type="text"
                     placeholder="Away Address"
                     value={awayAddress}
                     onChange={(e) => setAwayAddress(e.target.value)}
-                    disabled={!editable} // Disable input if not editable
+                    disabled={!editable}
                 />
                 <input
                     type="text"
                     placeholder="Wager"
                     value={wager}
                     onChange={(e) => setWager(e.target.value)}
-                    disabled={!editable} // Disable input if not editable
+                    disabled={!editable}
                 />
                 <button
                     className='start-game-button'
-                    disabled={isPending || !editable} // Disable button if not editable or pending
+                    disabled={isPending || isConfirming || !editable}
                     type="submit"
                 >
                     {isPending ? 'Starting Game...' : 'Start Game'}

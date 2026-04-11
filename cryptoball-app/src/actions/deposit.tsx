@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { BaseError, useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { academyContract } from '../contracts/academyContract';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { parseEther } from 'viem';
 
 import './deposit.css';
@@ -13,23 +13,33 @@ export function Deposit() {
         data: hash,
         error,
         isPending,
-        writeContract
+        writeContract,
+        reset
     } = useWriteContract();
     const account = useAccount();
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
+        // Validate amount before submitting
+        if (amount <= 0) {
+            console.error('Amount must be greater than 0');
+            return;
+        }
+
+        // Reset any previous transaction state before submitting
+        reset();
+
         console.log('Account:', account!.addresses![0]);
+        console.log('Amount to deposit:', parseEther(amount.toString()));
+        console.log('Academy Contract Address:', academyContract.address);
+        console.log('Chain ID:', account.chainId);
 
         writeContract({
             address: academyContract.address,
             abi: academyContract.abi,
-            args: [],
             functionName: 'deposit',
-            chainId: account.chainId as any,
-            gas: 3000000n,
-            value: parseEther(amount.toString())
+            value: parseEther(amount.toString()),
         });
     };
 
@@ -37,6 +47,18 @@ export function Deposit() {
         useWaitForTransactionReceipt({
             hash,
         })
+
+    // Reset form after successful transaction
+    useEffect(() => {
+        if (isConfirmed) {
+            const timer = setTimeout(() => {
+                setAmount(0);
+                reset();
+            }, 3000); // Clear after 3 seconds to let user see success message
+            
+            return () => clearTimeout(timer);
+        }
+    }, [isConfirmed, reset]);
 
     return (
         <form className='deposit-form' onSubmit={submit}>
@@ -50,7 +72,7 @@ export function Deposit() {
             />
             <button
                 className='deposit-button'
-                disabled={isPending}
+                disabled={isPending || isConfirming}
                 type="submit"
             >
                 {isPending ? 'Confirming...' : 'Deposit'}

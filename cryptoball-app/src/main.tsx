@@ -12,6 +12,7 @@ import Header from './header.tsx'
 import GetPlayers from './get-players.tsx'
 import Games from './games.tsx'
 import Academy from './academy.tsx'
+import Chemistry from './chemistry.tsx'
 
 globalThis.Buffer = Buffer
 
@@ -29,6 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/players" element={<GetPlayers />} />
               <Route path="/games" element={<Games />} />
               <Route path="/academy" element={<Academy />} />
+              <Route path="/chemistry" element={<Chemistry />} />
             </Routes>
           </div>
         </Router>
@@ -36,15 +38,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </WagmiProvider>
   </React.StrictMode>,
 )
-
-// ReactDOM.createRoot(document.getElementById('root')!).render(
-//   <React.StrictMode>
-//     <WagmiProvider config={config}>
-//       <QueryClientProvider client={queryClient}>
-//         <Header />
-//         <MintPlayer />
-//         <GetPlayers />
-//       </QueryClientProvider>
-//     </WagmiProvider>
-//   </React.StrictMode>,
-// )

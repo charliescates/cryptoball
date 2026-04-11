@@ -49,6 +49,10 @@ const config: HardhatUserConfig = {
       },
       accounts: [process.env.PRIVATE_KEY_DEPLOYER as string]
     },
+    polygon_amoy: {
+      url: "https://rpc-amoy.polygon.technology",
+      accounts: [process.env.PRIVATE_KEY_DEPLOYER as string]
+    },
     polygonMumbai: {
       chainId: 80001,
       url: "https://rpc-mumbai.polygon.technology",

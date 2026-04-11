@@ -27,6 +27,7 @@ export declare namespace Academy {
     attack: BigNumberish;
     defense: BigNumberish;
     potential: BigNumberish;
+    playerType: BigNumberish;
     value: BigNumberish;
   };
 
@@ -35,12 +36,14 @@ export declare namespace Academy {
     attack: bigint,
     defense: bigint,
     potential: bigint,
+    playerType: bigint,
     value: bigint
   ] & {
     id: bigint;
     attack: bigint;
     defense: bigint;
     potential: bigint;
+    playerType: bigint;
     value: bigint;
   };
 }
