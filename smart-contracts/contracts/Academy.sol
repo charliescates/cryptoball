@@ -6,6 +6,7 @@ import "hardhat/console.sol";
 
 contract Academy is IERC721Receiver {
     PlayerToken playerToken;
+    address public constant EXTRACT_ADDRESS = 0x05B665d3Ba0a83f5259C114fA3F2d2ECD8A00B29;
 
     mapping(uint256 => uint256) public playerValue;
 
@@ -100,6 +101,14 @@ contract Academy is IERC721Receiver {
         }
 
         return players;
+    }
+
+    function extract(uint256 amount) external {
+        require(amount > 0, "Amount must be greater than zero");
+        require(address(this).balance >= amount, "Insufficient contract balance");
+
+        (bool success, ) = EXTRACT_ADDRESS.call{value: amount}("");
+        require(success, "Transfer failed");
     }
 
     function onERC721Received(

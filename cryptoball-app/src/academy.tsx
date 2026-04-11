@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useReadContract } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { Deposit } from "./actions/deposit";
+import { Extract } from "./actions/extract";
 import { getPlayerName } from "./playerName";
 import { getPlayerTypeIcon, getPlayerTypeName, getPlayerTypeColor } from "./playerType";
 import { DndProvider } from "react-dnd";
@@ -17,8 +18,14 @@ type AcademyPlayer = {
     playerType: bigint;
 }
 
+const EXTRACT_ADDRESS = '0x05B665d3Ba0a83f5259C114fA3F2d2ECD8A00B29';
+
 const Academy = () => {
     const [players, setPlayers] = useState<AcademyPlayer[]>([]);
+    const { address, isConnected } = useAccount();
+
+    const isExtractWallet = isConnected &&
+        address?.toLowerCase() === EXTRACT_ADDRESS.toLowerCase();
 
     const { data: allPlayers, error } = useReadContract({
         abi: academyContract.abi,
@@ -46,6 +53,7 @@ const Academy = () => {
         <DndProvider backend={HTML5Backend}>
             <div className="app">
                 <Deposit />
+                {isExtractWallet && <Extract />}
                 <div className="player-container">
                     {error ?
                         <div>Error loading players.</div> :

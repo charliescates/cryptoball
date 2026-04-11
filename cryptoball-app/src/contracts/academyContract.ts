@@ -15,6 +15,19 @@ export const academyContract: Contract = {
       "type": "constructor"
     },
     {
+      "inputs": [],
+      "name": "EXTRACT_ADDRESS",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -37,6 +50,19 @@ export const academyContract: Contract = {
       "name": "deposit",
       "outputs": [],
       "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "extract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {

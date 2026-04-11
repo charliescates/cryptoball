@@ -108,4 +108,45 @@ describe("Academy", () => {
         expect(etherAfter1).to.be.lessThan(etherBefore);
         expect(etherAfter2).to.be.lessThan(etherAfter1);
     })
+
+    describe("extract", () => {
+        const EXTRACT_ADDRESS = "0x05B665d3Ba0a83f5259C114fA3F2d2ECD8A00B29";
+
+        it("should extract the specified amount to the extract address", async () => {
+            await contract.academy.deposit({value: ethers.parseEther("0.01")});
+
+            const balanceBefore = await ethers.provider.getBalance(EXTRACT_ADDRESS);
+            await contract.academy.extract(ethers.parseEther("0.005"));
+            const balanceAfter = await ethers.provider.getBalance(EXTRACT_ADDRESS);
+
+            expect(balanceAfter - balanceBefore).to.equal(ethers.parseEther("0.005"));
+        });
+
+        it("should reduce the contract balance after extraction", async () => {
+            await contract.academy.deposit({value: ethers.parseEther("0.01")});
+            const contractBalanceBefore = await contract.academy.getBalance();
+
+            await contract.academy.extract(ethers.parseEther("0.005"));
+            const contractBalanceAfter = await contract.academy.getBalance();
+
+            expect(contractBalanceAfter).to.equal(contractBalanceBefore - ethers.parseEther("0.005"));
+        });
+
+        it("should revert if amount is zero", async () => {
+            await expect(contract.academy.extract(0)).to.be.revertedWith("Amount must be greater than zero");
+        });
+
+        it("should revert if contract has insufficient balance", async () => {
+            await expect(contract.academy.extract(ethers.parseEther("1"))).to.be.revertedWith("Insufficient contract balance");
+        });
+
+        it("should allow extracting the entire contract balance", async () => {
+            await contract.academy.deposit({value: ethers.parseEther("0.003")});
+            const balance = await contract.academy.getBalance();
+
+            await contract.academy.extract(balance);
+
+            expect(await contract.academy.getBalance()).to.equal(0);
+        });
+    });
 });
