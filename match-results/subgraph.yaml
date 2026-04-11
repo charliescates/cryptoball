@@ -1,0 +1,32 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Game
+    network: matic
+    source:
+      address: "0x1601FadDE5d701bfae6427d6Ea12DF8a2c7E4fe4"
+      abi: Game
+      startBlock: 85397813
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - MatchPlayed
+        - NewMatch
+        - PlayerScored
+      abis:
+        - name: Game
+          file: ./abis/Game.json
+      eventHandlers:
+        - event: MatchPlayed(uint256,uint8,uint8)
+          handler: handleMatchPlayed
+        - event: NewMatch(uint256)
+          handler: handleNewMatch
+        - event: PlayerScored(uint256,uint256)
+          handler: handlePlayerScored
+      file: ./src/game.ts

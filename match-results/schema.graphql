@@ -1,0 +1,26 @@
+type MatchPlayed @entity(immutable: true) {
+  id: Bytes!
+  matchId: BigInt! # uint256
+  homeScore: Int! # uint8
+  awayScore: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type NewMatch @entity(immutable: true) {
+  id: Bytes!
+  matchId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type PlayerScored @entity(immutable: true) {
+  id: Bytes!
+  matchId: BigInt! # uint256
+  playerId: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
