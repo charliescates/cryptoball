@@ -39,6 +39,7 @@ export function Deposit() {
             address: academyContract.address,
             abi: academyContract.abi,
             functionName: 'deposit',
+            args: [],
             value: parseEther(amount.toString()),
         });
     };

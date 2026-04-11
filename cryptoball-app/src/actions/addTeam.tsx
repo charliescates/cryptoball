@@ -1,7 +1,7 @@
 import { Player } from "../player";
 import { BaseError, parseEther } from "viem";
 import { gameContract } from "../contracts/gameContract";
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
 type AddTeamProps = {
     matchId: string;
@@ -19,7 +19,6 @@ export const AddTeam = ({ matchId, attackingPlayers, midfieldPlayers, defensiveP
         writeContract,
         reset
     } = useWriteContract();
-    const account = useAccount();
 
     const addTeam = async () => {
         // Reset any previous transaction state before submitting
