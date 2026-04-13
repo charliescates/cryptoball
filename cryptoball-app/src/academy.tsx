@@ -24,7 +24,7 @@ const Academy = () => {
     const [players, setPlayers] = useState<AcademyPlayer[]>([]);
     const { address, isConnected } = useAccount();
 
-    const isExtractWallet = isConnected &&
+    const isOwnerWallet = isConnected &&
         address?.toLowerCase() === EXTRACT_ADDRESS.toLowerCase();
 
     const { data: allPlayers, error } = useReadContract({
@@ -52,8 +52,8 @@ const Academy = () => {
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="app">
-                <Deposit />
-                {isExtractWallet && <Extract />}
+                {isOwnerWallet && <Deposit />}
+                {isOwnerWallet && <Extract />}
                 <div className="player-container">
                     {error ?
                         <div>Error loading players.</div> :
