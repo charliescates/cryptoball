@@ -535,6 +535,58 @@ form {
   border-radius: 4px;
 }
 
+.position-stats .stat-delta {
+  background-color: transparent;
+  padding: 0;
+}
+
+.stat-delta {
+  font-size: 0.72em;
+  font-weight: 700;
+  margin-left: 4px;
+  letter-spacing: 0.02em;
+}
+
+.stat-value-with-delta {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  padding-right: 14px;
+}
+
+.stat-value-with-delta .stat-delta {
+  position: absolute;
+  top: -0.45em;
+  right: 0;
+  margin-left: 0;
+  font-size: 0.58em;
+  line-height: 1;
+}
+
+.stat-delta-positive {
+  color: var(--success-color);
+}
+
+.stat-delta-negative {
+  color: var(--warning-color);
+}
+
+.stat-delta-neutral {
+  color: var(--info-text-color);
+}
+
+.player-info p span.stat-delta-positive {
+  color: var(--success-color);
+}
+
+.player-info p span.stat-delta-negative {
+  color: var(--warning-color);
+}
+
+.player-info p span.stat-delta-neutral {
+  color: var(--info-text-color);
+}
+
 .click-hint {
   font-size: 10px;
   color: var(--warning-color);

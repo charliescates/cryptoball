@@ -6,7 +6,11 @@
         "name": "playerTokenAddress",
         "type": "address"
       },
-      { "internalType": "address", "name": "academyAddress", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "academyAddress",
+        "type": "address"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -69,8 +73,25 @@
     "type": "event"
   },
   {
+    "inputs": [],
+    "name": "EXECUTION_FEE_BPS",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
-      { "internalType": "uint256", "name": "matchId", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "matchId",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256[3]",
         "name": "attackingPlayers",
@@ -94,9 +115,21 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "wagerRequired", "type": "uint256" },
-      { "internalType": "address", "name": "homeAddress", "type": "address" },
-      { "internalType": "address", "name": "awayAddress", "type": "address" }
+      {
+        "internalType": "uint256",
+        "name": "wagerRequired",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "homeAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "awayAddress",
+        "type": "address"
+      }
     ],
     "name": "createGame",
     "outputs": [],
@@ -105,7 +138,11 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "matchId", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "matchId",
+        "type": "uint256"
+      }
     ],
     "name": "getMatch",
     "outputs": [
@@ -170,7 +207,11 @@
             "name": "awayTeam",
             "type": "tuple"
           },
-          { "internalType": "uint256", "name": "pot", "type": "uint256" }
+          {
+            "internalType": "uint256",
+            "name": "pot",
+            "type": "uint256"
+          }
         ],
         "internalType": "struct Game.Match",
         "name": "",
@@ -184,17 +225,35 @@
     "inputs": [],
     "name": "getMatchList",
     "outputs": [
-      { "internalType": "uint256[]", "name": "", "type": "uint256[]" }
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "name": "matches",
     "outputs": [
-      { "internalType": "uint256", "name": "wagerRequired", "type": "uint256" },
-      { "internalType": "address", "name": "homeAddress", "type": "address" },
+      {
+        "internalType": "uint256",
+        "name": "wagerRequired",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "homeAddress",
+        "type": "address"
+      },
       {
         "components": [
           {
@@ -217,7 +276,11 @@
         "name": "homeTeam",
         "type": "tuple"
       },
-      { "internalType": "address", "name": "awayAddress", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "awayAddress",
+        "type": "address"
+      },
       {
         "components": [
           {
@@ -240,7 +303,11 @@
         "name": "awayTeam",
         "type": "tuple"
       },
-      { "internalType": "uint256", "name": "pot", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "pot",
+        "type": "uint256"
+      }
     ],
     "stateMutability": "view",
     "type": "function"

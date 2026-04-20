@@ -18,6 +18,19 @@ type PlayerCardProps = {
     player: Player;
 };
 
+const formatSignedDelta = (delta: bigint): string => {
+    if (delta >= 0n) {
+        return `+${delta.toString()}`;
+    }
+    return delta.toString();
+};
+
+const getDeltaClassName = (delta: bigint): string => {
+    if (delta > 0n) return 'stat-delta-positive';
+    if (delta < 0n) return 'stat-delta-negative';
+    return 'stat-delta-neutral';
+};
+
 const PlayerCard = ({ player }: PlayerCardProps) => {
     const [{ isDragging }, drag] = useDrag(() => ({
         type: 'PLAYER',
@@ -28,6 +41,8 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
     }));
 
     const playerTypeColor = getPlayerTypeColor(player.playerType);
+    const attackDelta = player.attack - player.originalAttack;
+    const defenseDelta = player.defense - player.originalDefense;
 
     return (
         <div
@@ -57,8 +72,28 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
                 </span>
             </div>
             <div className="player-info">
-                <p className="player-attack">Att: <span>{player.attack.toString()}</span></p>
-                <p className="player-defense">Def: <span>{player.defense.toString()}</span></p>
+                <p className="player-attack">
+                    Att:{' '}
+                    <span className="stat-value-with-delta">
+                        <span>{player.attack.toString()}</span>
+                        {attackDelta !== 0n && (
+                            <span className={`stat-delta ${getDeltaClassName(attackDelta)}`}>
+                                {formatSignedDelta(attackDelta)}
+                            </span>
+                        )}
+                    </span>
+                </p>
+                <p className="player-defense">
+                    Def:{' '}
+                    <span className="stat-value-with-delta">
+                        <span>{player.defense.toString()}</span>
+                        {defenseDelta !== 0n && (
+                            <span className={`stat-delta ${getDeltaClassName(defenseDelta)}`}>
+                                {formatSignedDelta(defenseDelta)}
+                            </span>
+                        )}
+                    </span>
+                </p>
                 <p className="player-potential">Pot: <span>{player.potential.toString()}</span></p>
             </div>
         </div>
