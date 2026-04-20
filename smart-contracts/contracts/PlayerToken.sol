@@ -3,7 +3,6 @@ pragma solidity 0.8.21;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "hardhat/console.sol";
 
 contract PlayerToken is ERC721 {
     uint256 private _tokenIdCounter = 1;
@@ -96,15 +95,6 @@ contract PlayerToken is ERC721 {
             )
         );
         players[newPlayerId].distribution = createPoissonDistribution(
-            players[newPlayerId].potential
-        );
-
-        console.log("New Player: %s", newPlayerId);
-
-        console.log(
-            "Stats: %s, %s, %s",
-            players[newPlayerId].attack,
-            players[newPlayerId].defense,
             players[newPlayerId].potential
         );
 
@@ -210,22 +200,25 @@ contract PlayerToken is ERC721 {
             players[id].defense = 10;
         }
 
-        // console.log("Pre-game player %s had attack: %d, defense: %d", id, players[id].attack, players[id].defense);
+        uint attackProgression = calculateProgression(
+            players[id].attack,
+            players[id].distribution
+        );
 
         players[id].attack =
             players[id].attack +
-            calculateProgression(players[id].attack, players[id].distribution) -
+            attackProgression -
             (isDefense ? 1 : 0);
+        uint defenseProgression = calculateProgression(
+            players[id].defense,
+            players[id].distribution
+        );
 
         players[id].defense =
             players[id].defense +
-            calculateProgression(
-                players[id].defense,
-                players[id].distribution
-            ) -
+            defenseProgression -
             (isAttack ? 1 : 0);
         players[id].gamesLeft -= 1;
-        // console.log("After-game player %s has attack: %d, defense: %d", id, players[id].attack, players[id].defense);
     }
 
     function calculateProgression(
@@ -245,8 +238,6 @@ contract PlayerToken is ERC721 {
 
         uint progression = ((100 - baseStat) *
             readFromDistribution(distribution, randomNumber)) / 100;
-
-        // console.log("Base Stat: %s, Progression: %s", baseStat, progression);
 
         return uint(progression);
     }

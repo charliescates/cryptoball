@@ -31,8 +31,8 @@ contract Academy is IERC721Receiver {
                 address(this)
             );
             playerValue[id] =
-                0.004 ether +
-                (0.004 ether * (attack + defense)) /
+                1 ether +
+                (1 ether * (attack + defense)) /
                 200;
             console.log("Player %d minted with value %d", id, playerValue[id]);
             for (uint i = 1; i < id; i++) {

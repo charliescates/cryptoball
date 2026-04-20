@@ -19,6 +19,7 @@ async function main() {
   // Game
   const Game = await ethers.getContractFactory("Game");
   const game = await Game.deploy(await playerToken.getAddress(), await academy.getAddress());
+  // const game = await Game.deploy('0x5FbDB2315678afecb367f032d93F642f64180aa3', '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512');
   await game.waitForDeployment();
   console.log("Game deployed to:", await game.getAddress());
 }

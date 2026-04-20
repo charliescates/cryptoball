@@ -3,13 +3,13 @@ pragma solidity 0.8.21;
 
 import "./PlayerToken.sol";
 import "./Academy.sol";
-import "hardhat/console.sol";
 
 /**
  * Refactor to replace uint with uint8 where possible
  */
 contract Game {
     uint256 private _tokenIdCounter = 1;
+    uint256 public constant EXECUTION_FEE_BPS = 100; // 1% of pot
     PlayerToken playerToken;
     Academy academy;
     uint randomCounter = 0;
@@ -41,14 +41,12 @@ contract Game {
     }
 
     function createGame(uint wagerRequired, address homeAddress, address awayAddress) external payable {
-        console.log("Making game");
         Match memory game;
         game.wagerRequired = wagerRequired;
         game.homeAddress = homeAddress;
         game.awayAddress = awayAddress;
         game.pot = wagerRequired * 2;
         matches[_tokenIdCounter] = game;
-        console.log("Made game");
 
         emit NewMatch(_tokenIdCounter++);
     }
@@ -74,7 +72,6 @@ contract Game {
         uint256[3] memory attackingPlayers,
         uint256[3] memory midfieldPlayers,
         uint256[3] memory defensivePlayers) external payable {
-        console.log("Starting match");
         Match storage game = matches[matchId];
         require(
             msg.sender == game.homeAddress || msg.sender == game.awayAddress,
@@ -86,23 +83,18 @@ contract Game {
             string.concat(Strings.toString(msg.value), " does not match required wager of ", Strings.toString(game.wagerRequired))
         );
 
-        console.log("Adding team");
-
         if (msg.sender == game.homeAddress) {
+            require(isEmpty(game.homeTeam), "Home team already submitted");
             validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
             game.homeTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
-            console.log("Home team added");
         } else {
+            require(isEmpty(game.awayTeam), "Away team already submitted");
             validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
             game.awayTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
-            console.log("Away team added");
         }
 
-        console.log("Game, home team included: %s, away team included: %s", isEmpty(game.homeTeam), isEmpty(game.awayTeam));
-
         if (!isEmpty(game.homeTeam) && !isEmpty(game.awayTeam)) {
-            console.log("Playing match");
-            playMatch(matchId);
+            playMatch(matchId, msg.sender);
         }
     }
 
@@ -118,7 +110,7 @@ contract Game {
         && team.defensivePlayers[2] == 0;
     }
 
-    function playMatch(uint256 matchId) internal returns (uint8 homeGoals, uint8 awayGoals) {
+    function playMatch(uint256 matchId, address executor) internal returns (uint8 homeGoals, uint8 awayGoals) {
         Match memory game = matches[matchId];
         
         (homeGoals, awayGoals) = iterateThroughGame(
@@ -138,7 +130,7 @@ contract Game {
         assignGoals(matchId, awayGoals, game.awayTeam);
 
         // Distribute winnings
-        distributeWinnings(matchId, homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress);
+        distributeWinnings(homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress, executor);
 
         emit MatchPlayed(matchId, homeGoals, awayGoals);
 
@@ -170,21 +162,32 @@ contract Game {
         }
     }
 
-    function distributeWinnings(uint256 matchId, uint8 homeGoals, uint8 awayGoals, uint256 pot, address homeAddress, address awayAddress) private {
-        uint academyShare = (pot * 5) / 100;
-        console.log("Sending money to the academy: %s wen", academyShare);
-        academy.deposit{value: academyShare}();
+    function distributeWinnings(
+        uint8 homeGoals,
+        uint8 awayGoals,
+        uint256 pot,
+        address homeAddress,
+        address awayAddress,
+        address executor
+    ) private {
+        uint executorFee = (pot * EXECUTION_FEE_BPS) / 10000;
+        if (executorFee > 0) {
+            payable(executor).transfer(executorFee);
+        }
+
+        uint payoutPot = pot - executorFee;
+        uint academyShare = (payoutPot * 5) / 100;
+        if (academyShare > 0) {
+            academy.deposit{value: academyShare}();
+        }
         
-        uint remainingPot = pot - academyShare;
+        uint remainingPot = payoutPot - academyShare;
 
         if (homeGoals > awayGoals) {
-            console.log("Home team wins, sending %s wen to home team: %s", remainingPot, homeAddress);
             payable(homeAddress).transfer(remainingPot);
         } else if (awayGoals > homeGoals) {
-            console.log("Away team wins, sending %s wen to away team: %s", remainingPot, awayAddress);
             payable(awayAddress).transfer(remainingPot);
         } else {
-            console.log("It's a draw, sending %s wen to home and away teams", remainingPot / 2);
             payable(homeAddress).transfer(remainingPot / 2);
             payable(awayAddress).transfer(remainingPot / 2);
         }
@@ -199,24 +202,11 @@ contract Game {
         uint256[3] memory awayDefensivePlayers) private returns (uint8 homeGoals, uint8 awayGoals) {
         (uint homeAttack, uint homeDefense) = calculateTeamStats(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
         (uint awayAttack, uint awayDefense) = calculateTeamStats(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
-
-        console.log(
-            "Home team stats: Attack %d Defense %d",
-            homeAttack,
-            homeDefense
-        );
-        console.log(
-            "Away team stats: Attack %d Defense %d",
-            awayAttack,
-            awayDefense
-        );
         
         for (uint i = 0; i < 20; i++) {
             homeGoals += tryAndScore(homeAttack, awayDefense);
             awayGoals += tryAndScore(awayAttack, homeDefense);
         }
-
-        console.log("Home: %d Away: %d", homeGoals, awayGoals);
 
         return (homeGoals, awayGoals);
     }
@@ -332,7 +322,6 @@ contract Game {
 
             for (uint j = 0; j < 5; j++) {
                 if (random < attackRange[j + 1]) {
-                    console.log("Player %d scored a goal", players[j]);
                     playerToken.scoreGoal(players[j]);
                     emit PlayerScored(matchId, players[j]);
                     break;

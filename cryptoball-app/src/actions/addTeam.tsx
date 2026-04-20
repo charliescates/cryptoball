@@ -34,7 +34,6 @@ export const AddTeam = ({ matchId, attackingPlayers, midfieldPlayers, defensiveP
             functionName: 'addTeam',
             args: [matchId, attackingIds, midfieldIds, defensiveIds],
             value: parseEther(wager),
-            gas: 1000000n,
         });
     };
 

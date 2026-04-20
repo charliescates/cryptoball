@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BaseError, parseEther } from "viem";
 import { gameContract } from "../contracts/gameContract";
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
 const StartGame = () => {
+    const { address } = useAccount();
     const [homeAddress, setHomeAddress] = useState("");
     const [awayAddress, setAwayAddress] = useState("");
     const [wager, setWager] = useState("");
     const [editable, setEditable] = useState(true);
+
+    useEffect(() => {
+        if (address && !homeAddress) {
+            setHomeAddress(address);
+        }
+    }, [address, homeAddress]);
 
     const {
         data: hash,

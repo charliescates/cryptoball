@@ -1,7 +1,7 @@
 import { Contract } from "./types";
 
 export const academyContract: Contract = {
-  address: '0x283F4b1b8A71C6DD7D004A246707A625Fbb01b6C' as `0x${string}`,
+  address: '0xe7f1725e7734ce288f8367e1bb143e90bb3f0512' as `0x${string}`,
   abi: [
     {
       "inputs": [

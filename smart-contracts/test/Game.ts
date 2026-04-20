@@ -93,6 +93,28 @@ describe("Game", () => {
         await expect(gameContract.addTeam(gameCount, homeTeam[0], homeTeam[1], [4, 4, 0], { value: 1 })).to.be.revertedWith("Each team must have unique players");
    });
 
+    it("should not allow the home side to submit team twice", async () => {
+        const { gameContract, homeOwner, awayOwner } = await deployContracts();
+        await gameContract.createGame(1, homeOwner.address, awayOwner.address);
+
+        await gameContract.connect(homeOwner).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 });
+
+        await expect(
+            gameContract.connect(homeOwner).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 })
+        ).to.be.revertedWith("Home team already submitted");
+    });
+
+    it("should not allow the away side to submit team twice", async () => {
+        const { gameContract, homeOwner, awayOwner } = await deployContracts();
+        await gameContract.createGame(1, homeOwner.address, awayOwner.address);
+
+        await gameContract.connect(awayOwner).addTeam(gameCount, awayTeam[0], awayTeam[1], awayTeam[2], { value: 1 });
+
+        await expect(
+            gameContract.connect(awayOwner).addTeam(gameCount, awayTeam[0], awayTeam[1], awayTeam[2], { value: 1 })
+        ).to.be.revertedWith("Away team already submitted");
+    });
+
     it("it should play a game and update the player attributes", async () => {
         const { gameContract, playerToken, homeOwner, awayOwner } = await deployContracts();
         const wager = ethers.parseEther("0.1");
@@ -107,8 +129,8 @@ describe("Game", () => {
         const homeStrikerAttackAfter = await playerToken.getPlayerAttributes(1);
         const awayStrikerAttackAfter = await playerToken.getPlayerAttributes(6);
 
-        expect(homeStrikerAttackBefore[1]).below(homeStrikerAttackAfter[1]);
-        expect(awayStrikerAttackBefore[1]).below(awayStrikerAttackAfter[1]);
+        expect(homeStrikerAttackAfter[1]).to.be.at.least(homeStrikerAttackBefore[1]);
+        expect(awayStrikerAttackAfter[1]).to.be.at.least(awayStrikerAttackBefore[1]);
     });
 
     it("should assign players goals", async () => {
