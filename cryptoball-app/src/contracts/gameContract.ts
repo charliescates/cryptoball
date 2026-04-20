@@ -1,7 +1,7 @@
 import { Contract } from "./types";
 
 export const gameContract: Contract = {
-  address: '0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0' as `0x${string}`,
+  address: '0x33e559F9b65fFBc5C28e6A1171beC472db2271a7' as `0x${string}`,
   abi: [
     {
       "inputs": [
@@ -75,6 +75,19 @@ export const gameContract: Contract = {
       ],
       "name": "PlayerScored",
       "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "EXECUTION_FEE_BPS",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [
