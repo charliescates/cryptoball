@@ -8,11 +8,13 @@ import { config } from './wagmi.ts'
 
 import './index.css'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Header from './header.tsx'
-import GetPlayers from './get-players.tsx'
-import Games from './games.tsx'
-import Academy from './academy.tsx'
-import Chemistry from './chemistry.tsx'
+import Header from './components/header.tsx'
+import Home from './components/home.tsx'
+import GetPlayers from './components/get-players.tsx'
+import Test from './components/test.tsx'
+import Games from './components/games.tsx'
+import Academy from './components/academy/Academy.tsx'
+import Chemistry from './components/chemistry.tsx'
 
 globalThis.Buffer = Buffer
 
@@ -26,11 +28,12 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <Header />
           <div className="content">
             <Routes>
-              {/* <Route path="/" element={<Home />} /> */}
+              <Route path="/" element={<Home />} />
               <Route path="/players" element={<GetPlayers />} />
               <Route path="/games/*" element={<Games />} />
               <Route path="/academy" element={<Academy />} />
               <Route path="/chemistry" element={<Chemistry />} />
+              <Route path="/test" element={<Test />} />
             </Routes>
           </div>
         </Router>
