@@ -8,6 +8,25 @@ type MatchPlayed @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
+type PlayedMatch @entity(immutable: false) {
+  id: String!
+  matchId: BigInt! # uint256
+  homeScore: Int! # uint8
+  awayScore: Int! # uint8
+  homeAddress: Bytes!
+  awayAddress: Bytes!
+  homeAttackingPlayers: [BigInt!]!
+  homeMidfieldPlayers: [BigInt!]!
+  homeDefensivePlayers: [BigInt!]!
+  awayAttackingPlayers: [BigInt!]!
+  awayMidfieldPlayers: [BigInt!]!
+  awayDefensivePlayers: [BigInt!]!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+  playerScoreds: [PlayerScored!]! @derivedFrom(field: "playedMatch")
+}
+
 type NewMatch @entity(immutable: true) {
   id: Bytes!
   matchId: BigInt! # uint256
@@ -18,8 +37,10 @@ type NewMatch @entity(immutable: true) {
 
 type PlayerScored @entity(immutable: true) {
   id: Bytes!
+  playedMatch: PlayedMatch!
   matchId: BigInt! # uint256
   playerId: BigInt! # uint256
+  goalOrder: Int!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!

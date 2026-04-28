@@ -1,5 +1,6 @@
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import JoinMatchPage from './game-pages/join-match-page';
+import ShowMatches from './game-pages/show-matches';
 import StartGamePage from './game-pages/start-game-page';
 
 const Games = () => {
@@ -31,6 +32,12 @@ const Games = () => {
                         >
                             Join Match
                         </NavLink>
+                        <NavLink
+                            to="recent"
+                            className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
+                        >
+                            Show Matches
+                        </NavLink>
                     </div>
                 </div>
 
@@ -39,6 +46,7 @@ const Games = () => {
                         <Route index element={<Navigate to="start" replace />} />
                         <Route path="start" element={<StartGamePage />} />
                         <Route path="join" element={<JoinMatchPage />} />
+                        <Route path="recent" element={<ShowMatches />} />
                     </Routes>
                 </div>
             </div>

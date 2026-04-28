@@ -60,7 +60,7 @@ const JoinMatchPage = () => {
   });
 
   const ownedPlayers = (myPlayers as Player[] | undefined) ?? [];
-  const matchList = ((matches as number[] | undefined) ?? []).filter((id) => id > 0);
+  const matchList = ((matches as bigint[] | undefined) ?? []).map(Number).filter((id) => id > 0);
   const typedMatchDetails = matchDetails as MatchDetails | undefined;
 
   return (
