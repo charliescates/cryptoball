@@ -16,7 +16,11 @@ import Games from './components/games.tsx'
 import Academy from './components/academy/Academy.tsx'
 import Chemistry from './components/chemistry.tsx'
 
-globalThis.Buffer = Buffer
+const globalWithBuffer = globalThis as typeof globalThis & {
+  Buffer: typeof Buffer
+}
+
+globalWithBuffer.Buffer = Buffer
 
 const queryClient = new QueryClient()
 
