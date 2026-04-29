@@ -47,7 +47,8 @@ describe("Academy PlayerCard", () => {
     render(<PlayerCard player={player} />);
 
     expect(screen.getByText("OVR")).toBeInTheDocument();
-    expect(screen.getAllByText("90")).toHaveLength(2);
+    expect(screen.getByText("87")).toBeInTheDocument();
+    expect(screen.getByText("90")).toBeInTheDocument();
     expect(screen.getByText("Attack")).toBeInTheDocument();
     expect(screen.getByText("Defense")).toBeInTheDocument();
     expect(screen.getByText("Potential")).toBeInTheDocument();

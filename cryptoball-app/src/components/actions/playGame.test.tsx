@@ -1,7 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { parseEther } from "viem";
+import { describe, expect, it, vi } from "vitest";
 
 import StartGame from "./playGame";
 
@@ -22,20 +21,23 @@ vi.mock("wagmi", () => ({
 
 describe("StartGame", () => {
   it("submits the game creation transaction", async () => {
-    const user = userEvent.setup();
-
     render(<StartGame />);
 
-    await user.type(screen.getByLabelText("Away wallet"), "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
-    await user.clear(screen.getByLabelText("Wager"));
-    await user.type(screen.getByLabelText("Wager"), "1.25");
-    await user.click(screen.getByRole("button", { name: "Start Game" }));
+    fireEvent.change(screen.getByLabelText("Away wallet"), {
+      target: { value: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" },
+    });
+    fireEvent.change(screen.getByLabelText("Wager"), { target: { value: "1.25" } });
+    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
 
     expect(resetSpy).toHaveBeenCalled();
     expect(writeContractSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         functionName: "createGame",
-        args: [parseEther("1.25"), "0x1234567890abcdef1234567890abcdef12345678", "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd"],
+        args: [
+          parseEther("1.25"),
+          "0x1234567890abcdef1234567890abcdef12345678",
+          "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        ],
       }),
     );
   });
