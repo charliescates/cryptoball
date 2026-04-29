@@ -19,7 +19,7 @@
 
 body {
   margin: 0;
-  padding-top: 70px;
+  padding-top: 0;
   background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
   background-attachment: fixed;
   color: var(--text-color);
@@ -27,6 +27,7 @@ body {
   line-height: 1.5;
   text-rendering: optimizeLegibility;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 h1 {
@@ -56,15 +57,19 @@ form {
   background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(15, 23, 41, 0.8) 100%);
   border: 2px solid var(--card-border-color);
   border-radius: 12px;
+  width: min(100%, 600px);
   max-width: 600px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* Games Container */
 .games-container {
   max-width: 1400px;
+  width: min(100%, 1400px);
   margin: 0 auto;
   padding: 24px;
+  box-sizing: border-box;
 }
 
 .games-panel-header {
@@ -73,6 +78,7 @@ form {
   justify-content: space-between;
   gap: 20px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .games-shell-header {
@@ -101,6 +107,7 @@ form {
 
 .games-panel-status {
   min-width: 132px;
+  flex: 0 0 auto;
   padding: 14px 16px;
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.03) 100%);
@@ -126,21 +133,25 @@ form {
 /* Tabs Container */
 .tabs-container {
   margin-bottom: 30px;
+  min-width: 0;
 }
 
 .tabs-header {
   display: flex;
   gap: 6px;
-  width: fit-content;
+  width: 100%;
   margin-bottom: 0;
   padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   background: rgba(10, 14, 39, 0.76);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+  flex-wrap: wrap;
+  box-sizing: border-box;
 }
 
 .tab-button {
+  flex: 1 1 170px;
   padding: 12px 18px;
   background-color: transparent;
   color: var(--info-text-color);
@@ -153,6 +164,8 @@ form {
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  min-width: 0;
+  text-align: center;
 }
 
 .tab-button:hover {
@@ -169,6 +182,7 @@ form {
 
 .tabs-content {
   min-height: 400px;
+  min-width: 0;
 }
 
 .matches-history-panel {
@@ -449,8 +463,14 @@ form {
 }
 
 @keyframes positionScorePulse {
-  0% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(126, 240, 167, 0.35); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(126, 240, 167, 0); }
+  0% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 8px rgba(126, 240, 167, 0.35);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(126, 240, 167, 0);
+  }
 }
 
 .matches-history-live-bar {
@@ -474,8 +494,15 @@ form {
 }
 
 @keyframes liveDotPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(0.7); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
 }
 
 .matches-history-goal-reveal-panel {
@@ -501,8 +528,14 @@ form {
 }
 
 @keyframes goalSlideIn {
-  from { opacity: 0; transform: translateX(-22px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .matches-history-score--revealed {
@@ -510,9 +543,17 @@ form {
 }
 
 @keyframes scoreReveal {
-  0% { opacity: 0; transform: scale(0.4); }
-  60% { transform: scale(1.25); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.25);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .matches-history-reveal-button--skip {
@@ -520,8 +561,6 @@ form {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
   color: rgba(255, 255, 255, 0.75);
 }
-
-
 
 .tab-panel {
   animation: fadeIn 0.3s ease-in;
@@ -572,6 +611,7 @@ form {
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 28px;
+  flex-wrap: wrap;
 }
 
 .start-game-hero-copy {
@@ -591,9 +631,9 @@ form {
 
 .start-game-highlights {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
-  max-width: 720px;
+  max-width: 100%;
 }
 
 .start-game-highlight,
@@ -618,9 +658,9 @@ form {
 
 .start-game-status-cluster {
   display: grid;
-  grid-template-columns: repeat(2, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 12px;
-  width: min(100%, 270px);
+  width: min(100%, 320px);
 }
 
 .section-kicker {
@@ -666,6 +706,7 @@ form {
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
   gap: 24px;
   align-items: stretch;
+  min-width: 0;
 }
 
 .start-game-section .start-game-form {
@@ -833,6 +874,7 @@ form {
   justify-content: space-between;
   gap: 16px;
   padding-top: 6px;
+  flex-wrap: wrap;
 }
 
 .start-game-readiness {
@@ -946,7 +988,7 @@ form {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 }
 
@@ -1136,7 +1178,7 @@ form {
 
 .team-builder {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   gap: 30px;
   align-items: start;
 }
@@ -1178,6 +1220,8 @@ form {
   transition: all 0.3s ease;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
   color: var(--text-color);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .player-card-small:hover {
@@ -1908,19 +1952,20 @@ form {
     width: 100%;
     max-width: 100%;
   }
-}
-
-@media (max-width: 768px) {
-  body {
-    padding-top: 60px;
-  }
-
-  .games-container {
-    padding: 16px;
-  }
 
   .games-panel-header {
     flex-direction: column;
+  }
+
+  .games-panel-status {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 768px) {
+  .games-container {
+    padding: 16px;
   }
 
   .games-shell-header {
@@ -1933,8 +1978,6 @@ form {
   }
 
   .tab-button {
-    flex: 1;
-    text-align: center;
     padding: 11px 10px;
   }
 
@@ -2061,6 +2104,7 @@ form {
   .formation-controls {
     flex-direction: column;
     width: 100%;
+    align-items: stretch;
   }
 
   .formation-select {
@@ -2078,6 +2122,24 @@ form {
 }
 
 @media (max-width: 480px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  .games-container {
+    padding: 12px;
+  }
+
+  .games-shell-header,
+  .matches-history-panel,
+  .start-game-section {
+    border-radius: 14px;
+  }
+
+  .tab-button {
+    flex-basis: 100%;
+  }
+
   .formation-positions {
     gap: 3px;
   }

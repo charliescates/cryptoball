@@ -55,7 +55,7 @@ export const ratingLabelStyle: CSSProperties = {
 };
 
 export const ratingValueStyle: CSSProperties = {
-  fontSize: "3rem",
+  fontSize: "clamp(2.2rem, 7vw, 3rem)",
   fontWeight: 950,
   lineHeight: 0.9,
   letterSpacing: "-0.06em",
@@ -64,7 +64,7 @@ export const ratingValueStyle: CSSProperties = {
 
 export const avatarStageStyle: CSSProperties = {
   position: "relative",
-  height: "238px",
+  height: "clamp(190px, 38vw, 238px)",
   marginTop: "-6px",
   marginBottom: "8px",
 };
@@ -93,14 +93,8 @@ export const getSignalPillStyle = (tone: "attack" | "defense"): CSSProperties =>
     tone === "attack"
       ? "linear-gradient(180deg, rgba(255,112,67,0.22), rgba(255,112,67,0.1))"
       : "linear-gradient(180deg, rgba(0,188,212,0.2), rgba(0,188,212,0.08))",
-  border:
-    tone === "attack"
-      ? "1px solid rgba(255,112,67,0.34)"
-      : "1px solid rgba(0,188,212,0.34)",
-  boxShadow:
-    tone === "attack"
-      ? "0 8px 16px rgba(255,112,67,0.14)"
-      : "0 8px 16px rgba(0,188,212,0.14)",
+  border: tone === "attack" ? "1px solid rgba(255,112,67,0.34)" : "1px solid rgba(0,188,212,0.34)",
+  boxShadow: tone === "attack" ? "0 8px 16px rgba(255,112,67,0.14)" : "0 8px 16px rgba(0,188,212,0.14)",
 });
 
 export const avatarShadowStyle: CSSProperties = {
@@ -125,7 +119,7 @@ export const avatarWrapStyle: CSSProperties = {
 export const playerNameStyle: CSSProperties = {
   textAlign: "center",
   fontWeight: 950,
-  fontSize: "1.02rem",
+  fontSize: "clamp(0.92rem, 2vw, 1.02rem)",
   letterSpacing: "0.07em",
   textTransform: "uppercase",
   padding: "9px 10px",
@@ -141,7 +135,7 @@ export const playerNameStyle: CSSProperties = {
 export const statsGridStyle: CSSProperties = {
   marginTop: "10px",
   display: "grid",
-  gridTemplateColumns: "1fr 1fr",
+  gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))",
   gap: "8px",
 };
 
@@ -164,10 +158,7 @@ export const getFeaturedStatBoxStyle = (tone: "attack" | "defense"): CSSProperti
     tone === "attack"
       ? "linear-gradient(180deg, rgba(255,112,67,0.18), rgba(0,0,0,0.42))"
       : "linear-gradient(180deg, rgba(0,188,212,0.17), rgba(0,0,0,0.42))",
-  border:
-    tone === "attack"
-      ? "1px solid rgba(255,112,67,0.34)"
-      : "1px solid rgba(0,188,212,0.34)",
+  border: tone === "attack" ? "1px solid rgba(255,112,67,0.34)" : "1px solid rgba(0,188,212,0.34)",
   boxShadow:
     tone === "attack"
       ? "inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 18px rgba(255,112,67,0.12)"
@@ -193,7 +184,7 @@ export const statValueStyle: CSSProperties = {
 
 export const academyGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
   gap: "22px",
   alignItems: "stretch",
 };

@@ -62,7 +62,8 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
         padding: "14px",
         boxShadow: isDragging ? "0 6px 14px rgba(0,0,0,0.12)" : "0 10px 22px rgba(0,0,0,0.28)",
         cursor: "grab",
-        minWidth: "260px",
+        width: "100%",
+        minWidth: "0",
         transition: "all 0.2s ease",
       }}
     >
@@ -137,7 +138,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
         style={{
           marginTop: "14px",
           display: "grid",
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
           gap: "10px",
         }}
       >

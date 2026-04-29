@@ -4,14 +4,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: clamp(24px, 5vw, 40px) clamp(16px, 4vw, 20px);
 }
 
 /* Hero Section (Not Connected) */
 .hero-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: clamp(28px, 5vw, 60px);
   align-items: center;
   max-width: 1200px;
   width: 100%;
@@ -21,6 +21,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-width: 0;
 }
 
 .hero-title {
@@ -64,7 +65,7 @@
 
 .hero-visual {
   position: relative;
-  height: 400px;
+  height: min(400px, 42vw);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -81,7 +82,8 @@
 }
 
 @keyframes pulse-sphere {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: inset 0 0 30px rgba(0, 255, 109, 0.1);
     transform: scale(1);
   }
@@ -113,7 +115,7 @@
   background: linear-gradient(135deg, rgba(17, 24, 39, 0.8) 0%, rgba(10, 14, 39, 0.8) 100%);
   border: 2px solid var(--heading-color);
   border-radius: 15px;
-  padding: 50px;
+  padding: clamp(28px, 5vw, 50px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
@@ -152,8 +154,13 @@
 }
 
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
 .empty-state h2 {
@@ -276,14 +283,16 @@
   display: flex;
   justify-content: center;
   gap: 30px;
+  flex-wrap: wrap;
 }
 
 .stat-card {
   background: rgba(0, 255, 109, 0.05);
   border: 2px solid var(--heading-color);
   border-radius: 10px;
-  padding: 20px 40px;
+  padding: 20px clamp(20px, 4vw, 40px);
   text-align: center;
+  min-width: 160px;
 }
 
 .stat-number {
@@ -308,7 +317,7 @@
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 25px;
 }
 
@@ -316,7 +325,7 @@
   background: linear-gradient(135deg, rgba(17, 24, 39, 0.7) 0%, rgba(15, 23, 41, 0.7) 100%);
   border: 2px solid rgba(0, 255, 109, 0.3);
   border-radius: 12px;
-  padding: 30px;
+  padding: clamp(22px, 4vw, 30px);
   text-align: center;
   text-decoration: none;
   color: inherit;
@@ -326,7 +335,7 @@
 }
 
 .dashboard-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -396,7 +405,7 @@
   }
 
   .dashboard-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 15px;
   }
 
