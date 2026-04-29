@@ -27,7 +27,11 @@ describe("StartGame", () => {
       target: { value: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" },
     });
     fireEvent.change(screen.getByLabelText("Wager"), { target: { value: "1.25" } });
+<<<<<<< Updated upstream
     fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
+=======
+    fireEvent.click(screen.getByRole("button", { name: "Launch Match" }));
+>>>>>>> Stashed changes
 
     expect(resetSpy).toHaveBeenCalled();
     expect(writeContractSpy).toHaveBeenCalledWith(

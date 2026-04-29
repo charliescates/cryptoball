@@ -119,6 +119,7 @@ describe("ShowMatches", () => {
     expect(screen.queryByText("0 - 5")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /reveal result/i }));
+    await user.click(screen.getByRole("button", { name: /skip/i }));
 
     expect(screen.getByText("0 - 5")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /goal events/i })).toBeInTheDocument();
