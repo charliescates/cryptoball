@@ -61,7 +61,9 @@ describe("Game", () => {
 
         await gameContract.createGame(2, homeOwner.address, awayOwner.address);
 
-        await expect(gameContract.addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], {value: 1})).to.be.revertedWith("1 does not match required wager of 2");
+        await expect(
+            (gameContract.connect(homeOwner) as any).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 })
+        ).to.be.revertedWith("1 does not match required wager of 2");
     });
 
     // it("should give 1% of the wager to the academy", async () => {
@@ -97,10 +99,10 @@ describe("Game", () => {
         const { gameContract, homeOwner, awayOwner } = await deployContracts();
         await gameContract.createGame(1, homeOwner.address, awayOwner.address);
 
-        await gameContract.connect(homeOwner).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 });
+        await (gameContract.connect(homeOwner) as any).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 });
 
         await expect(
-            gameContract.connect(homeOwner).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 })
+            (gameContract.connect(homeOwner) as any).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 })
         ).to.be.revertedWith("Home team already submitted");
     });
 
@@ -108,10 +110,10 @@ describe("Game", () => {
         const { gameContract, homeOwner, awayOwner } = await deployContracts();
         await gameContract.createGame(1, homeOwner.address, awayOwner.address);
 
-        await gameContract.connect(awayOwner).addTeam(gameCount, awayTeam[0], awayTeam[1], awayTeam[2], { value: 1 });
+        await (gameContract.connect(awayOwner) as any).addTeam(gameCount, awayTeam[0], awayTeam[1], awayTeam[2], { value: 1 });
 
         await expect(
-            gameContract.connect(awayOwner).addTeam(gameCount, awayTeam[0], awayTeam[1], awayTeam[2], { value: 1 })
+            (gameContract.connect(awayOwner) as any).addTeam(gameCount, awayTeam[0], awayTeam[1], awayTeam[2], { value: 1 })
         ).to.be.revertedWith("Away team already submitted");
     });
 
@@ -146,6 +148,31 @@ describe("Game", () => {
         console.log(`Player 1 scored: ${homeStrikerGoals} goals`);
 
         expect(homeStrikerGoals).above(0);
+    });
+
+    it("should emit a lineup snapshot before clearing the completed match", async () => {
+        const { gameContract, homeOwner, awayOwner } = await deployContracts();
+
+        await gameContract.createGame(1, homeOwner.address, awayOwner.address);
+        await (gameContract.connect(homeOwner) as any).addTeam(gameCount, homeTeam[0], homeTeam[1], homeTeam[2], { value: 1 });
+
+        const tx = await (gameContract.connect(awayOwner) as any).addTeam(gameCount, awayTeam[0], awayTeam[1], awayTeam[2], { value: 1 });
+        const receipt = await tx.wait();
+
+        const snapshotLog = receipt.logs
+            .map((log: any) => { try { return gameContract.interface.parseLog(log); } catch { return null; } })
+            .find((parsed: any) => parsed?.name === "MatchSnapshot");
+
+        expect(snapshotLog).to.not.be.null;
+        expect(snapshotLog.args.matchId).to.equal(gameCount);
+        expect(snapshotLog.args.homeAddress).to.equal(homeOwner.address);
+        expect(snapshotLog.args.awayAddress).to.equal(awayOwner.address);
+        expect([...snapshotLog.args.homeTeam.attackingPlayers]).to.deep.equal([1n, 0n, 2n]);
+        expect([...snapshotLog.args.homeTeam.midfieldPlayers]).to.deep.equal([0n, 3n, 0n]);
+        expect([...snapshotLog.args.homeTeam.defensivePlayers]).to.deep.equal([4n, 0n, 5n]);
+        expect([...snapshotLog.args.awayTeam.attackingPlayers]).to.deep.equal([6n, 0n, 7n]);
+        expect([...snapshotLog.args.awayTeam.midfieldPlayers]).to.deep.equal([0n, 8n, 0n]);
+        expect([...snapshotLog.args.awayTeam.defensivePlayers]).to.deep.equal([9n, 0n, 10n]);
     });
 
     it("should not be able to play a match if you are not the owner of the player", async () => {

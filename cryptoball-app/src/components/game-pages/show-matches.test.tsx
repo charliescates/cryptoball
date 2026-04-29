@@ -1,13 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ShowMatches from "./show-matches";
-
-vi.mock("wagmi", () => ({
-  useAccount: vi.fn(),
-  useReadContract: vi.fn(),
-  useWatchContractEvent: vi.fn(),
-}));
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: vi.fn(),
@@ -18,29 +13,116 @@ vi.mock("graphql-request", () => ({
   request: vi.fn(),
 }));
 
-vi.mock("react-dnd", () => ({
-  DndProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
-vi.mock("react-dnd-html5-backend", () => ({
-  HTML5Backend: {},
-}));
-
 const { useQuery } = await import("@tanstack/react-query");
 
 describe("ShowMatches", () => {
+  beforeEach(() => {
+    vi.mocked(useQuery).mockReset();
+  });
+
   it("shows loading, error, and success states", () => {
     vi.mocked(useQuery).mockReturnValueOnce({ status: "pending" } as never);
 
     const { rerender } = render(<ShowMatches />);
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByText("Loading recent matches...")).toBeInTheDocument();
 
-    vi.mocked(useQuery).mockReturnValueOnce({ status: "error" } as never);
+    vi.mocked(useQuery).mockReturnValueOnce({ status: "error", error: { code: 403 } } as never);
     rerender(<ShowMatches />);
     expect(screen.getByText(/error ocurred querying the subgraph/i)).toBeInTheDocument();
 
-    vi.mocked(useQuery).mockReturnValueOnce({ status: "success", data: { matchPlayeds: [], newMatches: [] } } as never);
+    vi.mocked(useQuery).mockReturnValueOnce({ status: "error", error: {} } as never);
     rerender(<ShowMatches />);
-    expect(screen.getByText(/"matchPlayeds":\[\]/i)).toBeInTheDocument();
+    expect(screen.getByText(/no games found/i)).toBeInTheDocument();
+
+    vi.mocked(useQuery).mockReturnValue({
+      status: "success",
+      data: {
+        playedMatches: [
+          {
+            id: "17",
+            matchId: "17",
+            homeScore: 3,
+            awayScore: 1,
+            blockTimestamp: "1714300000",
+            homeAddress: "0x0000000000000000000000000000000000000001",
+            awayAddress: "0x0000000000000000000000000000000000000002",
+            homeAttackingPlayers: ["1", "0", "2"],
+            homeMidfieldPlayers: ["0", "3", "0"],
+            homeDefensivePlayers: ["4", "0", "5"],
+            awayAttackingPlayers: ["6", "0", "7"],
+            awayMidfieldPlayers: ["0", "8", "0"],
+            awayDefensivePlayers: ["9", "0", "10"],
+            playerScoreds: [
+              { playerId: "9", goalOrder: 1 },
+              { playerId: "10", goalOrder: 2 },
+              { playerId: "6", goalOrder: 3 },
+              { playerId: "7", goalOrder: 4 },
+              { playerId: "7", goalOrder: 5 },
+            ],
+          },
+        ],
+      },
+    } as never);
+    rerender(<ShowMatches />);
+    expect(screen.getByRole("heading", { name: /last 5 matches/i })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /last 5 matches/i })).toBeInTheDocument();
+    expect(screen.getByText("Match #17")).toBeInTheDocument();
+    expect(screen.getByText(/result hidden until reveal/i)).toBeInTheDocument();
+  });
+
+  it("shows an empty state when no results are available", () => {
+    vi.mocked(useQuery).mockReturnValueOnce({
+      status: "success",
+      data: { playedMatches: [] },
+    } as never);
+
+    render(<ShowMatches />);
+
+    expect(screen.getByText(/no completed matches found yet/i)).toBeInTheDocument();
+  });
+
+  it("reveals team lineups and goal events on demand", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useQuery).mockReturnValue({
+      status: "success",
+      data: {
+        playedMatches: [
+          {
+            id: "1",
+            matchId: "1",
+            homeScore: 0,
+            awayScore: 5,
+            blockTimestamp: "1714300000",
+            homeAddress: "0x0000000000000000000000000000000000000001",
+            awayAddress: "0x0000000000000000000000000000000000000002",
+            homeAttackingPlayers: ["1", "0", "2"],
+            homeMidfieldPlayers: ["0", "3", "0"],
+            homeDefensivePlayers: ["4", "0", "5"],
+            awayAttackingPlayers: ["6", "0", "7"],
+            awayMidfieldPlayers: ["0", "8", "0"],
+            awayDefensivePlayers: ["9", "0", "10"],
+            playerScoreds: [
+              { playerId: "9", goalOrder: 1 },
+              { playerId: "10", goalOrder: 2 },
+              { playerId: "6", goalOrder: 3 },
+              { playerId: "7", goalOrder: 4 },
+              { playerId: "7", goalOrder: 5 },
+            ],
+          },
+        ],
+      },
+    } as never);
+
+    render(<ShowMatches />);
+
+    expect(screen.queryByText("0 - 5")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /reveal result/i }));
+
+    expect(screen.getByText("0 - 5")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /goal events/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/home team/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/away team/i).length).toBeGreaterThan(0);
   });
 });

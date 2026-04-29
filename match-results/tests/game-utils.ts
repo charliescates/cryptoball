@@ -1,6 +1,14 @@
 import { newMockEvent } from "matchstick-as"
-import { ethereum, BigInt } from "@graphprotocol/graph-ts"
-import { MatchPlayed, NewMatch, PlayerScored } from "../generated/Game/Game"
+import { ethereum, BigInt, Address } from "@graphprotocol/graph-ts"
+import { MatchPlayed, MatchSnapshot, NewMatch, PlayerScored } from "../generated/Game/Game"
+
+function bigIntArray(values: i32[]): BigInt[] {
+  const result = new Array<BigInt>(values.length)
+  for (let i = 0; i < values.length; i++) {
+    result[i] = BigInt.fromI32(values[i])
+  }
+  return result
+}
 
 export function createMatchPlayedEvent(
   matchId: BigInt,
@@ -31,6 +39,53 @@ export function createMatchPlayedEvent(
   )
 
   return matchPlayedEvent
+}
+
+export function createMatchSnapshotEvent(matchId: BigInt): MatchSnapshot {
+  let matchSnapshotEvent = changetype<MatchSnapshot>(newMockEvent())
+
+  matchSnapshotEvent.parameters = new Array()
+
+  matchSnapshotEvent.parameters.push(
+    new ethereum.EventParam(
+      "matchId",
+      ethereum.Value.fromUnsignedBigInt(matchId)
+    )
+  )
+  matchSnapshotEvent.parameters.push(
+    new ethereum.EventParam(
+      "homeAddress",
+      ethereum.Value.fromAddress(Address.fromString("0x0000000000000000000000000000000000000001"))
+    )
+  )
+  matchSnapshotEvent.parameters.push(
+    new ethereum.EventParam(
+      "awayAddress",
+      ethereum.Value.fromAddress(Address.fromString("0x0000000000000000000000000000000000000002"))
+    )
+  )
+  matchSnapshotEvent.parameters.push(
+    new ethereum.EventParam(
+      "homeTeam",
+      ethereum.Value.fromTuple(changetype<ethereum.Tuple>([
+        ethereum.Value.fromUnsignedBigIntArray(bigIntArray([1, 0, 2])),
+        ethereum.Value.fromUnsignedBigIntArray(bigIntArray([0, 3, 0])),
+        ethereum.Value.fromUnsignedBigIntArray(bigIntArray([4, 0, 5]))
+      ]))
+    )
+  )
+  matchSnapshotEvent.parameters.push(
+    new ethereum.EventParam(
+      "awayTeam",
+      ethereum.Value.fromTuple(changetype<ethereum.Tuple>([
+        ethereum.Value.fromUnsignedBigIntArray(bigIntArray([6, 0, 7])),
+        ethereum.Value.fromUnsignedBigIntArray(bigIntArray([0, 8, 0])),
+        ethereum.Value.fromUnsignedBigIntArray(bigIntArray([9, 0, 10]))
+      ]))
+    )
+  )
+
+  return matchSnapshotEvent
 }
 
 export function createNewMatchEvent(matchId: BigInt): NewMatch {

@@ -32,6 +32,13 @@ contract Game {
     mapping(uint256 => Match) public matches;
 
     event NewMatch(uint256 matchId);
+    event MatchSnapshot(
+        uint256 matchId,
+        address homeAddress,
+        address awayAddress,
+        Team homeTeam,
+        Team awayTeam
+    );
     event MatchPlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
     event PlayerScored(uint256 matchId, uint256 playerId);
 
@@ -128,6 +135,8 @@ contract Game {
         // Assign goals to scorers
         assignGoals(matchId, homeGoals, game.homeTeam);
         assignGoals(matchId, awayGoals, game.awayTeam);
+
+        emit MatchSnapshot(matchId, game.homeAddress, game.awayAddress, game.homeTeam, game.awayTeam);
 
         // Distribute winnings
         distributeWinnings(homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress, executor);

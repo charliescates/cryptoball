@@ -171,6 +171,358 @@ form {
   min-height: 400px;
 }
 
+.matches-history-panel {
+  padding: 24px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(10, 14, 39, 0.92) 0%, rgba(17, 24, 39, 0.82) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+}
+
+.matches-history-header h2 {
+  margin: 8px 0 0;
+  color: #ffffff;
+}
+
+.matches-history-header p {
+  margin: 10px 0 0;
+  color: rgba(176, 184, 193, 0.8);
+}
+
+.matches-history-state {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--info-text-color);
+}
+
+.matches-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 0;
+  display: grid;
+  gap: 12px;
+}
+
+.matches-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matches-history-item-reveal {
+  display: block;
+}
+
+.matches-history-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.matches-history-match-id {
+  display: block;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.matches-history-timestamp {
+  margin: 6px 0 0;
+  color: rgba(176, 184, 193, 0.74);
+  font-size: 0.92rem;
+}
+
+.matches-history-score {
+  color: #7ef0a7;
+  font-size: clamp(1.15rem, 3vw, 1.5rem);
+  white-space: nowrap;
+}
+
+.matches-history-reveal-button {
+  border: 1px solid rgba(126, 240, 167, 0.25);
+  background: linear-gradient(180deg, rgba(126, 240, 167, 0.16) 0%, rgba(126, 240, 167, 0.08) 100%);
+  color: #dfffe9;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.matches-history-concealed {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(176, 184, 193, 0.88);
+}
+
+.matches-history-reveal-body {
+  margin-top: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.matches-history-scoreboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.matches-history-team-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.matches-history-team-summary-away {
+  text-align: right;
+}
+
+.matches-history-side-label {
+  color: rgba(176, 184, 193, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.matches-history-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.matches-history-team-card,
+.matches-history-goals-panel {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matches-history-team-card h3,
+.matches-history-goals-panel h3 {
+  margin: 0 0 14px;
+  color: #ffffff;
+}
+
+.matches-history-formation-line {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin-top: 12px;
+}
+
+.matches-history-formation-line span {
+  color: rgba(176, 184, 193, 0.78);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.matches-history-formation-line div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.matches-history-player-pill,
+.matches-history-empty-line {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f5f7fa;
+  font-size: 0.9rem;
+}
+
+.matches-history-goal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.matches-history-goal-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.matches-history-goal-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(126, 240, 167, 0.12);
+  color: #7ef0a7;
+  font-weight: 800;
+}
+
+.matches-history-goal-item p {
+  margin: 4px 0 0;
+  color: rgba(176, 184, 193, 0.88);
+}
+
+/* ── Match replay animation ─────────────────────────────── */
+
+.matches-history-animation-body {
+  margin-top: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+/* Two-column layout for the replay team formations */
+.matches-history-replay-teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.matches-history-team-card--replay {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matches-history-team-card--replay h3 {
+  margin: 0 0 14px;
+  color: #ffffff;
+}
+
+/* Goal count badge on position cards */
+.replay-goal-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(126, 240, 167, 0.14);
+  border: 1px solid rgba(126, 240, 167, 0.3);
+  width: fit-content;
+}
+
+.replay-goal-count-ball {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.replay-goal-count-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: #7ef0a7;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Scored / just-scored states for position cards */
+.position--scored {
+  border-color: rgba(126, 240, 167, 0.55) !important;
+  background: linear-gradient(135deg, rgba(126, 240, 167, 0.1) 0%, rgba(15, 23, 41, 0.9) 100%) !important;
+}
+
+.position--just-scored {
+  border-color: #7ef0a7 !important;
+  background: linear-gradient(135deg, rgba(126, 240, 167, 0.2) 0%, rgba(15, 23, 41, 0.9) 100%) !important;
+  animation: positionScorePulse 0.85s ease-out;
+}
+
+@keyframes positionScorePulse {
+  0% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(126, 240, 167, 0.35); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(126, 240, 167, 0); }
+}
+
+.matches-history-live-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #7ef0a7;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.matches-history-live-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #7ef0a7;
+  animation: liveDotPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes liveDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.7); }
+}
+
+.matches-history-goal-reveal-panel {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matches-history-goal-reveal-panel h3 {
+  margin: 0 0 14px;
+  color: #ffffff;
+}
+
+.matches-history-kickoff-hint {
+  color: rgba(176, 184, 193, 0.72);
+  font-style: italic;
+  margin: 0;
+}
+
+.matches-history-goal-item--new {
+  animation: goalSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes goalSlideIn {
+  from { opacity: 0; transform: translateX(-22px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.matches-history-score--revealed {
+  animation: scoreReveal 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scoreReveal {
+  0% { opacity: 0; transform: scale(0.4); }
+  60% { transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.matches-history-reveal-button--skip {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+
+
 .tab-panel {
   animation: fadeIn 0.3s ease-in;
 }
@@ -667,6 +1019,7 @@ form {
   font-size: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
+  color-scheme: dark;
 }
 
 .match-select:hover {
@@ -824,6 +1177,7 @@ form {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  color: var(--text-color);
 }
 
 .player-card-small:hover {
@@ -1584,6 +1938,41 @@ form {
     padding: 11px 10px;
   }
 
+  .matches-history-item-header,
+  .matches-history-scoreboard {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .matches-history-item-header {
+    align-items: flex-start;
+  }
+
+  .matches-history-team-summary-away {
+    text-align: left;
+  }
+
+  .matches-history-team-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .matches-history-formation-line {
+    grid-template-columns: 1fr;
+  }
+
+  .matches-history-panel {
+    padding: 20px 16px;
+  }
+
+  .matches-history-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .matches-history-score {
+    font-size: 1.25rem;
+  }
+
   .start-game-section {
     padding: 22px 16px 16px;
     border-radius: 14px;
@@ -1635,17 +2024,23 @@ form {
     padding: 16px;
   }
 
-  .player-card-top {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .player-avatar-frame-roster {
-    align-self: center;
+    width: 72px;
+    height: 84px;
+    border-radius: 14px;
   }
 
   .player-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .player-card-small:hover {
+    transform: none;
+  }
+
+  .player-card-roster:hover {
+    transform: none;
   }
 
   .formation-positions {

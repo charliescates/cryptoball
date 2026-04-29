@@ -26,6 +26,77 @@
       },
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "homeAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "awayAddress",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256[3]",
+            "name": "attackingPlayers",
+            "type": "uint256[3]"
+          },
+          {
+            "internalType": "uint256[3]",
+            "name": "midfieldPlayers",
+            "type": "uint256[3]"
+          },
+          {
+            "internalType": "uint256[3]",
+            "name": "defensivePlayers",
+            "type": "uint256[3]"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Game.Team",
+        "name": "homeTeam",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256[3]",
+            "name": "attackingPlayers",
+            "type": "uint256[3]"
+          },
+          {
+            "internalType": "uint256[3]",
+            "name": "midfieldPlayers",
+            "type": "uint256[3]"
+          },
+          {
+            "internalType": "uint256[3]",
+            "name": "defensivePlayers",
+            "type": "uint256[3]"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Game.Team",
+        "name": "awayTeam",
+        "type": "tuple"
+      }
+    ],
+    "name": "MatchSnapshot",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "matchId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
         "internalType": "uint8",
         "name": "homeScore",
         "type": "uint8"
