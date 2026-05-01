@@ -1,25 +1,27 @@
-import { Player } from './player';
-import { getPlayerName } from './utils/playerName';
-import { getPlayerTypeIcon, getPlayerTypeColor } from './utils/playerType';
-import FootballPlayerAvatar from './avatar/FootballPlayerAvatar';
+import FootballPlayerAvatar from "./avatar/FootballPlayerAvatar";
+import type { Player } from "./player";
+import { getPlayerName } from "./utils/playerName";
+import { getPlayerTypeColor, getPlayerTypeIcon } from "./utils/playerType";
 
 type PositionProps = {
-    positionName: string;
-    teamColour: string;
-    index: number;
-    player: Player | null;
-    onPositionClick: (index: number) => void;
+  positionName: string;
+  teamColour: string;
+  index: number;
+  player: Player | null;
+  isActive?: boolean;
+  onPositionClick: (index: number) => void;
 };
 
-const Position = ({ positionName, teamColour, index, player, onPositionClick }: PositionProps) => {
+const Position = ({ positionName, teamColour, index, player, isActive = false, onPositionClick }: PositionProps) => {
   return (
-    <div
-      className={`position ${player ? 'filled' : 'empty'}`}
-      onClick={() => player && onPositionClick(index)}
+    <button
+      className={`position ${player ? "filled" : "empty"} ${isActive ? "active" : ""}`}
+      onClick={() => onPositionClick(index)}
       style={{
-        cursor: player ? 'pointer' : 'default',
-        borderColor: player ? teamColour : '#555',
+        cursor: "pointer",
+        borderColor: player || isActive ? teamColour : "#555",
       }}
+      type="button"
     >
       {player ? (
         <div className="position-content">
@@ -36,7 +38,7 @@ const Position = ({ positionName, teamColour, index, player, onPositionClick }: 
                 showBadge={false}
                 traits={{
                   primaryKitColor: getPlayerTypeColor(player.playerType),
-                  secondaryKitColor: '#ffffff',
+                  secondaryKitColor: "#ffffff",
                 }}
               />
             </div>
@@ -54,18 +56,22 @@ const Position = ({ positionName, teamColour, index, player, onPositionClick }: 
             </div>
           </div>
           <div className="position-stats">
-            <span>ATT <strong>{player.attack.toString()}</strong></span>
-            <span>DEF <strong>{player.defense.toString()}</strong></span>
+            <span>
+              ATT <strong>{player.attack.toString()}</strong>
+            </span>
+            <span>
+              DEF <strong>{player.defense.toString()}</strong>
+            </span>
           </div>
           <div className="click-hint">Click to remove</div>
         </div>
       ) : (
         <div className="empty-position">
           <span className="position-name">{positionName}</span>
-          <span className="empty-hint">Empty</span>
+          <span className="empty-hint">{isActive ? "Pick a player" : "Tap to fill"}</span>
         </div>
       )}
-    </div>
+    </button>
   );
 };
 

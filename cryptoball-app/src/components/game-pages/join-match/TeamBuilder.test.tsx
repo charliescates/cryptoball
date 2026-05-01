@@ -2,8 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import TeamBuilder from "./TeamBuilder";
 import type { Player } from "../../player";
+import TeamBuilder from "./TeamBuilder";
 
 vi.mock("../../formation-grid", () => ({
   default: ({ teamName }: { teamName: string }) => <div data-testid="formation-grid">{teamName}</div>,
@@ -38,10 +38,19 @@ describe("TeamBuilder", () => {
     render(
       <TeamBuilder
         formation={[null, null, null, null, null]}
+        activePositionIndex={null}
+        activePositionMeta={null}
         isFormationEmpty={false}
         ownedPlayers={players}
         selectedCount={2}
-        selectedFormation={{ name: "3-1-1", attack: 3, midfield: 1, defense: 1 }}
+        selectedFormation={{
+          name: "3-1-1",
+          attack: 3,
+          midfield: 1,
+          defense: 1,
+          summary: "Front foot",
+          intent: "Overload attack",
+        }}
         selectedPlayerIds={new Set()}
         onClearFormation={onClearFormation}
         onFormationChange={onFormationChange}
@@ -50,13 +59,13 @@ describe("TeamBuilder", () => {
       />,
     );
 
-    expect(screen.getByText("Build Your Team (5-a-side)")).toBeInTheDocument();
+    expect(screen.getByText("Build Your Match Five")).toBeInTheDocument();
     expect(screen.getByTestId("formation-grid")).toHaveTextContent("Your Team");
     expect(screen.getByTestId("player-roster")).toHaveTextContent("1");
-    expect(screen.getByText(/you need 5 players total/i)).toBeInTheDocument();
+    expect(screen.getByText(/choose players for your 3-1-1 formation/i)).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText("Formation:"), "2-1-2");
-    await user.click(screen.getByRole("button", { name: "Clear Formation" }));
+    await user.click(screen.getByRole("button", { name: /2-1-2 balanced stable shape 2 att \/ 1 mid \/ 2 def/i }));
+    await user.click(screen.getByRole("button", { name: "Reset Team" }));
 
     expect(onFormationChange).toHaveBeenCalledWith("2-1-2");
     expect(onClearFormation).toHaveBeenCalled();
@@ -68,10 +77,19 @@ describe("TeamBuilder", () => {
     render(
       <TeamBuilder
         formation={[null, null, null, null, null]}
+        activePositionIndex={null}
+        activePositionMeta={null}
         isFormationEmpty
         ownedPlayers={players}
         selectedCount={5}
-        selectedFormation={{ name: "3-1-1", attack: 3, midfield: 1, defense: 1 }}
+        selectedFormation={{
+          name: "3-1-1",
+          attack: 3,
+          midfield: 1,
+          defense: 1,
+          summary: "Front foot",
+          intent: "Overload attack",
+        }}
         selectedPlayerIds={new Set()}
         onClearFormation={vi.fn()}
         onFormationChange={vi.fn()}
@@ -80,7 +98,7 @@ describe("TeamBuilder", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Clear Formation" })).toBeDisabled();
-    expect(screen.queryByText(/you need 5 players total/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset Team" })).toBeDisabled();
+    expect(screen.queryByText(/choose players for your 3-1-1 formation/i)).not.toBeInTheDocument();
   });
 });

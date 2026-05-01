@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ShowMatches from "./show-matches";
@@ -15,6 +16,13 @@ vi.mock("graphql-request", () => ({
 
 const { useQuery } = await import("@tanstack/react-query");
 
+const renderShowMatches = (initialEntry = "/games/recent") =>
+  render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <ShowMatches />
+    </MemoryRouter>,
+  );
+
 describe("ShowMatches", () => {
   beforeEach(() => {
     vi.mocked(useQuery).mockReset();
@@ -23,15 +31,23 @@ describe("ShowMatches", () => {
   it("shows loading, error, and success states", () => {
     vi.mocked(useQuery).mockReturnValueOnce({ status: "pending" } as never);
 
-    const { rerender } = render(<ShowMatches />);
+    const { rerender } = renderShowMatches();
     expect(screen.getByText("Loading recent matches...")).toBeInTheDocument();
 
     vi.mocked(useQuery).mockReturnValueOnce({ status: "error", error: { code: 403 } } as never);
-    rerender(<ShowMatches />);
+    rerender(
+      <MemoryRouter initialEntries={["/games/recent"]}>
+        <ShowMatches />
+      </MemoryRouter>,
+    );
     expect(screen.getByText(/error ocurred querying the subgraph/i)).toBeInTheDocument();
 
     vi.mocked(useQuery).mockReturnValueOnce({ status: "error", error: {} } as never);
-    rerender(<ShowMatches />);
+    rerender(
+      <MemoryRouter initialEntries={["/games/recent"]}>
+        <ShowMatches />
+      </MemoryRouter>,
+    );
     expect(screen.getByText(/no games found/i)).toBeInTheDocument();
 
     vi.mocked(useQuery).mockReturnValue({
@@ -63,11 +79,15 @@ describe("ShowMatches", () => {
         ],
       },
     } as never);
-    rerender(<ShowMatches />);
-    expect(screen.getByRole("heading", { name: /last 5 matches/i })).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: /last 5 matches/i })).toBeInTheDocument();
+    rerender(
+      <MemoryRouter initialEntries={["/games/recent"]}>
+        <ShowMatches />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: /match replays/i })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: /match replays/i })).toBeInTheDocument();
     expect(screen.getByText("Match #17")).toBeInTheDocument();
-    expect(screen.getByText(/result hidden until reveal/i)).toBeInTheDocument();
+    expect(screen.getByText(/replay hidden until reveal/i)).toBeInTheDocument();
   });
 
   it("shows an empty state when no results are available", () => {
@@ -76,7 +96,7 @@ describe("ShowMatches", () => {
       data: { playedMatches: [] },
     } as never);
 
-    render(<ShowMatches />);
+    renderShowMatches();
 
     expect(screen.getByText(/no completed matches found yet/i)).toBeInTheDocument();
   });
@@ -114,16 +134,47 @@ describe("ShowMatches", () => {
       },
     } as never);
 
-    render(<ShowMatches />);
+    renderShowMatches();
 
     expect(screen.queryByText("0 - 5")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /reveal result/i }));
+    await user.click(screen.getByRole("button", { name: /reveal replay/i }));
     await user.click(screen.getByRole("button", { name: /skip/i }));
 
     expect(screen.getByText("0 - 5")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /goal events/i })).toBeInTheDocument();
     expect(screen.getAllByText(/home team/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/away team/i).length).toBeGreaterThan(0);
+  });
+
+  it("auto-reveals the target match when launched from play match", () => {
+    vi.mocked(useQuery).mockReturnValue({
+      status: "success",
+      data: {
+        playedMatches: [
+          {
+            id: "17",
+            matchId: "17",
+            homeScore: 3,
+            awayScore: 1,
+            blockTimestamp: "1714300000",
+            homeAddress: "0x0000000000000000000000000000000000000001",
+            awayAddress: "0x0000000000000000000000000000000000000002",
+            homeAttackingPlayers: ["1", "0", "2"],
+            homeMidfieldPlayers: ["0", "3", "0"],
+            homeDefensivePlayers: ["4", "0", "5"],
+            awayAttackingPlayers: ["6", "0", "7"],
+            awayMidfieldPlayers: ["0", "8", "0"],
+            awayDefensivePlayers: ["9", "0", "10"],
+            playerScoreds: [{ playerId: "9", goalOrder: 1 }],
+          },
+        ],
+      },
+    } as never);
+
+    renderShowMatches("/games/recent?matchId=17&autoplay=1");
+
+    expect(screen.queryByText(/replay hidden until reveal/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/match replay/i)).toBeInTheDocument();
   });
 });

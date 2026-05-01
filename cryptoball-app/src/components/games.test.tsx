@@ -59,9 +59,9 @@ describe("Games", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("link", { name: /show matches/i }));
+    await user.click(screen.getByRole("link", { name: /replays/i }));
 
     expect(screen.getByText("Show Matches Page")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /show matches/i })).toHaveClass("active");
+    expect(screen.getByRole("link", { name: /replays/i })).toHaveClass("active");
   });
 });

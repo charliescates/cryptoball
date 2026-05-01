@@ -68,6 +68,9 @@ describe("Academy", () => {
 
     render(<Academy />);
 
+    expect(screen.getByRole("heading", { name: "Academy" })).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("available")).toBeInTheDocument();
     expect(screen.getByText("Deposit")).toBeInTheDocument();
     expect(screen.getByText("Extract")).toBeInTheDocument();
     expect(screen.getByText("Player 1")).toBeInTheDocument();

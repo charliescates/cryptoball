@@ -300,16 +300,22 @@
 @media (max-width: 768px) {
   .header {
     align-items: stretch;
-    padding: 10px 14px;
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .header-top {
+    width: 100%;
+    flex: 1 1 100%;
   }
 
   .header-brand {
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
   }
 
   .header-brand-main {
-    gap: 8px;
+    gap: 6px;
   }
 
   .hamburger {
@@ -365,5 +371,41 @@
 
   .wallet-error {
     text-align: left;
+  }
+
+  .logo {
+    font-size: 1.35rem;
+  }
+
+  .header-brand-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .hamburger {
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .hamburger-line {
+    width: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 10px 12px;
+  }
+
+  .header-brand-badge {
+    display: none;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+  }
+
+  .header-top {
+    gap: 8px;
   }
 }

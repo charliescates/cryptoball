@@ -7,7 +7,6 @@ import { Extract } from "../actions/extract";
 import { academyContract } from "../contracts/academyContract";
 import type { AcademyPlayer } from "../utils/playerUtils";
 import { PlayerCard } from "./PlayerCard";
-import { academyGridStyle } from "./PlayerCard.styles";
 
 const EXTRACT_ADDRESS = "0x05B665d3Ba0a83f5259C114fA3F2d2ECD8A00B29";
 
@@ -37,7 +36,19 @@ export const Academy = () => {
         {isOwnerWallet && <Deposit />}
         {isOwnerWallet && <Extract />}
 
-        <div className="player-container" style={academyGridStyle}>
+        <section className="academy-section-header" aria-labelledby="academy-title">
+          <div>
+            <p className="academy-section-kicker">Recruitment</p>
+            <h1 id="academy-title">Academy</h1>
+            <p className="academy-section-copy">Scout fresh talent and sign the next CryptoBalls starter.</p>
+          </div>
+          <div className="academy-section-count">
+            <strong>{players.length}</strong>
+            <span>available</span>
+          </div>
+        </section>
+
+        <div className="academy-player-grid">
           {error ? (
             <div>Error loading players.</div>
           ) : (

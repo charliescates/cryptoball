@@ -2,8 +2,11 @@ import FormationGrid from "../../formation-grid";
 import type { Player } from "../../player";
 import PlayerRoster from "./PlayerRoster";
 import { FORMATIONS, type Formation } from "./formations";
+import type { FormationRole } from "./useFormationBuilder";
 
 interface TeamBuilderProps {
+  activePositionIndex: number | null;
+  activePositionMeta: { label: string; role: FormationRole } | null;
   formation: (Player | null)[];
   isFormationEmpty: boolean;
   ownedPlayers: Player[];
@@ -17,6 +20,8 @@ interface TeamBuilderProps {
 }
 
 const TeamBuilder = ({
+  activePositionIndex,
+  activePositionMeta,
   formation,
   isFormationEmpty,
   ownedPlayers,
@@ -28,32 +33,55 @@ const TeamBuilder = ({
   onPlayerClick,
   onPositionClick,
 }: TeamBuilderProps) => (
-  <div className="team-building-section">
-    <div className="team-header">
-      <h2>Build Your Team (5-a-side)</h2>
-      <div className="formation-controls">
-        <label htmlFor="formation-select">Formation:</label>
-        <select
-          id="formation-select"
-          className="formation-select"
-          value={selectedFormation.name}
-          onChange={(event) => onFormationChange(event.target.value)}
-        >
-          {FORMATIONS.map((formationOption) => (
-            <option key={formationOption.name} value={formationOption.name}>
-              {formationOption.name} (ATT: {formationOption.attack}, MID: {formationOption.midfield}, DEF:{" "}
-              {formationOption.defense})
-            </option>
-          ))}
-        </select>
-        <button className="clear-formation-button" onClick={onClearFormation} disabled={isFormationEmpty} type="button">
-          Clear Formation
-        </button>
+  <div className="team-building-section join-flow-shell">
+    <div className="team-header join-flow-header">
+      <div>
+        <p className="join-flow-kicker">Squad setup</p>
+        <h2>Build Your Match Five</h2>
+        <p className="join-flow-copy">Pick a shape, tap a pitch slot, then choose the player you want in that role.</p>
       </div>
+      <button className="clear-formation-button" onClick={onClearFormation} disabled={isFormationEmpty} type="button">
+        Reset Team
+      </button>
+    </div>
+
+    <div className="join-flow-stepper" aria-label="Join match progress">
+      <div className={`join-flow-step ${selectedFormation ? "complete" : "active"}`}>
+        <span>1</span>
+        <strong>Shape</strong>
+      </div>
+      <div className={`join-flow-step ${selectedCount > 0 ? "complete" : "active"}`}>
+        <span>2</span>
+        <strong>Pick players</strong>
+      </div>
+      <div className={`join-flow-step ${selectedCount === 5 ? "complete" : "pending"}`}>
+        <span>3</span>
+        <strong>Review</strong>
+      </div>
+    </div>
+
+    <div className="formation-card-grid" aria-label="Choose formation">
+      {FORMATIONS.map((formationOption) => (
+        <button
+          key={formationOption.name}
+          className={`formation-card-option ${formationOption.name === selectedFormation.name ? "selected" : ""}`}
+          type="button"
+          onClick={() => onFormationChange(formationOption.name)}
+        >
+          <span className="formation-card-name">{formationOption.name}</span>
+          <span className="formation-card-summary">{formationOption.summary}</span>
+          <span className="formation-card-intent">{formationOption.intent}</span>
+          <span className="formation-card-split">
+            {formationOption.attack} ATT / {formationOption.midfield} MID / {formationOption.defense} DEF
+          </span>
+        </button>
+      ))}
     </div>
 
     <div className="team-builder">
       <PlayerRoster
+        activePositionLabel={activePositionMeta?.label ?? "next empty slot"}
+        activePositionRole={activePositionMeta?.role ?? null}
         players={ownedPlayers}
         selectedCount={selectedCount}
         selectedPlayerIds={selectedPlayerIds}
@@ -66,12 +94,15 @@ const TeamBuilder = ({
           teamName="Your Team"
           formation={formation}
           selectedFormation={selectedFormation}
+          activePositionIndex={activePositionIndex}
           onPositionClick={onPositionClick}
         />
 
         {selectedCount < 5 && (
           <p className="formation-hint">
-            Click players on the left to add them to your {selectedFormation.name} formation. You need 5 players total.
+            {activePositionMeta
+              ? `Choose a player for ${activePositionMeta.label}, or tap another pitch slot to change role.`
+              : `Choose players for your ${selectedFormation.name} formation. You need 5 players total.`}
           </p>
         )}
       </div>

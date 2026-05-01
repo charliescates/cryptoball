@@ -28,15 +28,15 @@ interface RibbonStyleInput {
 
 const getRibbonStyle = ({ accentColor, isHighPotential, playerTypeColor }: RibbonStyleInput): CSSProperties => ({
   position: "absolute",
-  top: 15,
-  right: -64,
+  top: 12,
+  right: -58,
   transform: "rotate(35deg)",
   background: isHighPotential
     ? `linear-gradient(90deg, ${accentColor}, #fff1bf)`
     : `linear-gradient(90deg, ${playerTypeColor}, ${playerTypeColor}cc)`,
   color: "#101010",
-  padding: "8px 68px",
-  fontSize: "0.68rem",
+  padding: "6px 56px",
+  fontSize: "0.62rem",
   fontWeight: 950,
   letterSpacing: "0.13em",
   textTransform: "uppercase",

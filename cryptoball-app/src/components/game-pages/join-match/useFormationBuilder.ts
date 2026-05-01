@@ -5,9 +5,24 @@ import { FORMATIONS, type Formation } from "./formations";
 
 const EMPTY_FORMATION: (Player | null)[] = Array(5).fill(null);
 
+export type FormationRole = "attack" | "midfield" | "defense";
+
+export const getFormationPositionMeta = (index: number, formation: Formation) => {
+  if (index < formation.attack) {
+    return { label: `Attack ${index + 1}`, role: "attack" as const };
+  }
+
+  if (index < formation.attack + formation.midfield) {
+    return { label: `Midfield ${index - formation.attack + 1}`, role: "midfield" as const };
+  }
+
+  return { label: `Defense ${index - formation.attack - formation.midfield + 1}`, role: "defense" as const };
+};
+
 export const useFormationBuilder = () => {
   const [formation, setFormation] = useState<(Player | null)[]>(EMPTY_FORMATION);
   const [selectedFormation, setSelectedFormation] = useState<Formation>(FORMATIONS[0]);
+  const [activePositionIndex, setActivePositionIndex] = useState<number | null>(null);
 
   const selectedPlayerIds = useMemo(
     () => new Set(formation.filter((player): player is Player => player !== null).map((player) => player.id)),
@@ -17,27 +32,37 @@ export const useFormationBuilder = () => {
   const selectedCount = selectedPlayerIds.size;
   const isFormationComplete = formation.every((player) => player !== null);
   const isFormationEmpty = formation.every((player) => player === null);
+  const activePositionMeta =
+    activePositionIndex !== null ? getFormationPositionMeta(activePositionIndex, selectedFormation) : null;
 
   const handlePlayerClick = (player: Player) => {
     const isAlreadySelected = formation.some((item) => item?.id === player.id);
 
     if (isAlreadySelected) {
       setFormation((previous) => previous.map((item) => (item?.id === player.id ? null : item)));
+      setActivePositionIndex((currentIndex) => currentIndex ?? formation.findIndex((item) => item?.id === player.id));
       return;
     }
 
-    const firstEmptyIndex = formation.findIndex((item) => item === null);
+    const targetIndex =
+      activePositionIndex !== null && formation[activePositionIndex] === null
+        ? activePositionIndex
+        : formation.findIndex((item) => item === null);
 
-    if (firstEmptyIndex !== -1) {
+    if (targetIndex !== -1) {
       setFormation((previous) => {
         const next = [...previous];
-        next[firstEmptyIndex] = player;
+        next[targetIndex] = player;
         return next;
       });
+
+      const nextEmptyIndex = formation.findIndex((item, index) => index !== targetIndex && item === null);
+      setActivePositionIndex(nextEmptyIndex === -1 ? null : nextEmptyIndex);
     }
   };
 
   const handlePositionClick = (index: number) => {
+    setActivePositionIndex(index);
     setFormation((previous) => {
       const next = [...previous];
       next[index] = null;
@@ -45,7 +70,10 @@ export const useFormationBuilder = () => {
     });
   };
 
-  const clearFormation = () => setFormation(EMPTY_FORMATION);
+  const clearFormation = () => {
+    setFormation(EMPTY_FORMATION);
+    setActivePositionIndex(0);
+  };
 
   const handleFormationChange = (formationName: string) => {
     const nextFormation = FORMATIONS.find((item) => item.name === formationName);
@@ -53,6 +81,7 @@ export const useFormationBuilder = () => {
     if (nextFormation) {
       setSelectedFormation(nextFormation);
       setFormation(EMPTY_FORMATION);
+      setActivePositionIndex(0);
     }
   };
 
@@ -67,6 +96,8 @@ export const useFormationBuilder = () => {
     .filter((player): player is Player => player !== null);
 
   return {
+    activePositionIndex,
+    activePositionMeta,
     attackingPlayers,
     clearFormation,
     defensivePlayers,

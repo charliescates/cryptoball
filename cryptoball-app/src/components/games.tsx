@@ -36,7 +36,7 @@ const Games = () => {
                             to="recent"
                             className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
                         >
-                            Show Matches
+                            Replays
                         </NavLink>
                     </div>
                 </div>

@@ -3,8 +3,12 @@ import type { CSSProperties } from "react";
 export const getCardStyle = (accentColor: string): CSSProperties => ({
   position: "relative",
   overflow: "hidden",
-  borderRadius: "30px",
-  padding: "14px",
+  boxSizing: "border-box",
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
+  borderRadius: "26px",
+  padding: "12px",
   color: "#ffffff",
   background: `
     radial-gradient(circle at 50% 0%, ${accentColor}4d 0%, transparent 34%),
@@ -43,19 +47,19 @@ export const cardTopRowStyle: CSSProperties = {
   display: "flex",
   alignItems: "flex-start",
   justifyContent: "space-between",
-  gap: "10px",
-  marginBottom: "2px",
+  gap: "8px",
+  marginBottom: "0",
 };
 
 export const ratingLabelStyle: CSSProperties = {
-  fontSize: "0.78rem",
+  fontSize: "0.7rem",
   fontWeight: 950,
   letterSpacing: "0.18em",
   opacity: 0.95,
 };
 
 export const ratingValueStyle: CSSProperties = {
-  fontSize: "clamp(2.2rem, 7vw, 3rem)",
+  fontSize: "clamp(1.9rem, 7vw, 2.7rem)",
   fontWeight: 950,
   lineHeight: 0.9,
   letterSpacing: "-0.06em",
@@ -64,16 +68,16 @@ export const ratingValueStyle: CSSProperties = {
 
 export const avatarStageStyle: CSSProperties = {
   position: "relative",
-  height: "clamp(190px, 38vw, 238px)",
-  marginTop: "-6px",
-  marginBottom: "8px",
+  height: "clamp(150px, 32vw, 210px)",
+  marginTop: "-4px",
+  marginBottom: "6px",
 };
 
 export const cardSignalsStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "flex-end",
-  gap: "6px",
+  gap: "4px",
   minWidth: 0,
 };
 
@@ -81,9 +85,9 @@ export const getSignalPillStyle = (tone: "attack" | "defense"): CSSProperties =>
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "6px 10px",
+  padding: "5px 8px",
   borderRadius: "999px",
-  fontSize: "0.64rem",
+  fontSize: "0.6rem",
   fontWeight: 900,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
@@ -119,11 +123,11 @@ export const avatarWrapStyle: CSSProperties = {
 export const playerNameStyle: CSSProperties = {
   textAlign: "center",
   fontWeight: 950,
-  fontSize: "clamp(0.92rem, 2vw, 1.02rem)",
+  fontSize: "clamp(0.84rem, 2vw, 0.98rem)",
   letterSpacing: "0.07em",
   textTransform: "uppercase",
-  padding: "9px 10px",
-  borderRadius: "16px",
+  padding: "8px 10px",
+  borderRadius: "14px",
   background: "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05))",
   border: "1px solid rgba(255,255,255,0.12)",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
@@ -133,19 +137,19 @@ export const playerNameStyle: CSSProperties = {
 };
 
 export const statsGridStyle: CSSProperties = {
-  marginTop: "10px",
+  marginTop: "8px",
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))",
-  gap: "8px",
+  gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))",
+  gap: "6px",
 };
 
 export const buyPlayerWrapStyle: CSSProperties = {
-  marginTop: "10px",
+  marginTop: "8px",
 };
 
 export const statBoxStyle: CSSProperties = {
-  padding: "10px 11px",
-  borderRadius: "14px",
+  padding: "8px 9px",
+  borderRadius: "12px",
   background: "rgba(0,0,0,0.38)",
   border: "1px solid rgba(255,255,255,0.08)",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
@@ -166,15 +170,15 @@ export const getFeaturedStatBoxStyle = (tone: "attack" | "defense"): CSSProperti
 });
 
 export const statLabelStyle: CSSProperties = {
-  fontSize: "0.64rem",
+  fontSize: "0.6rem",
   opacity: 0.72,
   textTransform: "uppercase",
   letterSpacing: "0.11em",
-  marginBottom: "5px",
+  marginBottom: "4px",
 };
 
 export const statValueStyle: CSSProperties = {
-  fontSize: "1.05rem",
+  fontSize: "0.95rem",
   fontWeight: 950,
   lineHeight: 1,
   whiteSpace: "nowrap",
@@ -184,7 +188,5 @@ export const statValueStyle: CSSProperties = {
 
 export const academyGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-  gap: "22px",
   alignItems: "stretch",
 };

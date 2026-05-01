@@ -1,62 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { gql, request } from 'graphql-request'
+import { request } from 'graphql-request'
+import { useSearchParams } from 'react-router-dom'
 import { getPlayerName } from '../utils/playerName'
 import { ReplayPositionCard } from '../formation-grid-parts/ReplayPositionCard'
-
-type PlayerScored = {
-  playerId: string
-  goalOrder: number
-}
-
-type PlayedMatch = {
-  id: string
-  matchId: string
-  homeScore: number
-  awayScore: number
-  blockTimestamp: string
-  homeAddress: string
-  awayAddress: string
-  homeAttackingPlayers: string[]
-  homeMidfieldPlayers: string[]
-  homeDefensivePlayers: string[]
-  awayAttackingPlayers: string[]
-  awayMidfieldPlayers: string[]
-  awayDefensivePlayers: string[]
-  playerScoreds: PlayerScored[]
-}
-
-type MatchesResponse = {
-  playedMatches: PlayedMatch[]
-}
-
-const query = gql`
-  {
-    playedMatches(first: 5, orderBy: blockTimestamp, orderDirection: desc) {
-      id
-      matchId
-      homeScore
-      awayScore
-      blockTimestamp
-      homeAddress
-      awayAddress
-      homeAttackingPlayers
-      homeMidfieldPlayers
-      homeDefensivePlayers
-      awayAttackingPlayers
-      awayMidfieldPlayers
-      awayDefensivePlayers
-      playerScoreds {
-        playerId
-        goalOrder
-      }
-    }
-  }
-`
-
-const url = 'https://api.studio.thegraph.com/query/1747934/match-results/version/latest'
-const graphApiKey = import.meta.env.VITE_GRAPH_API_KEY
-const headers = graphApiKey ? { Authorization: `Bearer ${graphApiKey}` } : undefined
+import {
+  matchResultsHeaders,
+  matchResultsUrl,
+  recentMatchesQuery,
+  type MatchesResponse,
+  type PlayedMatch,
+} from './matchResultsQuery'
 
 function formatMatchTime(blockTimestamp: string) {
   const value = Number(blockTimestamp)
@@ -176,18 +130,28 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export default function ShowMatches() {
+  const [searchParams] = useSearchParams()
   const [revealPhases, setRevealPhases] = useState<Record<string, RevealPhase>>({})
   const [animSteps, setAnimSteps] = useState<Record<string, number>>({})
   const [shuffledTimelines, setShuffledTimelines] = useState<Record<string, GoalEvent[]>>({})
+  const autoplayMatchId = searchParams.get('matchId')
+  const shouldAutoplay = searchParams.get('autoplay') === '1'
 
   const { data, status, error } = useQuery<MatchesResponse>({
     queryKey: ['recent-matches'],
     async queryFn() {
-      return await request(url, query, {}, headers)
+      return await request(matchResultsUrl, recentMatchesQuery, {}, matchResultsHeaders)
     },
+    refetchInterval: shouldAutoplay && autoplayMatchId ? 4000 : false,
   })
 
   const matches = data?.playedMatches ?? []
+  const orderedMatches = useMemo(() => {
+    if (!autoplayMatchId) return matches
+    const prioritized = matches.find((match) => match.matchId === autoplayMatchId)
+    if (!prioritized) return matches
+    return [prioritized, ...matches.filter((match) => match.id !== prioritized.id)]
+  }, [autoplayMatchId, matches])
 
   useEffect(() => {
     const animating = Object.entries(revealPhases).filter(([, phase]) => phase === 'animating')
@@ -228,12 +192,24 @@ export default function ShowMatches() {
     setAnimSteps((prev) => ({ ...prev, [matchId]: 0 }))
   }
 
+  useEffect(() => {
+    if (!shouldAutoplay || !autoplayMatchId) return
+    const targetMatch = matches.find((match) => match.matchId === autoplayMatchId)
+    if (!targetMatch) return
+    if ((revealPhases[targetMatch.id] ?? 'hidden') !== 'hidden') return
+    startReveal(targetMatch.id)
+  }, [autoplayMatchId, matches, revealPhases, shouldAutoplay])
+
   return (
     <main className="matches-history-panel">
       <div className="matches-history-header">
-        <span className="section-kicker">Results Feed</span>
-        <h2>Last 5 Matches</h2>
-        <p>Recent completed fixtures pulled from the match results subgraph.</p>
+        <span className="section-kicker">Replays</span>
+        <h2>{autoplayMatchId ? `Match #${autoplayMatchId} Replay` : 'Match Replays'}</h2>
+        <p>
+          {autoplayMatchId
+            ? 'The selected match is pinned here and will reveal automatically when ready.'
+            : 'Recent completed fixtures with replay reveals and goal events.'}
+        </p>
       </div>
 
       {status === 'pending' ? <div className="matches-history-state">Loading recent matches...</div> : null}
@@ -247,9 +223,13 @@ export default function ShowMatches() {
         <div className="matches-history-state">No completed matches found yet.</div>
       ) : null}
 
-      {status === 'success' && matches.length > 0 ? (
-        <ol className="matches-history-list" aria-label="Last 5 matches">
-          {matches.map((match) => {
+      {status === 'success' && shouldAutoplay && autoplayMatchId && !matches.some((match) => match.matchId === autoplayMatchId) ? (
+        <div className="matches-history-state">Waiting for the completed match replay to index...</div>
+      ) : null}
+
+      {status === 'success' && orderedMatches.length > 0 ? (
+        <ol className="matches-history-list" aria-label="Match replays">
+          {orderedMatches.map((match) => {
             const phase = revealPhases[match.id] ?? 'hidden'
             const step = animSteps[match.id] ?? 0
             const timeline = getGoalTimeline(match)
@@ -280,7 +260,7 @@ export default function ShowMatches() {
                       onClick={() => startReveal(match.id)}
                       type="button"
                     >
-                      Reveal Result
+                      Reveal Replay
                     </button>
                   )}
                   {phase === 'animating' && (
@@ -298,13 +278,13 @@ export default function ShowMatches() {
                       onClick={() => hideMatch(match.id)}
                       type="button"
                     >
-                      Hide Result
+                      Hide Replay
                     </button>
                   )}
                 </div>
 
                 {phase === 'hidden' && (
-                  <div className="matches-history-concealed">Result hidden until reveal.</div>
+                  <div className="matches-history-concealed">Replay hidden until reveal.</div>
                 )}
 
                 {phase === 'animating' && (

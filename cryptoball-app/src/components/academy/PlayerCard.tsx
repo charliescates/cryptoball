@@ -45,7 +45,7 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
   const hasEliteDefense = player.defense >= 85n;
 
   return (
-    <div className="player-card" style={getCardStyle(accentColor)}>
+    <div className="player-card academy-player-card" style={getCardStyle(accentColor)}>
       <div style={cardPatternStyle} />
       <PlayerCardRibbon
         accentColor={accentColor}
@@ -67,12 +67,13 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           </div>
         </div>
 
-        <div style={avatarStageStyle}>
+        <div className="academy-avatar-stage" style={avatarStageStyle}>
           <div style={avatarShadowStyle} />
           <div style={avatarWrapStyle}>
             <FootballPlayerAvatar
+              className="academy-avatar"
               seed={playerSeed}
-              size={215}
+              size={168}
               showBadge={false}
               traits={{
                 primaryKitColor: accentColor,
@@ -82,9 +83,9 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           </div>
         </div>
 
-        <div style={playerNameStyle}>{getPlayerName(player.id)}</div>
+        <div className="academy-player-name" style={playerNameStyle}>{getPlayerName(player.id)}</div>
 
-        <div style={statsGridStyle}>
+        <div className="academy-stats-grid" style={statsGridStyle}>
           <PlayerCardStatBox
             label="Attack"
             value={player.attack.toString()}
@@ -99,7 +100,7 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           <PlayerCardStatBox label="Value" value={formatPol(player.value)} />
         </div>
 
-        <div style={buyPlayerWrapStyle}>
+        <div className="academy-buy-wrap" style={buyPlayerWrapStyle}>
           <BuyPlayer playerId={player.id} price={player.value} accentColor={accentColor} />
         </div>
       </div>
