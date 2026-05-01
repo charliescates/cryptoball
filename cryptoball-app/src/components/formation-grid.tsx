@@ -12,10 +12,18 @@ interface FormationGridProps {
   teamName: string;
   formation: (Player | null)[];
   selectedFormation: Formation;
+  activePositionIndex?: number | null;
   onPositionClick: (index: number) => void;
 }
 
-const FormationGrid = ({ teamColour, teamName, formation, selectedFormation, onPositionClick }: FormationGridProps) => {
+const FormationGrid = ({
+  teamColour,
+  teamName,
+  formation,
+  selectedFormation,
+  activePositionIndex = null,
+  onPositionClick,
+}: FormationGridProps) => {
   const [showBonusBreakdown, setShowBonusBreakdown] = useState(false);
 
   const teamStats = useMemo(() => {
@@ -35,6 +43,7 @@ const FormationGrid = ({ teamColour, teamName, formation, selectedFormation, onP
         count={selectedFormation.attack}
         formation={formation}
         teamColour={teamColour}
+        activePositionIndex={activePositionIndex}
         onPositionClick={onPositionClick}
       />
       <FormationRow
@@ -44,6 +53,7 @@ const FormationGrid = ({ teamColour, teamName, formation, selectedFormation, onP
         count={selectedFormation.midfield}
         formation={formation}
         teamColour={teamColour}
+        activePositionIndex={activePositionIndex}
         onPositionClick={onPositionClick}
       />
       <FormationRow
@@ -53,6 +63,7 @@ const FormationGrid = ({ teamColour, teamName, formation, selectedFormation, onP
         count={selectedFormation.defense}
         formation={formation}
         teamColour={teamColour}
+        activePositionIndex={activePositionIndex}
         onPositionClick={onPositionClick}
       />
 

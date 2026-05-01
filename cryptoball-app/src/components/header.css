@@ -2,15 +2,14 @@
 
 .header {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 18px;
-  padding: 12px 24px;
-  background:
-    linear-gradient(180deg, rgba(8, 12, 24, 0.98) 0%, rgba(12, 17, 34, 0.96) 100%);
+  padding: 12px clamp(14px, 2vw, 24px);
+  background: linear-gradient(180deg, rgba(8, 12, 24, 0.98) 0%, rgba(12, 17, 34, 0.96) 100%);
   color: #ffffff;
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
-  position: fixed;
+  position: sticky;
   width: 100%;
   top: 0;
   z-index: 1000;
@@ -110,7 +109,7 @@
   align-items: center;
   gap: 18px;
   width: auto;
-  flex: 1 1 auto;
+  flex: 1 1 760px;
   justify-content: space-between;
   min-width: 0;
 }
@@ -126,6 +125,7 @@
   padding: 5px;
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -175,6 +175,7 @@
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.03) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
 }
 
 .wallet-panel-copy {
@@ -284,6 +285,7 @@
 
   .header-collapse {
     gap: 12px;
+    flex-basis: 100%;
   }
 
   .connection {
@@ -297,18 +299,23 @@
 
 @media (max-width: 768px) {
   .header {
-    flex-direction: column;
     align-items: stretch;
-    padding: 10px 14px;
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .header-top {
+    width: 100%;
+    flex: 1 1 100%;
   }
 
   .header-brand {
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
   }
 
   .header-brand-main {
-    gap: 8px;
+    gap: 6px;
   }
 
   .hamburger {
@@ -364,5 +371,41 @@
 
   .wallet-error {
     text-align: left;
+  }
+
+  .logo {
+    font-size: 1.35rem;
+  }
+
+  .header-brand-badge {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .hamburger {
+    padding: 8px;
+    border-radius: 10px;
+  }
+
+  .hamburger-line {
+    width: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 10px 12px;
+  }
+
+  .header-brand-badge {
+    display: none;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+  }
+
+  .header-top {
+    gap: 8px;
   }
 }

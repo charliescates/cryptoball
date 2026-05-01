@@ -7,7 +7,7 @@ const StartGamePage = () => {
         <div className="start-game-hero">
           <div className="start-game-hero-copy">
             <span className="section-kicker">Games desk</span>
-            <h2>Match Control</h2>
+            <h2>Create a new match</h2>
             <p className="tab-description">
               Set the fixture, fund the stake, and open a competitive match with a clean on-chain record.
             </p>

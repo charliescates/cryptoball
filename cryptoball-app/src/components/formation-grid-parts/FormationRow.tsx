@@ -2,6 +2,7 @@ import type { Player } from "../player";
 import Position from "../position";
 
 interface FormationRowProps {
+  activePositionIndex?: number | null;
   count: number;
   formation: (Player | null)[];
   icon: string;
@@ -12,6 +13,7 @@ interface FormationRowProps {
 }
 
 const FormationRow = ({
+  activePositionIndex = null,
   count,
   formation,
   icon,
@@ -40,6 +42,7 @@ const FormationRow = ({
               teamColour={teamColour}
               index={index}
               player={formation[index]}
+              isActive={activePositionIndex === index}
               onPositionClick={onPositionClick}
             />
           );

@@ -24,7 +24,9 @@ describe("MatchSelector", () => {
         onMatchChange={vi.fn()}
         matchDetails={{
           homeAddress: "0x1111111111111111111111111111111111111111",
+          homeTeam: { attackingPlayers: [0n, 0n, 0n], midfieldPlayers: [0n, 0n, 0n], defensivePlayers: [0n, 0n, 0n] },
           awayAddress: "",
+          awayTeam: { attackingPlayers: [0n, 0n, 0n], midfieldPlayers: [0n, 0n, 0n], defensivePlayers: [0n, 0n, 0n] },
           wagerRequired: 1000000000000000000n,
           pot: 2500000000000000000n,
         }}

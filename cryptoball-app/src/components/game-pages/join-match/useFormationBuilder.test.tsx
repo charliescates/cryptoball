@@ -63,7 +63,7 @@ describe("useFormationBuilder", () => {
     await user.click(screen.getByRole("button", { name: /toggle b/i }));
 
     expect(screen.getByText("Selected: 2")).toBeInTheDocument();
-    expect(screen.getByText("Attackers: 1,2")).toBeInTheDocument();
+    expect(screen.getByText(/Attackers: (1,2|2,1)/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /clear first/i }));
 

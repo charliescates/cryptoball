@@ -74,14 +74,14 @@ export function BuyPlayer({
           boxSizing: "border-box",
           display: "block",
           margin: 0,
-          padding: "11px 14px",
-          borderRadius: "14px",
+          padding: "10px 12px",
+          borderRadius: "12px",
           border: "none",
           background: isConfirmed
             ? "rgba(255,255,255,0.18)"
             : `linear-gradient(135deg, ${accentColor}, ${gradientEnd})`,
           color: "#071018",
-          fontSize: "0.95rem",
+          fontSize: "0.86rem",
           fontWeight: 950,
           letterSpacing: "0.08em",
           textTransform: "uppercase",

@@ -28,7 +28,7 @@ describe("Position", () => {
     );
 
     expect(screen.getByText("ATTACK")).toBeInTheDocument();
-    expect(screen.getByText("Empty")).toBeInTheDocument();
+    expect(screen.getByText("Tap to fill")).toBeInTheDocument();
   });
 
   it("renders a filled slot and removes the player when clicked", async () => {

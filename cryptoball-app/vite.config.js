@@ -10,6 +10,6 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "html"],
     },
-    setupFiles: "./src/test/setup.js",
+    setupFiles: "./src/test/setup.ts",
   },
 });

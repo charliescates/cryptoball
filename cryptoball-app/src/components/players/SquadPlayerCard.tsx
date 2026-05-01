@@ -2,7 +2,7 @@ import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
 import type { Player } from "../player";
 import { getPlayerName } from "../utils/playerName";
 import { getPlayerTypeColor, getPlayerTypeIcon, getPlayerTypeName } from "../utils/playerType";
-import { formatSignedDelta, getDeltaClassName } from "./playerStats";
+import PlayerStat from "./PlayerStat";
 
 interface SquadPlayerCardProps {
   player: Player;
@@ -67,9 +67,9 @@ const SquadPlayerCard = ({ player }: SquadPlayerCardProps) => {
       </div>
 
       <div className="player-stats player-stats-grid">
-        <PlayerStat label="ATT" value={player.attack} delta={attackDelta} />
-        <PlayerStat label="DEF" value={player.defense} delta={defenseDelta} />
-        <PlayerStat label="POT" value={player.potential} highlight />
+        <PlayerStat label="ATT" value={player.attack} delta={attackDelta} variant="inline" />
+        <PlayerStat label="DEF" value={player.defense} delta={defenseDelta} variant="inline" />
+        <PlayerStat label="POT" value={player.potential} highlight variant="inline" />
       </div>
 
       <div className="player-card-footer">
@@ -83,19 +83,5 @@ const SquadPlayerCard = ({ player }: SquadPlayerCardProps) => {
     </div>
   );
 };
-
-interface PlayerStatProps {
-  delta?: bigint;
-  highlight?: boolean;
-  label: string;
-  value: bigint;
-}
-
-const PlayerStat = ({ delta = 0n, highlight = false, label, value }: PlayerStatProps) => (
-  <span className={highlight ? "player-stats-highlight" : undefined}>
-    {label} <strong>{value.toString()}</strong>
-    {delta !== 0n && <em className={`stat-delta ${getDeltaClassName(delta)}`}>{formatSignedDelta(delta)}</em>}
-  </span>
-);
 
 export default SquadPlayerCard;
