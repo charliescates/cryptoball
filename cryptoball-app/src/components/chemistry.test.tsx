@@ -7,11 +7,11 @@ describe("Chemistry", () => {
   it("renders the guide sections and reference data", () => {
     render(<Chemistry />);
 
-    expect(screen.getByText("Chemistry System Guide")).toBeInTheDocument();
-    expect(screen.getByText("How It Works")).toBeInTheDocument();
-    expect(screen.getByText("Player Type Reference")).toBeInTheDocument();
-    expect(screen.getByText("Chemistry Bonuses")).toBeInTheDocument();
-    expect(screen.getByText("Reference Grid")).toBeInTheDocument();
-    expect(screen.getByText("Quick Rules")).toBeInTheDocument();
+    expect(screen.getByText("Plan Stronger Teams")).toBeInTheDocument();
+    expect(screen.getByText("Try a Team Shape")).toBeInTheDocument();
+    expect(screen.getByText("Build Chemistry in Four Moves")).toBeInTheDocument();
+    expect(screen.getByText("Bonus Reference")).toBeInTheDocument();
+    expect(screen.getByText("Player Type Strengths")).toBeInTheDocument();
+    expect(screen.getByText("How Final Stats Are Built")).toBeInTheDocument();
   });
 });

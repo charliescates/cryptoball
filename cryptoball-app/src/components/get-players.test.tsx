@@ -26,6 +26,7 @@ describe("GetPlayers", () => {
 
     render(<GetPlayers />);
 
+    expect(screen.getByText("Player 1").parentElement).toHaveClass("squad-player-grid");
     expect(screen.getByText("Player 1")).toBeInTheDocument();
     expect(screen.getByText("Player 2")).toBeInTheDocument();
   });

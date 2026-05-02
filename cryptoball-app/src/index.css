@@ -2207,6 +2207,547 @@ form {
   padding: 40px 20px;
 }
 
+/* Chemistry guide */
+.chemistry-page {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding: 28px clamp(14px, 3vw, 28px) 64px;
+  box-sizing: border-box;
+  color: #f8fafc;
+}
+
+.chemistry-kicker {
+  margin: 0 0 8px;
+  color: #7dd3fc;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.chemistry-hero {
+  padding: clamp(20px, 3vw, 30px) 0 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chemistry-hero h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2.1rem, 6vw, 4.4rem);
+  line-height: 0.98;
+  text-align: left;
+}
+
+.chemistry-hero > p {
+  max-width: 820px;
+  margin: 14px 0 0;
+  color: #cbd5e1;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.chemistry-hero-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.chemistry-hero-summary div,
+.chemistry-section,
+.chemistry-builder {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(10, 14, 39, 0.96));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+.chemistry-hero-summary div,
+.chemistry-builder,
+.chemistry-section {
+  border-radius: 20px;
+}
+
+.chemistry-hero-summary div {
+  padding: 16px;
+}
+
+.chemistry-hero-summary span,
+.chemistry-guide-card span,
+.chemistry-step-card span {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 10px;
+  place-items: center;
+  border-radius: 999px;
+  background: #f5c542;
+  color: #101624;
+  font-weight: 950;
+}
+
+.chemistry-hero-summary strong {
+  display: block;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.chemistry-hero-summary p {
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.chemistry-builder,
+.chemistry-section {
+  margin-top: 22px;
+  padding: clamp(16px, 2.6vw, 24px);
+}
+
+.chemistry-builder {
+  background: radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.14), transparent 30%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(10, 14, 39, 0.97));
+}
+
+.chemistry-builder-header,
+.chemistry-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.chemistry-builder-header h2,
+.chemistry-section-header h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  line-height: 1.05;
+  text-align: left;
+}
+
+.chemistry-builder-header p,
+.chemistry-section-header p {
+  max-width: 600px;
+  margin: 8px 0 0;
+  color: #cbd5e1;
+  line-height: 1.55;
+}
+
+.chemistry-scoreboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 10px;
+  min-width: 220px;
+}
+
+.chemistry-scoreboard div,
+.chemistry-line,
+.chemistry-live-card,
+.chemistry-guide-card,
+.chemistry-step-card,
+.chemistry-role-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.chemistry-scoreboard div {
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.chemistry-scoreboard span {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chemistry-scoreboard strong {
+  display: block;
+  margin-top: 6px;
+  color: #ffffff;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.chemistry-formation-picker {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.chemistry-formation-option {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #e2e8f0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+}
+
+.chemistry-formation-option:hover,
+.chemistry-formation-option.selected {
+  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.chemistry-formation-option strong {
+  color: #ffffff;
+  font-size: 1.08rem;
+  letter-spacing: 0.08em;
+}
+
+.chemistry-formation-option span {
+  color: #7dd3fc;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chemistry-formation-option small {
+  color: #94a3b8;
+  font-size: 0.78rem;
+}
+
+.chemistry-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.chemistry-pitch,
+.chemistry-live-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chemistry-line {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.chemistry-line-label {
+  margin-bottom: 10px;
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.chemistry-line-slots {
+  display: grid;
+  gap: 10px;
+}
+
+.chemistry-slot {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.chemistry-slot-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.chemistry-slot-heading span {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.chemistry-slot-heading strong {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chemistry-slot select {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: #10182c;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.chemistry-live-card {
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.chemistry-live-card > span {
+  display: block;
+  margin-bottom: 10px;
+  color: #f5c542;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chemistry-live-card p,
+.chemistry-live-card li {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.chemistry-live-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.chemistry-live-card small {
+  display: block;
+  margin-top: 3px;
+  color: #94a3b8;
+}
+
+.chemistry-role-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chemistry-role-chips span {
+  padding: 6px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.chemistry-guide-grid,
+.chemistry-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.chemistry-guide-card,
+.chemistry-step-card,
+.chemistry-role-card {
+  padding: 15px;
+  border-radius: 16px;
+}
+
+.chemistry-guide-card p,
+.chemistry-step-card p {
+  margin: 0;
+  color: #e2e8f0;
+  line-height: 1.5;
+}
+
+.chemistry-combo-scroll {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+}
+
+.chemistry-combo-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.chemistry-combo-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.chemistry-combo-table th,
+.chemistry-combo-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #dbe4f0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.chemistry-combo-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.chemistry-combo-table th {
+  background: rgba(255, 255, 255, 0.055);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chemistry-combo-table strong {
+  display: block;
+  color: #ffffff;
+}
+
+.chemistry-combo-table small {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+.chemistry-major-bonus {
+  color: #f5c542;
+  font-weight: 950;
+}
+
+.chemistry-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.chemistry-role-card {
+  border: 1px solid;
+}
+
+.chemistry-role-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.chemistry-role-card-top > span {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 950;
+}
+
+.chemistry-role-card h3,
+.chemistry-role-card p {
+  margin: 0;
+}
+
+.chemistry-role-card h3 {
+  font-size: 1rem;
+}
+
+.chemistry-role-card-top p,
+.chemistry-role-note {
+  color: #94a3b8;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.chemistry-role-bonuses {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.chemistry-role-bonuses span {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  color: #e2e8f0;
+  font-size: 0.86rem;
+}
+
+.chemistry-role-note {
+  margin-top: 12px !important;
+}
+
+@media (max-width: 980px) {
+  .chemistry-hero-summary,
+  .chemistry-builder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chemistry-builder-header,
+  .chemistry-section-header {
+    flex-direction: column;
+  }
+
+  .chemistry-scoreboard {
+    width: 100%;
+  }
+
+  .chemistry-formation-picker {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    margin-inline: -2px;
+    padding: 2px 2px 10px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .chemistry-formation-picker::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chemistry-formation-option {
+    flex: 0 0 155px;
+    scroll-snap-align: start;
+  }
+
+  .chemistry-combo-scroll {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .chemistry-page {
+    padding-inline: 12px;
+  }
+
+  .chemistry-line-slots {
+    grid-template-columns: 1fr !important;
+  }
+
+  .chemistry-scoreboard {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.squad-player-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  justify-items: stretch;
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.squad-player-grid > * {
+  min-width: 0;
+}
+
 .academy-section-header {
   display: flex;
   align-items: flex-end;
@@ -2295,8 +2836,11 @@ form {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 18px;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+  box-sizing: border-box;
   padding: 18px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -2326,6 +2870,7 @@ form {
   display: flex;
   gap: 16px;
   align-items: center;
+  min-width: 0;
 }
 
 .player-avatar-frame {
@@ -2360,6 +2905,7 @@ form {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  min-width: 0;
 }
 
 .player-card-title-wrap {
@@ -2425,6 +2971,7 @@ form {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  box-sizing: border-box;
 }
 
 .player-stats span strong {
@@ -2703,6 +3250,36 @@ form {
     justify-items: stretch;
   }
 
+  .squad-player-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 14px;
+    padding: 14px 12px 22px;
+  }
+
+  .squad-player-grid .player-card-roster {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .squad-player-grid .player-card-top {
+    gap: 12px;
+  }
+
+  .squad-player-grid .player-avatar-frame-roster {
+    width: 78px;
+    height: 92px;
+    border-radius: 14px;
+  }
+
+  .squad-player-grid .player-stats {
+    gap: 6px;
+  }
+
+  .squad-player-grid .player-stats span {
+    padding: 8px 9px;
+    gap: 6px;
+  }
+
   .academy-section-header {
     align-items: flex-start;
     gap: 10px;
@@ -2772,6 +3349,12 @@ form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 5px;
     padding: 7px;
+  }
+
+  .squad-player-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 14px;
+    padding: 14px 12px 22px;
   }
 
   .academy-player-grid {
@@ -2993,6 +3576,54 @@ form {
 
   .position-stats {
     font-size: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .squad-player-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 10px 20px;
+  }
+
+  .squad-player-grid .player-card-roster {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .squad-player-grid .player-card-top {
+    align-items: flex-start;
+  }
+
+  .squad-player-grid .player-avatar-frame-roster {
+    width: 68px;
+    height: 80px;
+    border-radius: 12px;
+  }
+
+  .squad-player-grid .player-card-name {
+    font-size: 0.92rem;
+  }
+
+  .squad-player-grid .player-card-note {
+    display: none;
+  }
+
+  .squad-player-grid .player-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .squad-player-grid .player-stats span {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 7px;
+    gap: 3px;
+  }
+
+  .squad-player-grid .player-card-footer {
+    gap: 8px;
+    font-size: 0.78rem;
   }
 }
 
