@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { request } from "graphql-request";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Log } from "viem";
+import { type Log, decodeEventLog } from "viem";
 import { zeroAddress } from "viem";
 import { useAccount, useReadContract, useWatchContractEvent } from "wagmi";
 
@@ -26,6 +26,12 @@ const hasSubmittedTeam = (team?: MatchDetails["homeTeam"]) =>
   !!team &&
   [...team.attackingPlayers, ...team.midfieldPlayers, ...team.defensivePlayers].some((playerId) => playerId > 0n);
 
+type PlayedMatchEventArgs = {
+  awayScore: bigint | number;
+  homeScore: bigint | number;
+  matchId: bigint;
+};
+
 const MatchRequiredPanel = ({ hasMatches }: { hasMatches: boolean }) => (
   <section className="join-flow-locked" aria-label="Squad setup locked">
     <p className="join-flow-kicker">Squad setup locked</p>
@@ -44,11 +50,34 @@ const MatchRequiredPanel = ({ hasMatches }: { hasMatches: boolean }) => (
   </section>
 );
 
+const LockedTeamPanel = ({ isConfirmed, isPending }: { isConfirmed: boolean; isPending: boolean }) => (
+  <section className="join-flow-locked" aria-label="Submitted squad locked">
+    <p className="join-flow-kicker">Team submitted</p>
+    <h2>Your Team Is Locked</h2>
+    <p>
+      {isConfirmed
+        ? "Your team is confirmed on-chain. The match will play automatically once both sides are ready."
+        : isPending
+          ? "Your wallet transaction is in progress. This team can no longer be edited for this match."
+          : "Your team is locked for this match. Waiting for the match to complete."}
+    </p>
+    <div className="join-flow-locked-steps" aria-label="Submitted team flow">
+      <span className="complete">1 Team</span>
+      <span className={isConfirmed ? "complete" : "active"}>2 Confirm</span>
+      <span>3 Play</span>
+      <span>4 Replay</span>
+    </div>
+  </section>
+);
+
 const JoinMatchPage = () => {
   const account = useAccount();
   const navigate = useNavigate();
   const [selectedMatchId, setSelectedMatchId] = useState<number | null>(null);
   const [gameResult, setGameResult] = useState<GameResultScore | null>(null);
+  const [isTeamSubmissionPending, setIsTeamSubmissionPending] = useState(false);
+  const [isTeamTransactionConfirmed, setIsTeamTransactionConfirmed] = useState(false);
+  const [playedMatchId, setPlayedMatchId] = useState<number | null>(null);
 
   const formationBuilder = useFormationBuilder();
 
@@ -68,7 +97,7 @@ const JoinMatchPage = () => {
     functionName: "getMatchList",
   });
 
-  const { data: matchDetails } = useReadContract({
+  const { data: matchDetails, refetch: refetchMatchDetails } = useReadContract({
     abi: gameContract.abi,
     address: gameContract.address,
     functionName: "getMatch",
@@ -85,8 +114,20 @@ const JoinMatchPage = () => {
     eventName: "MatchPlayed",
     onLogs: (logs: Log[]) => {
       for (const log of logs) {
-        const decodedLog = gameContract.abi.decodeEventLog("MatchPlayed", log.data, log.topics);
-        const { homeScore, awayScore } = decodedLog;
+        const { args } = decodeEventLog({
+          abi: gameContract.abi,
+          data: log.data,
+          eventName: "MatchPlayed",
+          topics: log.topics,
+        });
+        const { awayScore, homeScore, matchId } = args as PlayedMatchEventArgs;
+        const nextPlayedMatchId = Number(matchId);
+
+        if (selectedMatchId === null || nextPlayedMatchId !== selectedMatchId) {
+          continue;
+        }
+
+        setPlayedMatchId(nextPlayedMatchId);
         setGameResult({ homeScore: Number(homeScore), awayScore: Number(awayScore) });
       }
     },
@@ -113,6 +154,8 @@ const JoinMatchPage = () => {
     return false;
   }, [account.address, typedMatchDetails]);
 
+  const hasLockedTeam = hasOwnTeamSubmitted || isTeamSubmissionPending || isTeamTransactionConfirmed;
+  const shouldPollReplay = hasLockedTeam || bothTeamsSubmitted || playedMatchId !== null;
   const selectedMatchIdText = selectedMatchId?.toString();
   const { data: replayData, status: replayStatus } = useQuery<MatchesResponse>({
     queryKey: ["played-match", selectedMatchIdText],
@@ -124,17 +167,41 @@ const JoinMatchPage = () => {
         matchResultsHeaders,
       );
     },
-    enabled: bothTeamsSubmitted && !!selectedMatchIdText,
-    refetchInterval: bothTeamsSubmitted && selectedMatchIdText ? 4000 : false,
+    enabled: shouldPollReplay && !!selectedMatchIdText,
+    refetchInterval: shouldPollReplay && selectedMatchIdText ? 4000 : false,
   });
 
-  const isReplayReady = !!replayData?.playedMatches?.length;
-  const isReplayPending = bothTeamsSubmitted && !isReplayReady && replayStatus !== "error";
+  const isReplayReady = shouldPollReplay && !!replayData?.playedMatches?.length;
+  const isReplayPending = shouldPollReplay && !isReplayReady && replayStatus !== "error";
 
-  const handleWatchReplay = () => {
+  const handleWatchReplay = useCallback(() => {
     if (selectedMatchId === null) return;
     navigate(`/games/recent?matchId=${selectedMatchId}&autoplay=1`);
-  };
+  }, [navigate, selectedMatchId]);
+
+  const handleTeamTransactionConfirmed = useCallback(() => {
+    setIsTeamSubmissionPending(false);
+    setIsTeamTransactionConfirmed(true);
+    void refetchMatchDetails();
+  }, [refetchMatchDetails]);
+
+  const handleTeamTransactionFailed = useCallback(() => {
+    setIsTeamSubmissionPending(false);
+  }, []);
+
+  const handleMatchChange = useCallback((matchId: number | null) => {
+    setSelectedMatchId(matchId);
+    setGameResult(null);
+    setIsTeamSubmissionPending(false);
+    setIsTeamTransactionConfirmed(false);
+    setPlayedMatchId(null);
+  }, []);
+
+  useEffect(() => {
+    if (playedMatchId !== null || isReplayReady) {
+      handleWatchReplay();
+    }
+  }, [handleWatchReplay, isReplayReady, playedMatchId]);
 
   return (
     <div className="tab-panel">
@@ -142,32 +209,41 @@ const JoinMatchPage = () => {
         matchDetails={typedMatchDetails}
         matchList={matchList}
         selectedMatchId={selectedMatchId}
-        onMatchChange={setSelectedMatchId}
+        disabled={hasLockedTeam}
+        onMatchChange={handleMatchChange}
       />
 
       {selectedMatchId === null ? (
         <MatchRequiredPanel hasMatches={matchList.length > 0} />
       ) : (
         <>
-          <TeamBuilder
-            activePositionIndex={formationBuilder.activePositionIndex}
-            activePositionMeta={formationBuilder.activePositionMeta}
-            formation={formationBuilder.formation}
-            isFormationEmpty={formationBuilder.isFormationEmpty}
-            ownedPlayers={ownedPlayers}
-            selectedCount={formationBuilder.selectedCount}
-            selectedFormation={formationBuilder.selectedFormation}
-            selectedPlayerIds={formationBuilder.selectedPlayerIds}
-            onClearFormation={formationBuilder.clearFormation}
-            onFormationChange={formationBuilder.handleFormationChange}
-            onPlayerClick={formationBuilder.handlePlayerClick}
-            onPositionClick={formationBuilder.handlePositionClick}
-          />
+          {hasLockedTeam ? (
+            <LockedTeamPanel
+              isConfirmed={hasOwnTeamSubmitted || isTeamTransactionConfirmed}
+              isPending={isTeamSubmissionPending}
+            />
+          ) : (
+            <TeamBuilder
+              activePositionIndex={formationBuilder.activePositionIndex}
+              activePositionMeta={formationBuilder.activePositionMeta}
+              formation={formationBuilder.formation}
+              isFormationEmpty={formationBuilder.isFormationEmpty}
+              ownedPlayers={ownedPlayers}
+              selectedCount={formationBuilder.selectedCount}
+              selectedFormation={formationBuilder.selectedFormation}
+              selectedPlayerIds={formationBuilder.selectedPlayerIds}
+              onAutoPick={() => formationBuilder.autoPickFormation(ownedPlayers)}
+              onClearFormation={formationBuilder.clearFormation}
+              onFormationChange={formationBuilder.handleFormationChange}
+              onPlayerClick={formationBuilder.handlePlayerClick}
+              onPositionClick={formationBuilder.handlePositionClick}
+            />
+          )}
 
           <SubmitTeamSection
             attackingPlayers={formationBuilder.attackingPlayers}
             defensivePlayers={formationBuilder.defensivePlayers}
-            hasOwnTeamSubmitted={hasOwnTeamSubmitted}
+            hasOwnTeamSubmitted={hasLockedTeam}
             isFormationComplete={formationBuilder.isFormationComplete}
             matchDetails={typedMatchDetails}
             midfieldPlayers={formationBuilder.midfieldPlayers}
@@ -175,6 +251,9 @@ const JoinMatchPage = () => {
             hasBothTeamsSubmitted={bothTeamsSubmitted}
             isReplayPending={isReplayPending}
             isReplayReady={isReplayReady}
+            onTransactionConfirmed={handleTeamTransactionConfirmed}
+            onTransactionFailed={handleTeamTransactionFailed}
+            onTransactionStarted={() => setIsTeamSubmissionPending(true)}
             onWatchReplay={handleWatchReplay}
           />
         </>

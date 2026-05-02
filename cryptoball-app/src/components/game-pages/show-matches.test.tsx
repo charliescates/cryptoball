@@ -141,7 +141,8 @@ describe("ShowMatches", () => {
     await user.click(screen.getByRole("button", { name: /reveal replay/i }));
     await user.click(screen.getByRole("button", { name: /skip/i }));
 
-    expect(screen.getByText("0 - 5")).toBeInTheDocument();
+    expect(screen.getAllByText("0 - 5").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/match 1 centre/i)).toHaveTextContent("Player of match");
     expect(screen.getByRole("heading", { name: /goal events/i })).toBeInTheDocument();
     expect(screen.getAllByText(/home team/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/away team/i).length).toBeGreaterThan(0);

@@ -6,37 +6,39 @@ const StartGamePage = () => {
       <div className="start-game-section">
         <div className="start-game-hero">
           <div className="start-game-hero-copy">
-            <span className="section-kicker">Games desk</span>
-            <h2>Create a new match</h2>
+            <span className="section-kicker">Match setup</span>
+            <h2>Start new game</h2>
             <p className="tab-description">
-              Set the fixture, fund the stake, and open a competitive match with a clean on-chain record.
+              Pair two wallets, choose the shared stake, and create a fixture ready for squad selection.
             </p>
-            <div className="start-game-highlights" aria-label="Match setup overview">
-              <div className="start-game-highlight">
-                <span>Queue</span>
-                <strong>Private fixture</strong>
-              </div>
-              <div className="start-game-highlight">
-                <span>Entry</span>
-                <strong>Equal stake</strong>
-              </div>
-              <div className="start-game-highlight">
-                <span>Finish</span>
-                <strong>Wallet confirmation</strong>
-              </div>
-            </div>
           </div>
-          <div className="start-game-status-cluster" aria-label="Match format and mode">
-            <div className="start-game-metric">
+          <div className="start-game-format-pills" aria-label="Match format and mode">
+            <div>
               <span>Format</span>
               <strong>1v1</strong>
             </div>
-            <div className="start-game-metric">
+            <div>
               <span>Mode</span>
               <strong>Wager</strong>
             </div>
           </div>
         </div>
+
+        <ol className="start-game-setup-rail" aria-label="Setup steps">
+          <li>
+            <span>1</span>
+            <strong>Wallets</strong>
+          </li>
+          <li>
+            <span>2</span>
+            <strong>Stake</strong>
+          </li>
+          <li>
+            <span>3</span>
+            <strong>Confirm</strong>
+          </li>
+        </ol>
+
         <StartGame />
       </div>
     </div>

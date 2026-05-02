@@ -5,10 +5,12 @@ import { getPlayerTypeColor, getPlayerTypeIcon, getPlayerTypeName } from "../uti
 import PlayerStat from "./PlayerStat";
 
 interface SquadPlayerCardProps {
+  onOpenDetails?: (player: Player) => void;
   player: Player;
+  roleFitLabel?: string;
 }
 
-const SquadPlayerCard = ({ player }: SquadPlayerCardProps) => {
+const SquadPlayerCard = ({ onOpenDetails, player, roleFitLabel }: SquadPlayerCardProps) => {
   const playerTypeColor = getPlayerTypeColor(player.playerType);
   const playerTypeName = getPlayerTypeName(player.playerType);
   const attackDelta = player.attack - player.originalAttack;
@@ -62,6 +64,8 @@ const SquadPlayerCard = ({ player }: SquadPlayerCardProps) => {
             {playerTypeName}
           </div>
 
+          {roleFitLabel ? <div className="player-fit-badge">{roleFitLabel}</div> : null}
+
           <div className="player-card-note">Built for {playerTypeName.toLowerCase()} duties.</div>
         </div>
       </div>
@@ -80,6 +84,12 @@ const SquadPlayerCard = ({ player }: SquadPlayerCardProps) => {
           Goals <strong>{player.goalsScored.toString()}</strong>
         </span>
       </div>
+
+      {onOpenDetails ? (
+        <button className="player-detail-trigger" type="button" onClick={() => onOpenDetails(player)}>
+          Player details
+        </button>
+      ) : null}
     </div>
   );
 };

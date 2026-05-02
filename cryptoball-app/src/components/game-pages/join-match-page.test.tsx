@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import JoinMatchPage from "./join-match-page";
 
@@ -37,7 +37,7 @@ vi.mock("wagmi", () => ({
 }));
 
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: vi.fn(() => ({ data: undefined, status: "pending" })),
+  useQuery: vi.fn(),
 }));
 
 const navigateSpy = vi.fn();
@@ -55,9 +55,10 @@ vi.mock("./join-match/useFormationBuilder", () => ({
 }));
 
 vi.mock("./join-match/MatchSelector", () => ({
-  default: ({ onMatchChange }: { onMatchChange: (matchId: number) => void }) => (
+  default: ({ disabled, onMatchChange }: { disabled?: boolean; onMatchChange: (matchId: number) => void }) => (
     <div>
       <div>Match Selector</div>
+      <div>{disabled ? "Selector Locked" : "Selector Editable"}</div>
       <button type="button" onClick={() => onMatchChange(4)}>
         Pick Match
       </button>
@@ -70,13 +71,33 @@ vi.mock("./join-match/TeamBuilder", () => ({
 }));
 
 vi.mock("./join-match/SubmitTeamSection", () => ({
-  default: () => <div>Submit Team</div>,
+  default: ({
+    onTransactionConfirmed,
+    onTransactionStarted,
+  }: {
+    onTransactionConfirmed?: () => void;
+    onTransactionStarted?: () => void;
+  }) => (
+    <div>
+      <div>Submit Team</div>
+      <button
+        type="button"
+        onClick={() => {
+          onTransactionStarted?.();
+          onTransactionConfirmed?.();
+        }}
+      >
+        Submit Team Mock
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./join-match/GameResult", () => ({
   default: () => <div>Game Result</div>,
 }));
 
+const { useQuery } = await import("@tanstack/react-query");
 const { useAccount, useReadContract } = await import("wagmi");
 
 type MockAccount = {
@@ -89,6 +110,11 @@ type MockReadContractResult = {
 };
 
 describe("JoinMatchPage", () => {
+  beforeEach(() => {
+    navigateSpy.mockClear();
+    vi.mocked(useQuery).mockReturnValue({ data: undefined, status: "pending" } as never);
+  });
+
   it("locks squad setup until a match is selected", () => {
     vi.mocked(useAccount).mockReturnValue({ address: "0xabc", isConnected: true } as MockAccount as never);
     vi.mocked(useReadContract).mockImplementation((config: { functionName?: string } | undefined) => {
@@ -185,5 +211,114 @@ describe("JoinMatchPage", () => {
     expect(screen.queryByText("Select a Match First")).not.toBeInTheDocument();
     expect(screen.getByText("Team Builder")).toBeInTheDocument();
     expect(screen.getByText("Submit Team")).toBeInTheDocument();
+  });
+
+  it("locks the team builder after submitting the team transaction", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAccount).mockReturnValue({ address: "0xabc", isConnected: true } as MockAccount as never);
+    vi.mocked(useReadContract).mockImplementation((config: { functionName?: string } | undefined) => {
+      const functionName = config?.functionName;
+      if (functionName === "getPlayersByOwner") {
+        return { data: [{ id: 1n }] } as MockReadContractResult as never;
+      }
+
+      if (functionName === "getMatchList") {
+        return { data: [4] } as MockReadContractResult as never;
+      }
+
+      if (functionName === "getMatch") {
+        return {
+          data: {
+            homeAddress: "0x1",
+            homeTeam: {
+              attackingPlayers: [0n, 0n, 0n],
+              midfieldPlayers: [0n, 0n, 0n],
+              defensivePlayers: [0n, 0n, 0n],
+            },
+            awayAddress: "0xabc",
+            awayTeam: {
+              attackingPlayers: [0n, 0n, 0n],
+              midfieldPlayers: [0n, 0n, 0n],
+              defensivePlayers: [0n, 0n, 0n],
+            },
+            pot: 0n,
+            wagerRequired: 0n,
+          },
+          refetch: vi.fn(),
+        } as MockReadContractResult as never;
+      }
+
+      return { data: undefined } as MockReadContractResult as never;
+    });
+
+    render(
+      <MemoryRouter>
+        <JoinMatchPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Pick Match" }));
+    await user.click(screen.getByRole("button", { name: "Submit Team Mock" }));
+
+    expect(screen.queryByText("Team Builder")).not.toBeInTheDocument();
+    expect(screen.getByText("Your Team Is Locked")).toBeInTheDocument();
+    expect(screen.getByText("Selector Locked")).toBeInTheDocument();
+  });
+
+  it("redirects to the replay when the submitted match is ready", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useQuery).mockImplementation((config: { enabled?: boolean } | undefined) =>
+      config?.enabled
+        ? ({ data: { playedMatches: [{ matchId: "4" }] }, status: "success" } as never)
+        : ({ data: undefined, status: "pending" } as never),
+    );
+    vi.mocked(useAccount).mockReturnValue({ address: "0xabc", isConnected: true } as MockAccount as never);
+    vi.mocked(useReadContract).mockImplementation((config: { functionName?: string } | undefined) => {
+      const functionName = config?.functionName;
+      if (functionName === "getPlayersByOwner") {
+        return { data: [{ id: 1n }] } as MockReadContractResult as never;
+      }
+
+      if (functionName === "getMatchList") {
+        return { data: [4] } as MockReadContractResult as never;
+      }
+
+      if (functionName === "getMatch") {
+        return {
+          data: {
+            homeAddress: "0x1",
+            homeTeam: {
+              attackingPlayers: [0n, 0n, 0n],
+              midfieldPlayers: [0n, 0n, 0n],
+              defensivePlayers: [0n, 0n, 0n],
+            },
+            awayAddress: "0xabc",
+            awayTeam: {
+              attackingPlayers: [0n, 0n, 0n],
+              midfieldPlayers: [0n, 0n, 0n],
+              defensivePlayers: [0n, 0n, 0n],
+            },
+            pot: 0n,
+            wagerRequired: 0n,
+          },
+          refetch: vi.fn(),
+        } as MockReadContractResult as never;
+      }
+
+      return { data: undefined } as MockReadContractResult as never;
+    });
+
+    render(
+      <MemoryRouter>
+        <JoinMatchPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Pick Match" }));
+    await user.click(screen.getByRole("button", { name: "Submit Team Mock" }));
+
+    await waitFor(() => {
+      expect(navigateSpy).toHaveBeenCalledWith("/games/recent?matchId=4&autoplay=1");
+    });
   });
 });

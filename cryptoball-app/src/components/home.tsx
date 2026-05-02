@@ -5,6 +5,7 @@ import { playerContract } from "../contracts/playerContract";
 import HomeDisconnected from "./home/HomeDisconnected";
 import SquadDashboard from "./home/SquadDashboard";
 import WelcomeSection from "./home/WelcomeSection";
+import type { Player } from "./player";
 import "./home.css";
 
 const Home = () => {
@@ -20,7 +21,8 @@ const Home = () => {
     },
   });
 
-  const playerCount = (allPlayers as unknown[] | undefined)?.length ?? 0;
+  const players = (allPlayers as Player[] | undefined) ?? [];
+  const playerCount = players.length;
 
   return (
     <div className="home-container">
@@ -29,7 +31,7 @@ const Home = () => {
       ) : playerCount === 0 ? (
         <WelcomeSection />
       ) : (
-        <SquadDashboard playerCount={playerCount} />
+        <SquadDashboard players={players} />
       )}
     </div>
   );

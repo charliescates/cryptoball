@@ -20,6 +20,25 @@ const playerA: Player = {
 const playerB: Player = {
   ...playerA,
   id: 2n,
+  attack: 20n,
+};
+
+const playerC: Player = {
+  ...playerA,
+  id: 3n,
+  defense: 22n,
+};
+
+const playerD: Player = {
+  ...playerA,
+  id: 4n,
+  potential: 95n,
+};
+
+const playerE: Player = {
+  ...playerA,
+  id: 5n,
+  attack: 18n,
 };
 
 const FormationBuilderHarness = () => {
@@ -44,6 +63,9 @@ const FormationBuilderHarness = () => {
       </button>
       <button type="button" onClick={() => builder.handleFormationChange("1-3-1")}>
         Change Formation
+      </button>
+      <button type="button" onClick={() => builder.autoPickFormation([playerA, playerB, playerC, playerD, playerE])}>
+        Auto Pick
       </button>
     </div>
   );
@@ -82,5 +104,15 @@ describe("useFormationBuilder", () => {
     await user.click(screen.getByRole("button", { name: /change formation/i }));
 
     expect(screen.getByText("Selected: 0")).toBeInTheDocument();
+  });
+
+  it("auto-picks a complete formation from available players", async () => {
+    const user = userEvent.setup();
+    render(<FormationBuilderHarness />);
+
+    await user.click(screen.getByRole("button", { name: /auto pick/i }));
+
+    expect(screen.getByText("Selected: 5")).toBeInTheDocument();
+    expect(screen.getByText("Complete: yes")).toBeInTheDocument();
   });
 });

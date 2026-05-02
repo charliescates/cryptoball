@@ -26,7 +26,7 @@ describe("StartGame", () => {
     fireEvent.change(screen.getByLabelText("Away wallet"), {
       target: { value: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" },
     });
-    fireEvent.change(screen.getByLabelText("Wager"), { target: { value: "1.25" } });
+    fireEvent.change(screen.getByLabelText("Shared wager"), { target: { value: "1.25" } });
     fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
 
     expect(resetSpy).toHaveBeenCalled();

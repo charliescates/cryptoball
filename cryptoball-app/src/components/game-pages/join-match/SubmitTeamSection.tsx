@@ -14,6 +14,9 @@ interface SubmitTeamSectionProps {
   isReplayReady: boolean;
   matchDetails?: MatchDetails;
   midfieldPlayers: Player[];
+  onTransactionConfirmed?: () => void;
+  onTransactionFailed?: () => void;
+  onTransactionStarted?: () => void;
   onWatchReplay: () => void;
   selectedMatchId: number | null;
 }
@@ -28,6 +31,9 @@ const SubmitTeamSection = ({
   isReplayReady,
   matchDetails,
   midfieldPlayers,
+  onTransactionConfirmed,
+  onTransactionFailed,
+  onTransactionStarted,
   onWatchReplay,
   selectedMatchId,
 }: SubmitTeamSectionProps) => (
@@ -72,7 +78,10 @@ const SubmitTeamSection = ({
       wager={matchDetails?.wagerRequired ? formatEther(matchDetails.wagerRequired) : "0"}
       disabled={selectedMatchId === null || !isFormationComplete || hasOwnTeamSubmitted}
       disabledLabel={hasOwnTeamSubmitted ? "Team Submitted" : "Team Not Ready"}
-      readyLabel="Lock Team"
+      onTransactionConfirmed={onTransactionConfirmed}
+      onTransactionFailed={onTransactionFailed}
+      onTransactionStarted={onTransactionStarted}
+      readyLabel="Submit Team"
     />
     <div className="match-flow-status" aria-label="Match flow status">
       <div className={`match-flow-step ${selectedMatchId !== null ? "complete" : "pending"}`}>
@@ -97,13 +106,13 @@ const SubmitTeamSection = ({
     <div className="play-match-cta">
       <p className="play-match-copy">
         {isReplayReady
-          ? "The match replay is ready. Open it now and the reveal will start automatically."
+          ? "The match replay is ready. Opening it now with the reveal queued."
           : hasBothTeamsSubmitted
-            ? "Both teams are locked in. Preparing the replay feed..."
+            ? "Both teams are locked in. The match is playing and the replay feed is preparing."
             : "Submit your team, then wait for the opponent to lock in before the replay opens."}
       </p>
       <button className="play-match-button" disabled={!isReplayReady} onClick={onWatchReplay} type="button">
-        {isReplayReady ? "Watch Replay" : hasBothTeamsSubmitted ? "Preparing Replay" : "Waiting for Teams"}
+        {isReplayReady ? "Opening Replay" : hasBothTeamsSubmitted ? "Playing Match" : "Waiting for Teams"}
       </button>
     </div>
   </div>
