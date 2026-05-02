@@ -1,49 +1,29 @@
-import {
-  eyebrowStyle,
-  heroStyle,
-  leadStyle,
-  summaryCardStyle,
-  summaryGridStyle,
-  summaryLabelStyle,
-  summaryTextStyle,
-  titleStyle,
-} from "./styles";
-
 const ChemistryHero = () => (
-  <section style={heroStyle}>
-    <div style={eyebrowStyle}>Rulebook</div>
-    <h1 style={titleStyle}>Chemistry System Guide</h1>
-    <p style={leadStyle}>
-      A quick reference for how player types, placement, and chemistry bonuses work together. Use it while building your
-      squad to see what boosts each setup can unlock.
+  <section className="chemistry-hero">
+    <p className="chemistry-kicker">Squad Chemistry</p>
+    <h1>Plan Stronger Teams</h1>
+    <p>
+      Chemistry rewards smart placement. Match roles to their strongest line, combine players into bonus patterns, and
+      use the builder below to test a shape before you lock your match team.
     </p>
-    <div style={summaryGridStyle}>
-      <SummaryCard
-        label="How to read"
-        text="Start with player roles, then check bonus tiers, then use the position grid."
-      />
-      <SummaryCard
-        label="Gold highlight"
-        text="Players with high potential glow gold. Anchors stay teal so the two roles stay easy to tell apart."
-      />
-      <SummaryCard
-        label="Bonus order"
-        text="Six-point combinations resolve before three-point combinations, and each player only counts once."
-      />
+    <div className="chemistry-hero-summary">
+      <div>
+        <span>1</span>
+        <strong>Pick a shape</strong>
+        <p>Start with the formation that fits your best players.</p>
+      </div>
+      <div>
+        <span>2</span>
+        <strong>Place roles</strong>
+        <p>Use role strengths first, then tune for combos.</p>
+      </div>
+      <div>
+        <span>3</span>
+        <strong>Check bonuses</strong>
+        <p>Major bonuses count first and each player can only be used once.</p>
+      </div>
     </div>
   </section>
-);
-
-interface SummaryCardProps {
-  label: string;
-  text: string;
-}
-
-const SummaryCard = ({ label, text }: SummaryCardProps) => (
-  <div style={summaryCardStyle}>
-    <div style={summaryLabelStyle}>{label}</div>
-    <div style={summaryTextStyle}>{text}</div>
-  </div>
 );
 
 export default ChemistryHero;

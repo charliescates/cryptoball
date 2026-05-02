@@ -26,7 +26,7 @@ const GetPlayers = () => {
   }
 
   return (
-    <div className="player-container">
+    <div className="player-container squad-player-grid">
       {players.map((player) => (
         <SquadPlayerCard key={player.id.toString()} player={player} />
       ))}

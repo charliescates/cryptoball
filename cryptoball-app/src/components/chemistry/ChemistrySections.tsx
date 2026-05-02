@@ -1,164 +1,125 @@
+import ChemistryBuilder from "./ChemistryBuilder";
 import { calcSteps, comboRules, quickRules, roleCards } from "./data";
-import {
-  bandStyle,
-  bonusCardStyle,
-  bonusGridStyle,
-  bonusMetaLabelStyle,
-  bonusSummaryStyle,
-  bonusTextStyle,
-  bonusTitleStyle,
-  bonusTopRowStyle,
-  bulletItemStyle,
-  bulletListStyle,
-  calloutLabelStyle,
-  calloutStyle,
-  calloutTextStyle,
-  gridBandStyle,
-  gridReferenceStyle,
-  guidelineGridStyle,
-  guidelineItemStyle,
-  roleCardStyle,
-  roleGridStyle,
-  roleIconStyle,
-  roleNoteStyle,
-  rolePositionStyle,
-  roleTitleStyle,
-  roleTopRowStyle,
-  rulesStripStyle,
-  sectionHeaderRowStyle,
-  sectionHintStyle,
-  sectionTitleStyle,
-  stepCardStyle,
-  stepIndexStyle,
-  stepTextStyle,
-  stepsGridStyle,
-  tierPillStyle,
-  tierSixStyle,
-  tierThreeStyle,
-} from "./styles";
 
 const ChemistrySections = () => (
   <>
-    <HowItWorksSection />
-    <PlayerTypesSection />
-    <ChemistryBonusesSection />
-    <ReferenceGridSection />
-    <QuickRulesSection />
+    <ChemistryBuilder />
+    <QuickGuideSection />
+    <CombosSection />
+    <RolesSection />
+    <AdvancedRulesSection />
   </>
 );
 
-const HowItWorksSection = () => (
-  <section style={bandStyle}>
-    <h2 style={sectionTitleStyle}>How It Works</h2>
-    <div style={stepsGridStyle}>
-      {calcSteps.map((step, index) => (
-        <div key={step} style={stepCardStyle}>
-          <div style={stepIndexStyle}>{index + 1}</div>
-          <div style={stepTextStyle}>{step}</div>
+const QuickGuideSection = () => (
+  <section className="chemistry-section chemistry-section--guide">
+    <div className="chemistry-section-header">
+      <div>
+        <p className="chemistry-kicker">Quick Guide</p>
+        <h2>Build Chemistry in Four Moves</h2>
+      </div>
+      <p>Use this when you are picking a squad and want the shortest path to a stronger team.</p>
+    </div>
+
+    <div className="chemistry-guide-grid">
+      {quickRules.map((rule, index) => (
+        <div className="chemistry-guide-card" key={rule}>
+          <span>{index + 1}</span>
+          <p>{rule}</p>
         </div>
       ))}
     </div>
   </section>
 );
 
-const PlayerTypesSection = () => (
-  <section style={bandStyle}>
-    <div style={sectionHeaderRowStyle}>
-      <h2 style={sectionTitleStyle}>Player Type Reference</h2>
-      <div style={sectionHintStyle}>Role colors and strengths</div>
+const CombosSection = () => (
+  <section className="chemistry-section">
+    <div className="chemistry-section-header">
+      <div>
+        <p className="chemistry-kicker">Combos</p>
+        <h2>Bonus Reference</h2>
+      </div>
+      <p>Major combos are checked first. A player can only help one chemistry bonus.</p>
     </div>
 
-    <div style={roleGridStyle}>
+    <div className="chemistry-combo-scroll">
+      <table className="chemistry-combo-table">
+        <caption>Chemistry combo reference</caption>
+        <thead>
+          <tr>
+            <th scope="col">Combo</th>
+            <th scope="col">Needs</th>
+            <th scope="col">Best slots</th>
+            <th scope="col">Bonus</th>
+          </tr>
+        </thead>
+        <tbody>
+          {comboRules.map((rule) => (
+            <tr key={`${rule.tier}-${rule.title}`}>
+              <td>
+                <strong>{rule.title}</strong>
+                <small>{rule.tier}</small>
+              </td>
+              <td>{rule.combination}</td>
+              <td>{rule.positions}</td>
+              <td className={rule.tier === "6-Point" ? "chemistry-major-bonus" : ""}>{rule.summary}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+);
+
+const RolesSection = () => (
+  <section className="chemistry-section">
+    <div className="chemistry-section-header">
+      <div>
+        <p className="chemistry-kicker">Roles</p>
+        <h2>Player Type Strengths</h2>
+      </div>
+      <p>Each role has a best home. Put players there first, then adjust for combos.</p>
+    </div>
+
+    <div className="chemistry-role-grid">
       {roleCards.map((role) => (
-        <article key={role.title} style={{ ...roleCardStyle, borderColor: role.color }}>
-          <div style={roleTopRowStyle}>
-            <div style={{ ...roleIconStyle, color: role.color }}>{role.icon}</div>
+        <article className="chemistry-role-card" key={role.title} style={{ borderColor: role.color }}>
+          <div className="chemistry-role-card-top">
+            <span style={{ background: `${role.color}22`, borderColor: role.color, color: role.color }}>
+              {role.shorthand}
+            </span>
             <div>
-              <h3 style={{ ...roleTitleStyle, color: role.color }}>{role.title}</h3>
-              <div style={rolePositionStyle}>{role.position}</div>
+              <h3 style={{ color: role.color }}>{role.title}</h3>
+              <p>{role.position}</p>
             </div>
           </div>
-
-          <ul style={bulletListStyle}>
+          <div className="chemistry-role-bonuses">
             {role.bonuses.map((bonus) => (
-              <li key={bonus} style={bulletItemStyle}>
-                {bonus}
-              </li>
+              <span key={bonus}>{bonus}</span>
             ))}
-          </ul>
-
-          <div style={roleNoteStyle}>{role.note}</div>
-        </article>
-      ))}
-    </div>
-  </section>
-);
-
-const ChemistryBonusesSection = () => (
-  <section style={bandStyle}>
-    <div style={sectionHeaderRowStyle}>
-      <h2 style={sectionTitleStyle}>Chemistry Bonuses</h2>
-      <div style={sectionHintStyle}>Stronger bonus first</div>
-    </div>
-
-    <div style={bonusGridStyle}>
-      {comboRules.map((rule) => (
-        <article key={`${rule.tier}-${rule.title}`} style={bonusCardStyle}>
-          <div style={bonusTopRowStyle}>
-            <div style={{ ...tierPillStyle, ...(rule.tier === "6-Point" ? tierSixStyle : tierThreeStyle) }}>
-              {rule.tier}
-            </div>
-            <div style={bonusSummaryStyle}>{rule.summary}</div>
           </div>
-          <div style={bonusTitleStyle}>{rule.title}</div>
-          <div style={bonusMetaLabelStyle}>Combination</div>
-          <div style={bonusTextStyle}>{rule.combination}</div>
-          <div style={bonusMetaLabelStyle}>Positions</div>
-          <div style={bonusTextStyle}>{rule.positions}</div>
+          <p className="chemistry-role-note">{role.note}</p>
         </article>
       ))}
     </div>
-
-    <div style={rulesStripStyle}>
-      <Callout label="Priority" text="Six-point bonuses are checked before three-point bonuses." />
-      <Callout label="Uniqueness" text="Each player can help with only one chemistry bonus." />
-      <Callout label="Spacing" text="Each block keeps the same spacing so the page stays easy to scan." />
-    </div>
   </section>
 );
 
-const Callout = ({ label, text }: { label: string; text: string }) => (
-  <div style={calloutStyle}>
-    <div style={calloutLabelStyle}>{label}</div>
-    <div style={calloutTextStyle}>{text}</div>
-  </div>
-);
-
-const ReferenceGridSection = () => (
-  <section style={bandStyle}>
-    <h2 style={sectionTitleStyle}>Reference Grid</h2>
-    <div style={gridReferenceStyle}>
-      <GridBand color="#f97316" label="Attack" text="[6] Left [7] Center [8] Right" />
-      <GridBand color="#38bdf8" label="Midfield" text="[3] Left [4] Center [5] Right" />
-      <GridBand color="#14b8a6" label="Defense" text="[0] Left [1] Center [2] Right" />
+const AdvancedRulesSection = () => (
+  <section className="chemistry-section">
+    <div className="chemistry-section-header">
+      <div>
+        <p className="chemistry-kicker">Advanced Rules</p>
+        <h2>How Final Stats Are Built</h2>
+      </div>
+      <p>Useful when you want to understand why a squad produced a specific attack or defense number.</p>
     </div>
-  </section>
-);
 
-const GridBand = ({ color, label, text }: { color: string; label: string; text: string }) => (
-  <div style={{ ...gridBandStyle, borderColor: color }}>
-    <strong>{label}</strong>
-    <span>{text}</span>
-  </div>
-);
-
-const QuickRulesSection = () => (
-  <section style={bandStyle}>
-    <h2 style={sectionTitleStyle}>Quick Rules</h2>
-    <div style={guidelineGridStyle}>
-      {quickRules.map((rule) => (
-        <div key={rule} style={guidelineItemStyle}>
-          {rule}
+    <div className="chemistry-advanced-grid">
+      {calcSteps.map((step, index) => (
+        <div className="chemistry-step-card" key={step}>
+          <span>{index + 1}</span>
+          <p>{step}</p>
         </div>
       ))}
     </div>

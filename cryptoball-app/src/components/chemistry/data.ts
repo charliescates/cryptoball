@@ -1,6 +1,7 @@
 export type RoleCard = {
   title: string;
-  icon: string;
+  id: number;
+  shorthand: string;
   color: string;
   position: string;
   bonuses: string[];
@@ -15,10 +16,29 @@ export type ComboRule = {
   positions: string;
 };
 
+export type ChemistryFormation = {
+  name: string;
+  attack: number;
+  midfield: number;
+  defense: number;
+  summary: string;
+  intent: string;
+};
+
+export const builderFormations: ChemistryFormation[] = [
+  { name: "3-1-1", attack: 3, midfield: 1, defense: 1, summary: "Front foot", intent: "Overload attack" },
+  { name: "1-3-1", attack: 1, midfield: 3, defense: 1, summary: "Control", intent: "Win midfield" },
+  { name: "1-1-3", attack: 1, midfield: 1, defense: 3, summary: "Lockdown", intent: "Protect the back" },
+  { name: "2-2-1", attack: 2, midfield: 2, defense: 1, summary: "Press", intent: "Fast transitions" },
+  { name: "2-1-2", attack: 2, midfield: 1, defense: 2, summary: "Balanced", intent: "Stable shape" },
+  { name: "1-2-2", attack: 1, midfield: 2, defense: 2, summary: "Counter", intent: "Absorb and break" },
+];
+
 export const roleCards: RoleCard[] = [
   {
     title: "Enforcer",
-    icon: "💪",
+    id: 0,
+    shorthand: "ENF",
     color: "#ef4444",
     position: "Defense-first, flexible elsewhere",
     bonuses: ["Attack: +5% Attack", "Midfield: +5% Defense", "Defense: +10% Defense"],
@@ -26,7 +46,8 @@ export const roleCards: RoleCard[] = [
   },
   {
     title: "Target Man",
-    icon: "🎯",
+    id: 1,
+    shorthand: "TGT",
     color: "#f97316",
     position: "Attack",
     bonuses: ["Attack: +10% Attack", "Midfield / Defense: No bonus"],
@@ -34,7 +55,8 @@ export const roleCards: RoleCard[] = [
   },
   {
     title: "Playmaker",
-    icon: "⚡",
+    id: 2,
+    shorthand: "PLY",
     color: "#38bdf8",
     position: "Midfield",
     bonuses: ["Attack: +5% Attack", "Midfield: +10% Attack", "Defense: No bonus"],
@@ -42,7 +64,8 @@ export const roleCards: RoleCard[] = [
   },
   {
     title: "Anchor",
-    icon: "⚓",
+    id: 3,
+    shorthand: "ANC",
     color: "#14b8a6",
     position: "Defense",
     bonuses: ["Attack: No bonus", "Midfield: +5% Defense", "Defense: +10% Defense"],
@@ -56,70 +79,70 @@ export const comboRules: ComboRule[] = [
     title: "Strike Force",
     summary: "+6% Attack",
     combination: "Playmaker + Target Man + Target Man",
-    positions: "Mid-Left + Attack-Left + Attack-Center",
+    positions: "Midfield Left + Attack Left + Attack Center",
   },
   {
     tier: "6-Point",
     title: "Defensive Wall",
     summary: "+6% Defense",
     combination: "Anchor + Enforcer + Enforcer",
-    positions: "Defense-Left + Defense-Center + Defense-Right",
+    positions: "Defense Left + Defense Center + Defense Right",
   },
   {
     tier: "3-Point",
     title: "Balanced Trio",
     summary: "+3% Attack, +3% Defense",
     combination: "Anchor + Playmaker + Target Man",
-    positions: "Defense-Left + Mid-Left + Attack-Left",
+    positions: "Defense Left + Midfield Left + Attack Left",
   },
   {
     tier: "3-Point",
     title: "Midfield Dominance",
     summary: "+3% Attack, +3% Defense",
     combination: "Playmaker + Anchor + Enforcer",
-    positions: "Mid-Left + Mid-Center + Mid-Right",
+    positions: "Midfield Left + Midfield Center + Midfield Right",
   },
   {
     tier: "3-Point",
     title: "Playmaker Link",
     summary: "+3% Attack",
     combination: "Playmaker + Target Man",
-    positions: "Mid-Left + Attack-Left",
+    positions: "Midfield Left + Attack Left",
   },
   {
     tier: "3-Point",
     title: "Pressure Pair",
     summary: "+3% Attack",
     combination: "Target Man + Enforcer",
-    positions: "Attack-Left + Attack-Center",
+    positions: "Attack Left + Attack Center",
   },
   {
     tier: "3-Point",
     title: "Anchor Link",
     summary: "+3% Defense",
     combination: "Anchor + Enforcer",
-    positions: "Defense-Left + Defense-Center",
+    positions: "Defense Left + Defense Center",
   },
   {
     tier: "3-Point",
     title: "Enforcer Duo",
     summary: "+3% Defense",
     combination: "Enforcer + Enforcer",
-    positions: "Defense-Left + Defense-Center",
+    positions: "Defense Left + Defense Center",
   },
 ];
 
 export const calcSteps = [
-  "Start with each player's raw attack and defense values.",
-  "Apply the base position multipliers for attack, midfield, and defense slots.",
-  "Apply player type bonuses based on the position each player occupies.",
-  "Resolve chemistry bonuses, checking the highest-value combinations first.",
-  "Round the result to the nearest whole number for the final match stats.",
+  "Choose a formation that gives your best roles enough space.",
+  "Place players where their role has the strongest position bonus.",
+  "Build one major chemistry combo before chasing smaller bonuses.",
+  "Use leftover slots to add support combos or balance attack and defense.",
+  "Lock the team once the final attack and defense numbers fit your plan.",
 ];
 
 export const quickRules = [
   "Match each player type to the role that brings out its strengths.",
   "Aim for six-point combos first, then add three-point support.",
-  "Look for gold when a player has elite potential, and teal when the player is an Anchor.",
+  "Gold means elite potential. Teal means Anchor. Both are easy to spot while building.",
   "Think of chemistry as squad building, not just a list of hidden bonuses.",
 ];
