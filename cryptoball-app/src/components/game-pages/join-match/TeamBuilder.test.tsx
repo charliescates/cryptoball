@@ -39,6 +39,7 @@ describe("TeamBuilder", () => {
     const onFormationChange = vi.fn();
     const onPlayerClick = vi.fn();
     const onPositionClick = vi.fn();
+    const onUseRecentSquad = vi.fn();
 
     render(
       <TeamBuilder
@@ -62,6 +63,9 @@ describe("TeamBuilder", () => {
         onFormationChange={onFormationChange}
         onPlayerClick={onPlayerClick}
         onPositionClick={onPositionClick}
+        onUseRecentSquad={onUseRecentSquad}
+        recentSquadLabel="Use squad from match #4"
+        recentSquadMessage="Restored 5 players from your most recent match."
       />,
     );
 
@@ -69,11 +73,14 @@ describe("TeamBuilder", () => {
     expect(screen.getByTestId("formation-grid")).toHaveTextContent("Your Team");
     expect(screen.getByTestId("player-roster")).toHaveTextContent("5");
     expect(screen.getByText(/choose players for your 3-1-1 formation/i)).toBeInTheDocument();
+    expect(screen.getByText(/restored 5 players/i)).toBeInTheDocument();
 
+    await user.click(screen.getByRole("button", { name: /use squad from match #4/i }));
     await user.click(screen.getByRole("button", { name: /2-1-2 balanced stable shape 2 att \/ 1 mid \/ 2 def/i }));
     await user.click(screen.getByRole("button", { name: "Best Team" }));
     await user.click(screen.getByRole("button", { name: "Reset Team" }));
 
+    expect(onUseRecentSquad).toHaveBeenCalled();
     expect(onFormationChange).toHaveBeenCalledWith("2-1-2");
     expect(onAutoPick).toHaveBeenCalled();
     expect(onClearFormation).toHaveBeenCalled();

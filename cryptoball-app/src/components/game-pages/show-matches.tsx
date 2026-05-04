@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { request } from "graphql-request";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useAccount } from "wagmi";
 import { ReplayPositionCard } from "../formation-grid-parts/ReplayPositionCard";
 import { getPlayerName } from "../utils/playerName";
 import {
@@ -98,7 +99,7 @@ function getPlayerOfMatch(timeline: ReturnType<typeof getGoalTimeline>) {
 
 function renderFormationRow(
   label: string,
-  icon: string,
+  _icon: string,
   playerIds: string[],
   goalCounts: Record<string, number>,
   latestScorer: string | null,
@@ -107,10 +108,8 @@ function renderFormationRow(
   if (playerIds.length === 0) return null;
   return (
     <div className="formation-row">
-      <div className="position-label">
-        {icon} {label}
-      </div>
-      <div className="formation-positions" style={{ gridTemplateColumns: `repeat(${playerIds.length}, 1fr)` }}>
+      <div className="position-label">{label}</div>
+      <div className="formation-positions matches-history-formation-positions">
         {playerIds.map((id) => (
           <ReplayPositionCard
             key={id}
@@ -137,8 +136,102 @@ function shuffleArray<T>(arr: T[]): T[] {
   return copy;
 }
 
+function getVisibleScore(visibleGoals: GoalEvent[]) {
+  return {
+    away: visibleGoals.filter((goal) => goal.teamLabel === "Away").length,
+    home: visibleGoals.filter((goal) => goal.teamLabel === "Home").length,
+  };
+}
+
+function ReplayBroadcastHeader({
+  awayScore,
+  homeScore,
+  latestGoal,
+  totalGoals,
+  visibleGoalCount,
+}: {
+  awayScore: number | string;
+  homeScore: number | string;
+  latestGoal: GoalEvent | null;
+  totalGoals: number;
+  visibleGoalCount: number;
+}) {
+  const progress = totalGoals > 0 ? Math.min(100, Math.round((visibleGoalCount / totalGoals) * 100)) : 100;
+
+  return (
+    <section className="matches-history-broadcast" aria-label="Replay broadcast">
+      <div className="matches-history-live-bar">
+        <span className="matches-history-live-dot" aria-hidden="true" />
+        <span>Match Replay</span>
+      </div>
+      <div className="matches-history-broadcast-score">
+        <span>Home</span>
+        <strong>
+          {homeScore} - {awayScore}
+        </strong>
+        <span>Away</span>
+      </div>
+      <div className="matches-history-replay-progress" aria-label={`Replay progress ${progress}%`}>
+        <span style={{ width: `${progress}%` }} />
+      </div>
+      <div className="matches-history-latest-goal">
+        <span>
+          {visibleGoalCount > 0 ? `Goal ${visibleGoalCount} of ${Math.max(totalGoals, visibleGoalCount)}` : "Kick off"}
+        </span>
+        <strong>
+          {latestGoal ? `${latestGoal.teamLabel}: ${latestGoal.playerName}` : "Waiting for the first chance"}
+        </strong>
+      </div>
+    </section>
+  );
+}
+
+function getRematchLink(match: PlayedMatch, currentAddress?: string) {
+  const current = currentAddress?.toLowerCase();
+  const isAwayManager = current === match.awayAddress.toLowerCase();
+  const home = isAwayManager ? match.awayAddress : currentAddress || match.homeAddress;
+  const away = isAwayManager ? match.homeAddress : match.awayAddress;
+  const searchParams = new URLSearchParams({
+    away,
+    home,
+    rematch: "1",
+    rematchFrom: match.matchId,
+  });
+
+  return `/games/start?${searchParams.toString()}`;
+}
+
+function RematchPanel({ currentAddress, match }: { currentAddress?: string; match: PlayedMatch }) {
+  const current = currentAddress?.toLowerCase();
+  const isKnownManager = current === match.homeAddress.toLowerCase() || current === match.awayAddress.toLowerCase();
+  const opponentAddress =
+    current === match.awayAddress.toLowerCase()
+      ? match.homeAddress
+      : current === match.homeAddress.toLowerCase()
+        ? match.awayAddress
+        : match.awayAddress;
+
+  return (
+    <section className="rematch-panel" aria-label="Post-match actions">
+      <div>
+        <span>Run it back</span>
+        <strong>Play again vs {shortenAddress(opponentAddress)}</strong>
+        <p>
+          {isKnownManager
+            ? "Creates a new fixture with this opponent prefilled."
+            : "Prefills a new fixture from this replay."}
+        </p>
+      </div>
+      <Link className="matches-history-reveal-button rematch-button" to={getRematchLink(match, currentAddress)}>
+        Play Again
+      </Link>
+    </section>
+  );
+}
+
 export default function ShowMatches() {
   const [searchParams] = useSearchParams();
+  const { address } = useAccount();
   const [revealPhases, setRevealPhases] = useState<Record<string, RevealPhase>>({});
   const [animSteps, setAnimSteps] = useState<Record<string, number>>({});
   const [shuffledTimelines, setShuffledTimelines] = useState<Record<string, GoalEvent[]>>({});
@@ -253,6 +346,8 @@ export default function ShowMatches() {
             const animTimeline = shuffledTimelines[match.id] ?? timeline;
             const visibleGoals = animTimeline.slice(0, step);
             const latestScorer = visibleGoals.length > 0 ? visibleGoals[visibleGoals.length - 1].playerId : null;
+            const latestGoal = visibleGoals.length > 0 ? visibleGoals[visibleGoals.length - 1] : null;
+            const visibleScore = getVisibleScore(visibleGoals);
             const homeFormation = buildFormation(
               match.homeAttackingPlayers,
               match.homeMidfieldPlayers,
@@ -300,10 +395,13 @@ export default function ShowMatches() {
 
                 {phase === "animating" && (
                   <div className="matches-history-animation-body">
-                    <div className="matches-history-live-bar">
-                      <span className="matches-history-live-dot" aria-hidden="true" />
-                      <span>Match Replay</span>
-                    </div>
+                    <ReplayBroadcastHeader
+                      awayScore={visibleScore.away}
+                      homeScore={visibleScore.home}
+                      latestGoal={latestGoal}
+                      totalGoals={animTimeline.length}
+                      visibleGoalCount={visibleGoals.length}
+                    />
 
                     <div className="matches-history-replay-teams">
                       <section
@@ -399,6 +497,14 @@ export default function ShowMatches() {
 
                 {phase === "complete" && (
                   <div className="matches-history-reveal-body">
+                    <ReplayBroadcastHeader
+                      awayScore={match.awayScore}
+                      homeScore={match.homeScore}
+                      latestGoal={timeline.length > 0 ? timeline[timeline.length - 1] : null}
+                      totalGoals={timeline.length}
+                      visibleGoalCount={timeline.length}
+                    />
+
                     <section className="match-centre-summary" aria-label={`Match ${match.matchId} centre`}>
                       <div>
                         <span>Final score</span>
@@ -496,6 +602,7 @@ export default function ShowMatches() {
                         <div className="matches-history-state">No scorer events were indexed for this match.</div>
                       )}
                     </section>
+                    <RematchPanel currentAddress={address} match={match} />
                   </div>
                 )}
               </li>

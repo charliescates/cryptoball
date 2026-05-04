@@ -405,18 +405,99 @@ form {
   gap: 18px;
 }
 
-/* Two-column layout for the replay team formations */
+.matches-history-broadcast {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(190px, 1fr) minmax(180px, 1.1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(126, 240, 167, 0.16);
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 0%, rgba(126, 240, 167, 0.16), transparent 38%),
+    linear-gradient(180deg, rgba(8, 13, 28, 0.96), rgba(6, 10, 22, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.matches-history-broadcast-score {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.matches-history-broadcast-score span,
+.matches-history-latest-goal span {
+  color: rgba(176, 184, 193, 0.72);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.matches-history-broadcast-score strong {
+  color: #ffffff;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+  text-shadow: 0 12px 30px rgba(126, 240, 167, 0.16);
+}
+
+.matches-history-replay-progress {
+  grid-column: 1 / -1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.matches-history-replay-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7ef0a7, #38bdf8);
+  transition: width 0.5s ease;
+}
+
+.matches-history-latest-goal {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matches-history-latest-goal strong {
+  display: block;
+  margin-top: 5px;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .matches-history-replay-teams {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.matches-history-replay-teams > * {
+  min-width: 0;
 }
 
 .matches-history-team-card--replay {
+  width: 100%;
+  max-width: 100%;
   padding: 18px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)), rgba(7, 12, 26, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .matches-history-team-card--replay h3 {
@@ -424,22 +505,114 @@ form {
   color: #ffffff;
 }
 
+.matches-history-team-card--replay .formation-grid-wrapper {
+  gap: 12px;
+}
+
+.matches-history-team-card--replay .formation-row {
+  gap: 7px;
+}
+
+.matches-history-team-card--replay .position-label {
+  width: fit-content;
+  padding: 5px 9px;
+  border-color: rgba(126, 240, 167, 0.18);
+  border-radius: 999px;
+  background: rgba(126, 240, 167, 0.08);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.matches-history-team-card--replay .formation-positions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+}
+
+.matches-history-team-card--replay .position {
+  flex: 1 1 180px;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  align-items: stretch;
+  overflow: hidden;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.matches-history-team-card--replay .position-content,
+.matches-history-team-card--replay .position-header {
+  min-width: 0;
+}
+
+.matches-history-team-card--replay .position-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.matches-history-team-card--replay .position-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.matches-history-team-card--replay .position-avatar {
+  width: 42px;
+  height: 50px;
+  border-radius: 10px;
+}
+
+.matches-history-team-card--replay .player-name {
+  color: #ffffff;
+  font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matches-history-team-card--replay .position-role-pill {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 3px 6px;
+  font-size: 0.56rem;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 1180px) {
+  .matches-history-replay-teams {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Goal count badge on position cards */
 .replay-goal-count {
   display: flex;
   align-items: center;
   gap: 5px;
+  max-width: 100%;
   margin-top: 8px;
-  padding: 4px 9px;
+  padding: 4px 7px;
   border-radius: 999px;
   background: rgba(126, 240, 167, 0.14);
   border: 1px solid rgba(126, 240, 167, 0.3);
   width: fit-content;
 }
 
+.replay-goal-count--empty {
+  opacity: 0;
+}
+
 .replay-goal-count-ball {
   font-size: 0.85em;
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .replay-goal-count-num {
@@ -464,11 +637,12 @@ form {
 
 @keyframes positionScorePulse {
   0% {
-    transform: scale(1.06);
     box-shadow: 0 0 0 8px rgba(126, 240, 167, 0.35);
   }
+  45% {
+    box-shadow: 0 0 0 4px rgba(126, 240, 167, 0.18), 0 0 24px rgba(126, 240, 167, 0.26);
+  }
   100% {
-    transform: scale(1);
     box-shadow: 0 0 0 0 rgba(126, 240, 167, 0);
   }
 }
@@ -510,6 +684,42 @@ form {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rematch-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(126, 240, 167, 0.18);
+  border-radius: 16px;
+  background: rgba(126, 240, 167, 0.06);
+}
+
+.rematch-panel span {
+  color: rgba(176, 184, 193, 0.72);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.rematch-panel strong {
+  display: block;
+  margin-top: 5px;
+  color: #ffffff;
+}
+
+.rematch-panel p {
+  margin: 5px 0 0;
+  color: rgba(176, 184, 193, 0.82);
+  font-size: 0.84rem;
+}
+
+.rematch-button {
+  flex: 0 0 auto;
+  text-decoration: none;
 }
 
 .matches-history-goal-reveal-panel h3 {
@@ -3041,7 +3251,7 @@ form {
   width: 100%;
   max-width: 1480px;
   margin: 0 auto;
-  padding: clamp(18px, 3vw, 34px) clamp(14px, 2.6vw, 24px) 0;
+  padding: clamp(24px, 3.2vw, 38px) clamp(14px, 2.6vw, 24px) 0;
   box-sizing: border-box;
 }
 
@@ -3267,6 +3477,16 @@ form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  margin-top: 12px;
+}
+
+.academy-card-actions button {
+  min-height: 28px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.64rem;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
 }
 
 .academy-card-actions button.active {
@@ -3278,7 +3498,7 @@ form {
 .player-detail-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 2000;
   display: flex;
   justify-content: flex-end;
   background: rgba(0, 0, 0, 0.56);
@@ -3288,17 +3508,23 @@ form {
   width: min(100%, 440px);
   height: 100%;
   overflow-y: auto;
+  margin: 0;
   padding: 22px;
   box-sizing: border-box;
   background: #08101f;
+  color: #ffffff;
+  border: 0;
   border-left: 1px solid rgba(0, 255, 109, 0.2);
   box-shadow: -22px 0 50px rgba(0, 0, 0, 0.36);
 }
 
 .player-detail-close {
-  display: inline-flex;
-  margin-left: auto;
-  margin-bottom: 18px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  width: fit-content;
+  margin: 0 0 18px auto;
   padding: 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
@@ -4263,6 +4489,24 @@ form {
   flex-wrap: wrap;
 }
 
+.recent-squad-button {
+  padding: 12px 16px;
+  border: 1px solid rgba(126, 240, 167, 0.24);
+  border-radius: 8px;
+  background: rgba(126, 240, 167, 0.09);
+  color: #dfffe9;
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recent-squad-message {
+  margin: -4px 0 14px;
+  color: rgba(176, 184, 193, 0.88);
+  font-size: 0.86rem;
+}
+
 .auto-pick-button {
   padding: 12px 16px;
   background: linear-gradient(135deg, #00ff6d 0%, #39ff8e 100%);
@@ -4658,9 +4902,15 @@ form {
   .academy-card-actions {
     grid-template-columns: 1fr;
     gap: 6px;
+    margin-top: 9px;
   }
 
-  .academy-card-actions button,
+  .academy-card-actions button {
+    min-height: 24px;
+    padding: 5px 6px;
+    font-size: 0.56rem;
+  }
+
   .player-detail-trigger {
     padding: 7px 8px;
     font-size: 0.66rem;
@@ -4673,6 +4923,73 @@ form {
     grid-template-columns: 1fr;
   }
 
+  .matches-history-broadcast {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .matches-history-broadcast-score {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .matches-history-broadcast-score strong {
+    font-size: clamp(1.8rem, 12vw, 2.6rem);
+  }
+
+  .matches-history-latest-goal {
+    padding: 10px;
+  }
+
+  .rematch-panel {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .rematch-button {
+    text-align: center;
+  }
+
+  .matches-history-team-card--replay .formation-positions {
+    gap: 7px;
+  }
+
+  .matches-history-team-card--replay .position {
+    flex-basis: calc(50% - 7px);
+    padding: 8px;
+  }
+
+  .matches-history-team-card--replay .position-header {
+    align-items: center;
+    gap: 6px;
+  }
+
+  .matches-history-team-card--replay .position-avatar {
+    width: 30px;
+    height: 38px;
+  }
+
+  .matches-history-team-card--replay .player-name {
+    font-size: 0.62rem;
+  }
+
+  .matches-history-team-card--replay .position-role-pill {
+    padding: 2px 5px;
+    font-size: 0.5rem;
+  }
+
+  .replay-goal-count {
+    gap: 3px;
+    padding: 3px 5px;
+  }
+
+  .replay-goal-count-ball,
+  .replay-goal-count-num {
+    font-size: 0.52rem;
+  }
+
   .join-flow-actions {
     flex-direction: column;
     align-items: stretch;
@@ -4681,8 +4998,15 @@ form {
   .join-flow-actions button,
   .clear-formation-button,
   .auto-pick-button,
+  .recent-squad-button,
   .add-team-button,
   .play-match-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .matches-history-team-card--replay .position {
+    flex-basis: 100%;
   }
 }

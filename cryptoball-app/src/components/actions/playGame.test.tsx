@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { parseEther } from "viem";
 import { describe, expect, it, vi } from "vitest";
 
@@ -21,7 +22,11 @@ vi.mock("wagmi", () => ({
 
 describe("StartGame", () => {
   it("submits the game creation transaction", async () => {
-    render(<StartGame />);
+    render(
+      <MemoryRouter>
+        <StartGame />
+      </MemoryRouter>,
+    );
 
     fireEvent.change(screen.getByLabelText("Away wallet"), {
       target: { value: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" },
@@ -40,5 +45,17 @@ describe("StartGame", () => {
         ],
       }),
     );
+  });
+
+  it("prefills a rematch from the query string", () => {
+    render(
+      <MemoryRouter initialEntries={["/games/start?home=0xhome&away=0xaway&wager=0.25&rematch=1"]}>
+        <StartGame />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText("Home wallet")).toHaveValue("0xhome");
+    expect(screen.getByLabelText("Away wallet")).toHaveValue("0xaway");
+    expect(screen.getByLabelText("Shared wager")).toHaveValue("0.25");
   });
 });

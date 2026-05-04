@@ -21,6 +21,7 @@ import {
   matchResultsUrl,
   playedMatchByMatchIdQuery,
 } from "./matchResultsQuery";
+import { getRecentMatchSquad, restoreRecentMatchSquad, saveRecentMatchSquad } from "./recentMatchSquad";
 
 const hasSubmittedTeam = (team?: MatchDetails["homeTeam"]) =>
   !!team &&
@@ -78,6 +79,7 @@ const JoinMatchPage = () => {
   const [isTeamSubmissionPending, setIsTeamSubmissionPending] = useState(false);
   const [isTeamTransactionConfirmed, setIsTeamTransactionConfirmed] = useState(false);
   const [playedMatchId, setPlayedMatchId] = useState<number | null>(null);
+  const [recentSquadMessage, setRecentSquadMessage] = useState<string | null>(null);
 
   const formationBuilder = useFormationBuilder();
 
@@ -155,6 +157,8 @@ const JoinMatchPage = () => {
   }, [account.address, typedMatchDetails]);
 
   const hasLockedTeam = hasOwnTeamSubmitted || isTeamSubmissionPending || isTeamTransactionConfirmed;
+  const recentSquad = getRecentMatchSquad();
+  const canUseRecentSquad = !!recentSquad && !hasLockedTeam && ownedPlayers.length > 0;
   const shouldPollReplay = hasLockedTeam || bothTeamsSubmitted || playedMatchId !== null;
   const selectedMatchIdText = selectedMatchId?.toString();
   const { data: replayData, status: replayStatus } = useQuery<MatchesResponse>({
@@ -195,7 +199,59 @@ const JoinMatchPage = () => {
     setIsTeamSubmissionPending(false);
     setIsTeamTransactionConfirmed(false);
     setPlayedMatchId(null);
+    setRecentSquadMessage(null);
   }, []);
+
+  const getOpponentAddress = useCallback(() => {
+    if (!typedMatchDetails || !account.address) return undefined;
+    const currentAddress = account.address.toLowerCase();
+
+    if (typedMatchDetails.homeAddress.toLowerCase() === currentAddress) {
+      return typedMatchDetails.awayAddress;
+    }
+
+    if (typedMatchDetails.awayAddress.toLowerCase() === currentAddress) {
+      return typedMatchDetails.homeAddress;
+    }
+
+    return undefined;
+  }, [account.address, typedMatchDetails]);
+
+  const saveSubmittedSquad = useCallback(() => {
+    if (selectedMatchId === null) return;
+
+    saveRecentMatchSquad({
+      attackingPlayerIds: formationBuilder.attackingPlayers.map((player) => player.id.toString()),
+      defensivePlayerIds: formationBuilder.defensivePlayers.map((player) => player.id.toString()),
+      formationName: formationBuilder.selectedFormation.name,
+      matchId: selectedMatchId,
+      midfieldPlayerIds: formationBuilder.midfieldPlayers.map((player) => player.id.toString()),
+      opponentAddress: getOpponentAddress(),
+    });
+  }, [
+    formationBuilder.attackingPlayers,
+    formationBuilder.defensivePlayers,
+    formationBuilder.midfieldPlayers,
+    formationBuilder.selectedFormation.name,
+    getOpponentAddress,
+    selectedMatchId,
+  ]);
+
+  const handleUseRecentSquad = useCallback(() => {
+    const restoredSquad = restoreRecentMatchSquad(ownedPlayers, getRecentMatchSquad());
+
+    if (!restoredSquad) {
+      setRecentSquadMessage("No recent squad is available yet.");
+      return;
+    }
+
+    formationBuilder.applyFormation(restoredSquad.formation, restoredSquad.selectedFormation);
+    setRecentSquadMessage(
+      restoredSquad.restoredCount === restoredSquad.totalCount
+        ? `Restored ${restoredSquad.restoredCount} players from your most recent match.`
+        : `Restored ${restoredSquad.restoredCount} of ${restoredSquad.totalCount} players. Pick replacements for the rest.`,
+    );
+  }, [formationBuilder, ownedPlayers]);
 
   useEffect(() => {
     if (playedMatchId !== null || isReplayReady) {
@@ -237,6 +293,9 @@ const JoinMatchPage = () => {
               onFormationChange={formationBuilder.handleFormationChange}
               onPlayerClick={formationBuilder.handlePlayerClick}
               onPositionClick={formationBuilder.handlePositionClick}
+              onUseRecentSquad={canUseRecentSquad ? handleUseRecentSquad : undefined}
+              recentSquadLabel={recentSquad ? `Use squad from match #${recentSquad.matchId}` : undefined}
+              recentSquadMessage={recentSquadMessage}
             />
           )}
 
@@ -253,7 +312,10 @@ const JoinMatchPage = () => {
             isReplayReady={isReplayReady}
             onTransactionConfirmed={handleTeamTransactionConfirmed}
             onTransactionFailed={handleTeamTransactionFailed}
-            onTransactionStarted={() => setIsTeamSubmissionPending(true)}
+            onTransactionStarted={() => {
+              saveSubmittedSquad();
+              setIsTeamSubmissionPending(true);
+            }}
             onWatchReplay={handleWatchReplay}
           />
         </>

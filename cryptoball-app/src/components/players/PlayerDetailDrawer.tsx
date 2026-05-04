@@ -1,3 +1,5 @@
+import { type MouseEvent, useEffect } from "react";
+
 import { formatPol } from "../academy/formatters";
 import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
 import type { Player } from "../player";
@@ -35,6 +37,20 @@ const DetailStat = ({ label, value }: { label: string; value: string }) => (
 );
 
 const PlayerDetailDrawer = (props: PlayerDetailDrawerProps) => {
+  useEffect(() => {
+    if (!props.player) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        props.onClose();
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [props.player, props.onClose]);
+
   if (!props.player) return null;
 
   const { player } = props;
@@ -42,10 +58,15 @@ const PlayerDetailDrawer = (props: PlayerDetailDrawerProps) => {
   const playerTypeName = getPlayerTypeName(player.playerType);
   const playerName = getPlayerName(player.id);
   const progressLabel = getProgressLabel(player.potential, player.attack, player.defense);
+  const closeOnBackdropPress = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      props.onClose();
+    }
+  };
 
   return (
-    <div className="player-detail-backdrop" role="presentation">
-      <aside aria-label={`${playerName} details`} className="player-detail-drawer">
+    <div className="player-detail-backdrop" role="presentation" onMouseDown={closeOnBackdropPress}>
+      <dialog open aria-label={`${playerName} details`} aria-modal="true" className="player-detail-drawer">
         <button className="player-detail-close" type="button" onClick={props.onClose}>
           Close
         </button>
@@ -90,7 +111,7 @@ const PlayerDetailDrawer = (props: PlayerDetailDrawerProps) => {
               : "Shortlist this prospect if their potential or role fills a current squad gap."}
           </p>
         </section>
-      </aside>
+      </dialog>
     </div>
   );
 };

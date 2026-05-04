@@ -18,6 +18,9 @@ interface TeamBuilderProps {
   onFormationChange: (formationName: string) => void;
   onPlayerClick: (player: Player) => void;
   onPositionClick: (index: number) => void;
+  onUseRecentSquad?: () => void;
+  recentSquadLabel?: string;
+  recentSquadMessage?: string | null;
 }
 
 const TeamBuilder = ({
@@ -34,6 +37,9 @@ const TeamBuilder = ({
   onFormationChange,
   onPlayerClick,
   onPositionClick,
+  onUseRecentSquad,
+  recentSquadLabel,
+  recentSquadMessage,
 }: TeamBuilderProps) => (
   <div className="team-building-section join-flow-shell">
     <div className="team-header join-flow-header">
@@ -43,6 +49,11 @@ const TeamBuilder = ({
         <p className="join-flow-copy">Pick a shape, tap a pitch slot, then choose the player you want in that role.</p>
       </div>
       <div className="join-flow-actions">
+        {onUseRecentSquad ? (
+          <button className="recent-squad-button" onClick={onUseRecentSquad} type="button">
+            {recentSquadLabel ?? "Use recent squad"}
+          </button>
+        ) : null}
         <button className="auto-pick-button" onClick={onAutoPick} disabled={ownedPlayers.length < 5} type="button">
           Best Team
         </button>
@@ -51,6 +62,7 @@ const TeamBuilder = ({
         </button>
       </div>
     </div>
+    {recentSquadMessage ? <p className="recent-squad-message">{recentSquadMessage}</p> : null}
 
     <div className="match-readiness-panel" aria-label="Match readiness">
       <div>

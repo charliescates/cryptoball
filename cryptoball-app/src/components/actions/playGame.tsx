@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { parseEther } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
@@ -8,10 +9,16 @@ import StartGameForm from "./start-game/StartGameForm";
 
 const StartGame = () => {
   const { address } = useAccount();
-  const [homeAddress, setHomeAddress] = useState("");
-  const [awayAddress, setAwayAddress] = useState("");
-  const [wager, setWager] = useState("");
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rematchHomeAddress = searchParams.get("home");
+  const rematchAwayAddress = searchParams.get("away");
+  const rematchWager = searchParams.get("wager");
+  const [homeAddress, setHomeAddress] = useState(() => rematchHomeAddress ?? "");
+  const [awayAddress, setAwayAddress] = useState(() => rematchAwayAddress ?? "");
+  const [wager, setWager] = useState(() => rematchWager ?? "");
   const [editable, setEditable] = useState(true);
+  const shouldOpenJoinAfterCreate = searchParams.get("rematch") === "1";
 
   useEffect(() => {
     if (address && !homeAddress) {
@@ -43,6 +50,12 @@ const StartGame = () => {
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   });
+
+  useEffect(() => {
+    if (isConfirmed && shouldOpenJoinAfterCreate) {
+      navigate("/games/join");
+    }
+  }, [isConfirmed, navigate, shouldOpenJoinAfterCreate]);
 
   const statusLabel = isConfirmed ? "Confirmed" : isConfirming ? "Confirming" : isPending ? "Submitting" : "Ready";
   const hasReadyFixture = Boolean(homeAddress && awayAddress && wager);

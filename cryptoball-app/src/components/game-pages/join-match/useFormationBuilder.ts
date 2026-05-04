@@ -103,6 +103,18 @@ export const useFormationBuilder = () => {
     setActivePositionIndex(nextEmptyIndex === -1 ? null : nextEmptyIndex);
   };
 
+  const applyFormation = (nextFormation: (Player | null)[], nextSelectedFormation: Formation) => {
+    const normalizedFormation = [...nextFormation].slice(0, 5);
+    while (normalizedFormation.length < 5) {
+      normalizedFormation.push(null);
+    }
+
+    setSelectedFormation(nextSelectedFormation);
+    setFormation(normalizedFormation);
+    const nextEmptyIndex = normalizedFormation.findIndex((player) => player === null);
+    setActivePositionIndex(nextEmptyIndex === -1 ? null : nextEmptyIndex);
+  };
+
   const handleFormationChange = (formationName: string) => {
     const nextFormation = FORMATIONS.find((item) => item.name === formationName);
 
@@ -126,6 +138,7 @@ export const useFormationBuilder = () => {
   return {
     activePositionIndex,
     activePositionMeta,
+    applyFormation,
     attackingPlayers,
     autoPickFormation,
     clearFormation,
