@@ -15,6 +15,7 @@ import Test from './components/test.tsx'
 import Games from './components/games.tsx'
 import Academy from './components/academy/Academy.tsx'
 import Chemistry from './components/chemistry.tsx'
+import TransferMarket from './components/market/TransferMarket.tsx'
 
 const globalWithBuffer = globalThis as typeof globalThis & {
   Buffer: typeof Buffer
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/players" element={<GetPlayers />} />
               <Route path="/games/*" element={<Games />} />
               <Route path="/academy" element={<Academy />} />
+              <Route path="/market/*" element={<TransferMarket />} />
               <Route path="/chemistry" element={<Chemistry />} />
               <Route path="/test" element={<Test />} />
             </Routes>

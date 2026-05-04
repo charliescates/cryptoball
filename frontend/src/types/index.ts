@@ -26,11 +26,17 @@ export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
 export type { Math } from "./@openzeppelin/contracts/utils/math/Math";
 export { Math__factory } from "./factories/@openzeppelin/contracts/utils/math/Math__factory";
+export type { ReentrancyGuard } from "./@openzeppelin/contracts/utils/ReentrancyGuard";
+export { ReentrancyGuard__factory } from "./factories/@openzeppelin/contracts/utils/ReentrancyGuard__factory";
 export type { Strings } from "./@openzeppelin/contracts/utils/Strings";
 export { Strings__factory } from "./factories/@openzeppelin/contracts/utils/Strings__factory";
 export type { Academy } from "./contracts/Academy";
 export { Academy__factory } from "./factories/contracts/Academy__factory";
 export type { Game } from "./contracts/Game";
 export { Game__factory } from "./factories/contracts/Game__factory";
+export type { IPlayerToken } from "./contracts/Market.sol/IPlayerToken";
+export { IPlayerToken__factory } from "./factories/contracts/Market.sol/IPlayerToken__factory";
+export type { Market } from "./contracts/Market.sol/Market";
+export { Market__factory } from "./factories/contracts/Market.sol/Market__factory";
 export type { PlayerToken } from "./contracts/PlayerToken";
 export { PlayerToken__factory } from "./factories/contracts/PlayerToken__factory";

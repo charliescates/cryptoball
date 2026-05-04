@@ -36,7 +36,6 @@ const StartGame = () => {
       abi: gameContract.abi,
       functionName: "createGame",
       args: [parseEther(wager), homeAddress, awayAddress],
-      value: parseEther(wager),
       gas: 1000000n,
     });
   };

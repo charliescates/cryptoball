@@ -37,6 +37,7 @@ function Header() {
             <li><NavLink to="/players" className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setMenuOpen(false)}>Squad</NavLink></li>
             <li><NavLink to="/games" className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setMenuOpen(false)}>Games</NavLink></li>
             <li><NavLink to="/academy" className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setMenuOpen(false)}>Academy</NavLink></li>
+            <li><NavLink to="/market" className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setMenuOpen(false)}>Market</NavLink></li>
             <li><NavLink to="/chemistry" className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setMenuOpen(false)}>Chemistry</NavLink></li>
           </ul>
         </nav>

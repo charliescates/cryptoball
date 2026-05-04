@@ -1,0 +1,35 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Market
+    network: matic
+    source:
+      address: "0xf1DB60B2f781E754f9Bb744C09396D4586AdD651"
+      abi: Market
+      startBlock: 86388581
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - BidPlaced
+        - BoughtNow
+        - Finalized
+        - Listed
+      abis:
+        - name: Market
+          file: ./abis/Market.json
+      eventHandlers:
+        - event: BidPlaced(uint256,address,uint256)
+          handler: handleBidPlaced
+        - event: BoughtNow(uint256,address,uint256)
+          handler: handleBoughtNow
+        - event: Finalized(uint256,address,uint256)
+          handler: handleFinalized
+        - event: Listed(uint256,address,uint256,uint256,uint256)
+          handler: handleListed
+      file: ./src/market.ts

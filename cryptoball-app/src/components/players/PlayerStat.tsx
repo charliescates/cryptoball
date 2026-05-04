@@ -37,6 +37,7 @@ const valueStyle: CSSProperties = {
 const inlineStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "baseline",
+  justifyContent: "flex-start",
   gap: "6px",
 };
 

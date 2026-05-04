@@ -3,6 +3,7 @@ import { zeroAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
 import { playerContract } from "./contracts/playerContract";
+import { useMyListedTokenIds } from "./market/useMyListedTokenIds";
 import type { Player } from "./player";
 import PlayerDetailDrawer from "./players/PlayerDetailDrawer";
 import SquadPlayerCard from "./players/SquadPlayerCard";
@@ -32,10 +33,14 @@ const GetPlayers = () => {
     args: [account.address ?? zeroAddress],
     query: {
       enabled: account.isConnected && !!account.address,
+      refetchInterval: 12_000,
     },
   });
 
-  const players = (allPlayers as Player[] | undefined) ?? [];
+  const listedTokenIds = useMyListedTokenIds();
+  const players = ((allPlayers as Player[] | undefined) ?? []).filter(
+    (p) => !listedTokenIds.has(p.id),
+  );
   const squadMetrics = useMemo(() => getSquadMetrics(players), [players]);
   const squadInsights = useMemo(() => getSquadInsights(players), [players]);
   const visiblePlayers = useMemo(() => getVisibleSquadPlayers(players, filter, sort), [filter, players, sort]);

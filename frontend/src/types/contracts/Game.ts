@@ -69,6 +69,7 @@ export declare namespace Game {
 export interface GameInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "EXECUTION_FEE_BPS"
       | "addTeam"
       | "createGame"
       | "getMatch"
@@ -77,9 +78,17 @@ export interface GameInterface extends Interface {
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "MatchPlayed" | "NewMatch" | "PlayerScored"
+    nameOrSignatureOrTopic:
+      | "MatchPlayed"
+      | "MatchSnapshot"
+      | "NewMatch"
+      | "PlayerScored"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "EXECUTION_FEE_BPS",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "addTeam",
     values: [
@@ -106,6 +115,10 @@ export interface GameInterface extends Interface {
     values: [BigNumberish]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "EXECUTION_FEE_BPS",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "addTeam", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "createGame", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getMatch", data: BytesLike): Result;
@@ -131,6 +144,34 @@ export namespace MatchPlayedEvent {
     matchId: bigint;
     homeScore: bigint;
     awayScore: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace MatchSnapshotEvent {
+  export type InputTuple = [
+    matchId: BigNumberish,
+    homeAddress: AddressLike,
+    awayAddress: AddressLike,
+    homeTeam: Game.TeamStruct,
+    awayTeam: Game.TeamStruct
+  ];
+  export type OutputTuple = [
+    matchId: bigint,
+    homeAddress: string,
+    awayAddress: string,
+    homeTeam: Game.TeamStructOutput,
+    awayTeam: Game.TeamStructOutput
+  ];
+  export interface OutputObject {
+    matchId: bigint;
+    homeAddress: string;
+    awayAddress: string;
+    homeTeam: Game.TeamStructOutput;
+    awayTeam: Game.TeamStructOutput;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -206,6 +247,8 @@ export interface Game extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  EXECUTION_FEE_BPS: TypedContractMethod<[], [bigint], "view">;
+
   addTeam: TypedContractMethod<
     [
       matchId: BigNumberish,
@@ -261,6 +304,9 @@ export interface Game extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "EXECUTION_FEE_BPS"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "addTeam"
   ): TypedContractMethod<
@@ -326,6 +372,13 @@ export interface Game extends BaseContract {
     MatchPlayedEvent.OutputObject
   >;
   getEvent(
+    key: "MatchSnapshot"
+  ): TypedContractEvent<
+    MatchSnapshotEvent.InputTuple,
+    MatchSnapshotEvent.OutputTuple,
+    MatchSnapshotEvent.OutputObject
+  >;
+  getEvent(
     key: "NewMatch"
   ): TypedContractEvent<
     NewMatchEvent.InputTuple,
@@ -350,6 +403,17 @@ export interface Game extends BaseContract {
       MatchPlayedEvent.InputTuple,
       MatchPlayedEvent.OutputTuple,
       MatchPlayedEvent.OutputObject
+    >;
+
+    "MatchSnapshot(uint256,address,address,tuple,tuple)": TypedContractEvent<
+      MatchSnapshotEvent.InputTuple,
+      MatchSnapshotEvent.OutputTuple,
+      MatchSnapshotEvent.OutputObject
+    >;
+    MatchSnapshot: TypedContractEvent<
+      MatchSnapshotEvent.InputTuple,
+      MatchSnapshotEvent.OutputTuple,
+      MatchSnapshotEvent.OutputObject
     >;
 
     "NewMatch(uint256)": TypedContractEvent<

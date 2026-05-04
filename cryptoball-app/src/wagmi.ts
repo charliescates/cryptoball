@@ -9,11 +9,12 @@ export const config = createConfig({
     [hardhat.id]: http(),
     // Use fallback with multiple RPC endpoints for Polygon PoS
     [polygon.id]: fallback([
+      http('https://polygon-bor-rpc.publicnode.com'),
+      http('https://rpc.ankr.com/polygon'),
+      http('https://polygon.llamarpc.com'),
       http('https://polygon.drpc.org'),
-      http('https://polygon-rpc.com'),
-      http(), // Default public RPC as last resort
     ], {
-      rank: false, // Don't rank, just use in order
+      rank: false,
     })
   },
 })

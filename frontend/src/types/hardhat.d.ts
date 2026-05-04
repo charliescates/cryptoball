@@ -54,6 +54,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Math__factory>;
     getContractFactory(
+      name: "ReentrancyGuard",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ReentrancyGuard__factory>;
+    getContractFactory(
       name: "Strings",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Strings__factory>;
@@ -65,6 +69,14 @@ declare module "hardhat/types/runtime" {
       name: "Game",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Game__factory>;
+    getContractFactory(
+      name: "IPlayerToken",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPlayerToken__factory>;
+    getContractFactory(
+      name: "Market",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.Market__factory>;
     getContractFactory(
       name: "PlayerToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -121,6 +133,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Math>;
     getContractAt(
+      name: "ReentrancyGuard",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ReentrancyGuard>;
+    getContractAt(
       name: "Strings",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -135,6 +152,16 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.Game>;
+    getContractAt(
+      name: "IPlayerToken",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IPlayerToken>;
+    getContractAt(
+      name: "Market",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.Market>;
     getContractAt(
       name: "PlayerToken",
       address: string | ethers.Addressable,
@@ -182,6 +209,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Math>;
     deployContract(
+      name: "ReentrancyGuard",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ReentrancyGuard>;
+    deployContract(
       name: "Strings",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Strings>;
@@ -193,6 +224,14 @@ declare module "hardhat/types/runtime" {
       name: "Game",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Game>;
+    deployContract(
+      name: "IPlayerToken",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IPlayerToken>;
+    deployContract(
+      name: "Market",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Market>;
     deployContract(
       name: "PlayerToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -249,6 +288,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Math>;
     deployContract(
+      name: "ReentrancyGuard",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ReentrancyGuard>;
+    deployContract(
       name: "Strings",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -263,6 +307,16 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Game>;
+    deployContract(
+      name: "IPlayerToken",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IPlayerToken>;
+    deployContract(
+      name: "Market",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.Market>;
     deployContract(
       name: "PlayerToken",
       args: any[],

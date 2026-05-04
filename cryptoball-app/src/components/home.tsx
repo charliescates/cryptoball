@@ -2,6 +2,7 @@ import { zeroAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
 import { playerContract } from "../contracts/playerContract";
+import { useMyListedTokenIds } from "./market/useMyListedTokenIds";
 import HomeDisconnected from "./home/HomeDisconnected";
 import SquadDashboard from "./home/SquadDashboard";
 import WelcomeSection from "./home/WelcomeSection";
@@ -18,10 +19,14 @@ const Home = () => {
     args: [account.address ?? zeroAddress],
     query: {
       enabled: account.isConnected && !!account.address,
+      refetchInterval: 12_000,
     },
   });
 
-  const players = (allPlayers as Player[] | undefined) ?? [];
+  const listedTokenIds = useMyListedTokenIds();
+  const players = ((allPlayers as Player[] | undefined) ?? []).filter(
+    (p) => !listedTokenIds.has(p.id),
+  );
   const playerCount = players.length;
 
   return (

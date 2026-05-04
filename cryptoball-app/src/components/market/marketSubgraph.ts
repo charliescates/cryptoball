@@ -1,0 +1,45 @@
+export type Listing = {
+  id: string
+  listingId: bigint
+  seller: `0x${string}`
+  tokenId: bigint
+  buyNowPrice: bigint
+  minBid: bigint
+  highestBid: bigint
+  highestBidder: `0x${string}`
+  active: boolean
+}
+
+export type SubgraphListing = {
+  id: string
+  listingId: string
+  seller: string
+  tokenId: string
+  buyNowPrice: string
+  minBid: string
+  highestBid: string
+  highestBidder: string
+  active: boolean
+}
+
+export const MARKET_SUBGRAPH_URL =
+  'https://api.studio.thegraph.com/query/1747934/cryptoball-market/version/latest'
+
+export function getGraphHeaders() {
+  const apiKey = import.meta.env.VITE_GRAPH_API_KEY as string | undefined
+  return apiKey ? ({ Authorization: `Bearer ${apiKey}` } as Record<string, string>) : undefined
+}
+
+export function mapListing(l: SubgraphListing): Listing {
+  return {
+    id: l.id,
+    listingId: BigInt(l.listingId),
+    seller: l.seller as `0x${string}`,
+    tokenId: BigInt(l.tokenId),
+    buyNowPrice: BigInt(l.buyNowPrice),
+    minBid: BigInt(l.minBid),
+    highestBid: BigInt(l.highestBid),
+    highestBidder: l.highestBidder as `0x${string}`,
+    active: l.active,
+  }
+}

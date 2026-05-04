@@ -1,0 +1,55 @@
+type Listing @entity(immutable: false) {
+  id: String! # listingId as string
+  listingId: BigInt!
+  seller: Bytes!
+  tokenId: BigInt!
+  buyNowPrice: BigInt!
+  minBid: BigInt!
+  highestBid: BigInt!
+  highestBidder: Bytes!
+  active: Boolean!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type BidPlaced @entity(immutable: true) {
+  id: Bytes!
+  listingId: BigInt! # uint256
+  bidder: Bytes! # address
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type BoughtNow @entity(immutable: true) {
+  id: Bytes!
+  listingId: BigInt! # uint256
+  buyer: Bytes! # address
+  price: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Finalized @entity(immutable: true) {
+  id: Bytes!
+  listingId: BigInt! # uint256
+  winner: Bytes! # address
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type Listed @entity(immutable: true) {
+  id: Bytes!
+  listingId: BigInt! # uint256
+  seller: Bytes! # address
+  tokenId: BigInt! # uint256
+  buyNowPrice: BigInt! # uint256
+  minBid: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
