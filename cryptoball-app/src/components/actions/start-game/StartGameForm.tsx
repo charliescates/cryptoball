@@ -41,36 +41,38 @@ const StartGameForm = ({
 
   return (
     <form className="start-game-form" onSubmit={onSubmit}>
-      <PanelHeader label="Create match" title="Fixture Setup" state={statusLabel} />
+      <PanelHeader label="Launch pad" title="Fixture details" state={statusLabel} />
 
       <StartGameSection description="Choose the two managers entering the match." title="Wallet pairing">
-        <div className="form-field">
-          <label htmlFor="home-address">Home wallet</label>
-          <input
-            id="home-address"
-            type="text"
-            placeholder="0x..."
-            value={homeAddress}
-            onChange={(event) => onHomeAddressChange(event.target.value)}
-            disabled={!editable}
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="away-address">Away wallet</label>
-          <input
-            id="away-address"
-            type="text"
-            placeholder="0x..."
-            value={awayAddress}
-            onChange={(event) => onAwayAddressChange(event.target.value)}
-            disabled={!editable}
-          />
+        <div className="start-game-field-grid">
+          <div className="form-field">
+            <label htmlFor="home-address">Home wallet</label>
+            <input
+              id="home-address"
+              type="text"
+              placeholder="0x..."
+              value={homeAddress}
+              onChange={(event) => onHomeAddressChange(event.target.value)}
+              disabled={!editable}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="away-address">Away wallet</label>
+            <input
+              id="away-address"
+              type="text"
+              placeholder="0x..."
+              value={awayAddress}
+              onChange={(event) => onAwayAddressChange(event.target.value)}
+              disabled={!editable}
+            />
+          </div>
         </div>
       </StartGameSection>
 
-      <StartGameSection description="Both sides commit the same value to open the contest." title="Match stake">
+      <StartGameSection description="Both managers commit the same value to open the contest." title="Match stake">
         <div className="form-field">
-          <label htmlFor="match-wager">Wager</label>
+          <label htmlFor="match-wager">Shared wager</label>
           <div className="wager-input-wrap">
             <input
               id="match-wager"
@@ -92,7 +94,7 @@ const StartGameForm = ({
           <strong>{hasReadyFixture ? "Fixture complete" : "Awaiting details"}</strong>
         </div>
         <button className="start-game-button" disabled={isPending || isConfirming || !editable} type="submit">
-          {isPending ? "Starting Match..." : "Start Game"}
+          {isPending ? "Starting match..." : "Start Game"}
         </button>
       </div>
 

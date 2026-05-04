@@ -1,9 +1,4 @@
-import {
-  getFeaturedStatBoxStyle,
-  statBoxStyle,
-  statLabelStyle,
-  statValueStyle,
-} from "./PlayerCard.styles";
+import { getFeaturedStatBoxStyle, statBoxStyle, statLabelStyle, statValueStyle } from "./PlayerCard.styles";
 
 interface PlayerCardStatBoxProps {
   label: string;

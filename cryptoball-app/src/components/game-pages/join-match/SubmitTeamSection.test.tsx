@@ -124,7 +124,7 @@ describe("SubmitTeamSection", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /watch replay/i }));
+    await user.click(screen.getByRole("button", { name: /opening replay/i }));
     expect(onWatchReplay).toHaveBeenCalled();
   });
 });

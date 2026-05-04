@@ -13,10 +13,14 @@ interface TeamBuilderProps {
   selectedCount: number;
   selectedFormation: Formation;
   selectedPlayerIds: Set<bigint>;
+  onAutoPick: () => void;
   onClearFormation: () => void;
   onFormationChange: (formationName: string) => void;
   onPlayerClick: (player: Player) => void;
   onPositionClick: (index: number) => void;
+  onUseRecentSquad?: () => void;
+  recentSquadLabel?: string;
+  recentSquadMessage?: string | null;
 }
 
 const TeamBuilder = ({
@@ -28,10 +32,14 @@ const TeamBuilder = ({
   selectedCount,
   selectedFormation,
   selectedPlayerIds,
+  onAutoPick,
   onClearFormation,
   onFormationChange,
   onPlayerClick,
   onPositionClick,
+  onUseRecentSquad,
+  recentSquadLabel,
+  recentSquadMessage,
 }: TeamBuilderProps) => (
   <div className="team-building-section join-flow-shell">
     <div className="team-header join-flow-header">
@@ -40,9 +48,39 @@ const TeamBuilder = ({
         <h2>Build Your Match Five</h2>
         <p className="join-flow-copy">Pick a shape, tap a pitch slot, then choose the player you want in that role.</p>
       </div>
-      <button className="clear-formation-button" onClick={onClearFormation} disabled={isFormationEmpty} type="button">
-        Reset Team
-      </button>
+      <div className="join-flow-actions">
+        {onUseRecentSquad ? (
+          <button className="recent-squad-button" onClick={onUseRecentSquad} type="button">
+            {recentSquadLabel ?? "Use recent squad"}
+          </button>
+        ) : null}
+        <button className="auto-pick-button" onClick={onAutoPick} disabled={ownedPlayers.length < 5} type="button">
+          Best Team
+        </button>
+        <button className="clear-formation-button" onClick={onClearFormation} disabled={isFormationEmpty} type="button">
+          Reset Team
+        </button>
+      </div>
+    </div>
+    {recentSquadMessage ? <p className="recent-squad-message">{recentSquadMessage}</p> : null}
+
+    <div className="match-readiness-panel" aria-label="Match readiness">
+      <div>
+        <span>Readiness</span>
+        <strong>{selectedCount === 5 ? "Ready to submit" : `${5 - selectedCount} picks needed`}</strong>
+      </div>
+      <div>
+        <span>Available</span>
+        <strong>{ownedPlayers.filter((player) => player.gamesLeft > 0n).length}</strong>
+      </div>
+      <div>
+        <span>Shape</span>
+        <strong>{selectedFormation.name}</strong>
+      </div>
+      <div>
+        <span>Risk</span>
+        <strong>{ownedPlayers.some((player) => player.gamesLeft <= 1n) ? "Rotation watch" : "Clear"}</strong>
+      </div>
     </div>
 
     <div className="join-flow-stepper" aria-label="Join match progress">

@@ -17,7 +17,7 @@ vi.mock("./home/WelcomeSection", () => ({
 }));
 
 vi.mock("./home/SquadDashboard", () => ({
-  default: ({ playerCount }: { playerCount: number }) => <div>Dashboard {playerCount}</div>,
+  default: ({ players }: { players: unknown[] }) => <div>Dashboard {players.length}</div>,
 }));
 
 const { useAccount, useReadContract } = await import("wagmi");

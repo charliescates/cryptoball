@@ -26,14 +26,20 @@ const players: Player[] = [
     potential: 82n,
   },
 ];
+const fivePlayers = Array.from({ length: 5 }, (_, index) => ({
+  ...players[0],
+  id: BigInt(index + 1),
+}));
 
 describe("TeamBuilder", () => {
   it("shows formation controls and the helper hint", async () => {
     const user = userEvent.setup();
     const onClearFormation = vi.fn();
+    const onAutoPick = vi.fn();
     const onFormationChange = vi.fn();
     const onPlayerClick = vi.fn();
     const onPositionClick = vi.fn();
+    const onUseRecentSquad = vi.fn();
 
     render(
       <TeamBuilder
@@ -41,7 +47,7 @@ describe("TeamBuilder", () => {
         activePositionIndex={null}
         activePositionMeta={null}
         isFormationEmpty={false}
-        ownedPlayers={players}
+        ownedPlayers={fivePlayers}
         selectedCount={2}
         selectedFormation={{
           name: "3-1-1",
@@ -52,22 +58,31 @@ describe("TeamBuilder", () => {
           intent: "Overload attack",
         }}
         selectedPlayerIds={new Set()}
+        onAutoPick={onAutoPick}
         onClearFormation={onClearFormation}
         onFormationChange={onFormationChange}
         onPlayerClick={onPlayerClick}
         onPositionClick={onPositionClick}
+        onUseRecentSquad={onUseRecentSquad}
+        recentSquadLabel="Use squad from match #4"
+        recentSquadMessage="Restored 5 players from your most recent match."
       />,
     );
 
     expect(screen.getByText("Build Your Match Five")).toBeInTheDocument();
     expect(screen.getByTestId("formation-grid")).toHaveTextContent("Your Team");
-    expect(screen.getByTestId("player-roster")).toHaveTextContent("1");
+    expect(screen.getByTestId("player-roster")).toHaveTextContent("5");
     expect(screen.getByText(/choose players for your 3-1-1 formation/i)).toBeInTheDocument();
+    expect(screen.getByText(/restored 5 players/i)).toBeInTheDocument();
 
+    await user.click(screen.getByRole("button", { name: /use squad from match #4/i }));
     await user.click(screen.getByRole("button", { name: /2-1-2 balanced stable shape 2 att \/ 1 mid \/ 2 def/i }));
+    await user.click(screen.getByRole("button", { name: "Best Team" }));
     await user.click(screen.getByRole("button", { name: "Reset Team" }));
 
+    expect(onUseRecentSquad).toHaveBeenCalled();
     expect(onFormationChange).toHaveBeenCalledWith("2-1-2");
+    expect(onAutoPick).toHaveBeenCalled();
     expect(onClearFormation).toHaveBeenCalled();
     expect(onPlayerClick).not.toHaveBeenCalled();
     expect(onPositionClick).not.toHaveBeenCalled();
@@ -91,6 +106,7 @@ describe("TeamBuilder", () => {
           intent: "Overload attack",
         }}
         selectedPlayerIds={new Set()}
+        onAutoPick={vi.fn()}
         onClearFormation={vi.fn()}
         onFormationChange={vi.fn()}
         onPlayerClick={vi.fn()}

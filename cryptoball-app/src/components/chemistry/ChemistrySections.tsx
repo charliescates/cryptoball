@@ -1,4 +1,4 @@
-import ChemistryBuilder from "./ChemistryBuilder";
+import ChemistryBuilder from "./builder/ChemistryBuilder";
 import { calcSteps, comboRules, quickRules, roleCards } from "./data";
 
 const ChemistrySections = () => (

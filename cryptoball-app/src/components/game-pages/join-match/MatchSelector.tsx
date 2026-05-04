@@ -3,6 +3,7 @@ import { formatEther } from "viem";
 import type { MatchDetails } from "./types";
 
 interface MatchSelectorProps {
+  disabled?: boolean;
   matchDetails?: MatchDetails;
   matchList: number[];
   selectedMatchId: number | null;
@@ -11,7 +12,13 @@ interface MatchSelectorProps {
 
 const formatAddress = (address: string) => (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Available");
 
-const MatchSelector = ({ matchDetails, matchList, selectedMatchId, onMatchChange }: MatchSelectorProps) => (
+const MatchSelector = ({
+  disabled = false,
+  matchDetails,
+  matchList,
+  selectedMatchId,
+  onMatchChange,
+}: MatchSelectorProps) => (
   <div className="match-selection-section">
     <h2>Select Match</h2>
     {matchList.length === 0 ? (
@@ -19,6 +26,7 @@ const MatchSelector = ({ matchDetails, matchList, selectedMatchId, onMatchChange
     ) : (
       <select
         className="match-select"
+        disabled={disabled}
         onChange={(event) => {
           const { value } = event.target;
           onMatchChange(value === "" ? null : Number(value));
@@ -33,6 +41,7 @@ const MatchSelector = ({ matchDetails, matchList, selectedMatchId, onMatchChange
         ))}
       </select>
     )}
+    {disabled && <p className="match-lock-note">This match is locked while your submitted team is being processed.</p>}
 
     {matchDetails && selectedMatchId !== null && (
       <div className="match-details">

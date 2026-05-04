@@ -1,34 +1,44 @@
+import { useMemo, useState } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { useAccount, useReadContract } from "wagmi";
 
 import { Deposit } from "../actions/deposit";
 import { Extract } from "../actions/extract";
-import { academyContract } from "../contracts/academyContract";
+import PlayerDetailDrawer from "../players/PlayerDetailDrawer";
 import type { AcademyPlayer } from "../utils/playerUtils";
-import { PlayerCard } from "./PlayerCard";
-
-const EXTRACT_ADDRESS = "0x05B665d3Ba0a83f5259C114fA3F2d2ECD8A00B29";
+import AcademyHeader from "./AcademyHeader";
+import AcademyPlayerGrid from "./AcademyPlayerGrid";
+import AcademyRecruitmentToolbar, { type AcademyRecruitmentFocus } from "./AcademyRecruitmentToolbar";
+import { useAcademyPlayers } from "./hooks/useAcademyPlayers";
 
 export const Academy = () => {
-  const { address, isConnected } = useAccount();
+  const { error, isOwnerWallet, players } = useAcademyPlayers();
+  const [focus, setFocus] = useState<AcademyRecruitmentFocus>("all");
+  const [selectedPlayer, setSelectedPlayer] = useState<AcademyPlayer | null>(null);
+  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(() => new Set());
 
-  const isOwnerWallet = isConnected && address?.toLowerCase() === EXTRACT_ADDRESS.toLowerCase();
+  const filteredPlayers = useMemo(() => {
+    return players.filter((player) => {
+      if (focus === "attack") return player.attack >= player.defense;
+      if (focus === "defense") return player.defense >= player.attack;
+      if (focus === "potential") return player.potential >= 80n;
+      if (focus === "shortlist") return shortlistedIds.has(player.id.toString());
+      return true;
+    });
+  }, [focus, players, shortlistedIds]);
 
-  const { data: allPlayers, error } = useReadContract({
-    abi: academyContract.abi,
-    address: academyContract.address,
-    functionName: "getAcademyPlayers",
-    query: {
-      refetchInterval: 10000,
-    },
-  });
-
-  const players = (allPlayers as AcademyPlayer[] | undefined) ?? [];
-
-  if (error) {
-    console.error("Failed to fetch players:", error);
-  }
+  const toggleShortlist = (playerId: bigint) => {
+    setShortlistedIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      const key = playerId.toString();
+      if (nextIds.has(key)) {
+        nextIds.delete(key);
+      } else {
+        nextIds.add(key);
+      }
+      return nextIds;
+    });
+  };
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -36,25 +46,22 @@ export const Academy = () => {
         {isOwnerWallet && <Deposit />}
         {isOwnerWallet && <Extract />}
 
-        <section className="academy-section-header" aria-labelledby="academy-title">
-          <div>
-            <p className="academy-section-kicker">Recruitment</p>
-            <h1 id="academy-title">Academy</h1>
-            <p className="academy-section-copy">Scout fresh talent and sign the next CryptoBalls starter.</p>
-          </div>
-          <div className="academy-section-count">
-            <strong>{players.length}</strong>
-            <span>available</span>
-          </div>
-        </section>
-
-        <div className="academy-player-grid">
-          {error ? (
-            <div>Error loading players.</div>
-          ) : (
-            players.map((player) => <PlayerCard key={player.id.toString()} player={player} />)
-          )}
-        </div>
+        <AcademyHeader playerCount={players.length} />
+        <AcademyRecruitmentToolbar
+          focus={focus}
+          resultCount={filteredPlayers.length}
+          shortlistCount={shortlistedIds.size}
+          totalCount={players.length}
+          onFocusChange={setFocus}
+        />
+        <AcademyPlayerGrid
+          error={error}
+          players={filteredPlayers}
+          shortlistedIds={shortlistedIds}
+          onOpenDetails={setSelectedPlayer}
+          onToggleShortlist={toggleShortlist}
+        />
+        <PlayerDetailDrawer kind="academy" player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
       </div>
     </DndProvider>
   );

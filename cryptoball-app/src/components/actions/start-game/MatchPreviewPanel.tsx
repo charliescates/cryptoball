@@ -17,7 +17,7 @@ const MatchPreviewPanel = ({
   const shortAway = awayAddress ? `${awayAddress.slice(0, 6)}...${awayAddress.slice(-4)}` : "Assign away wallet";
 
   return (
-    <aside className="match-summary-panel">
+    <aside className={`match-summary-panel ${hasReadyFixture ? "match-summary-panel-ready" : ""}`}>
       <PanelHeader label="Match preview" title="Fixture Board" />
       <div className="matchup-row">
         <div>
@@ -33,13 +33,12 @@ const MatchPreviewPanel = ({
       <div className="summary-grid">
         <SummaryCell label="Wager" value={`${wager || "0"} ETH`} />
         <SummaryCell label="Status" value={statusLabel} />
-        <SummaryCell label="Entry type" value="Direct challenge" />
         <SummaryCell label="Chain action" value={hasReadyFixture ? "Ready to submit" : "Waiting on inputs"} />
       </div>
       <div className="start-game-guidance">
-        <GuidanceRow step="1" text="Set the home and away wallets for the fixture." />
-        <GuidanceRow step="2" text="Choose the shared stake that opens the match." />
-        <GuidanceRow step="3" text="Launch the match and confirm the wallet transaction." />
+        <GuidanceRow step="1" text="Set both wallets for the fixture." />
+        <GuidanceRow step="2" text="Choose the shared match stake." />
+        <GuidanceRow step="3" text="Create the match and confirm in wallet." />
       </div>
     </aside>
   );

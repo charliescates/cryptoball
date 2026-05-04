@@ -11,9 +11,10 @@ describe("StartGamePage", () => {
   it("renders the start game hero and form", () => {
     render(<StartGamePage />);
 
-    expect(screen.getByRole("heading", { name: /create a new match/i })).toBeInTheDocument();
-    expect(screen.getByText(/games desk/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /start new game/i })).toBeInTheDocument();
+    expect(screen.getByText(/match setup/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/match format/i)).toHaveTextContent("1v1");
+    expect(screen.getByLabelText(/setup steps/i)).toHaveTextContent("Wallets");
     expect(screen.getByText("Play Game Form")).toBeInTheDocument();
   });
 });

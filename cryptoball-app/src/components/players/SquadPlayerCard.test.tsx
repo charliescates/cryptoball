@@ -22,10 +22,11 @@ const player: Player = {
 
 describe("SquadPlayerCard", () => {
   it("renders player stats with signed deltas and summary details", () => {
-    render(<SquadPlayerCard player={player} />);
+    render(<SquadPlayerCard player={player} roleFitLabel="Attack fit" />);
 
     expect(screen.getByTestId("football-avatar")).toBeInTheDocument();
     expect(screen.getByText("Target Man")).toBeInTheDocument();
+    expect(screen.getByText("Attack fit")).toBeInTheDocument();
     expect(screen.getByText("+3")).toHaveClass("stat-delta-positive");
     expect(screen.getByText("-2")).toHaveClass("stat-delta-negative");
     expect(screen.getByText(/games left/i)).toHaveTextContent("Games left 5");

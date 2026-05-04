@@ -14,6 +14,10 @@ vi.mock("graphql-request", () => ({
   request: vi.fn(),
 }));
 
+vi.mock("wagmi", () => ({
+  useAccount: () => ({ address: "0x0000000000000000000000000000000000000001" }),
+}));
+
 const { useQuery } = await import("@tanstack/react-query");
 
 const renderShowMatches = (initialEntry = "/games/recent") =>
@@ -141,7 +145,12 @@ describe("ShowMatches", () => {
     await user.click(screen.getByRole("button", { name: /reveal replay/i }));
     await user.click(screen.getByRole("button", { name: /skip/i }));
 
-    expect(screen.getByText("0 - 5")).toBeInTheDocument();
+    expect(screen.getAllByText("0 - 5").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/match 1 centre/i)).toHaveTextContent("Player of match");
+    expect(screen.getByRole("link", { name: /play again/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/games/start?"),
+    );
     expect(screen.getByRole("heading", { name: /goal events/i })).toBeInTheDocument();
     expect(screen.getAllByText(/home team/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/away team/i).length).toBeGreaterThan(0);

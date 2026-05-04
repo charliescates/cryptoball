@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { type BaseError, parseEther } from "viem";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { gameContract } from "../../contracts/gameContract";
@@ -11,6 +12,10 @@ type AddTeamProps = {
   wager: string;
   disabled?: boolean;
   disabledLabel?: string;
+  onTransactionConfirmed?: () => void;
+  onTransactionFailed?: () => void;
+  onTransactionStarted?: () => void;
+  onTransactionSubmitted?: (hash: `0x${string}`) => void;
   readyLabel?: string;
 };
 
@@ -22,6 +27,10 @@ export const AddTeam = ({
   wager,
   disabled = false,
   disabledLabel = "Team Not Ready",
+  onTransactionConfirmed,
+  onTransactionFailed,
+  onTransactionStarted,
+  onTransactionSubmitted,
   readyLabel = "Add Team",
 }: AddTeamProps) => {
   const { data: hash, error, isPending, writeContract, reset } = useWriteContract();
@@ -29,6 +38,7 @@ export const AddTeam = ({
   const addTeam = async () => {
     // Reset any previous transaction state before submitting
     reset();
+    onTransactionStarted?.();
 
     const attackingIds = createPlayerList(attackingPlayers);
     const midfieldIds = createPlayerList(midfieldPlayers);
@@ -63,6 +73,24 @@ export const AddTeam = ({
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   });
+
+  useEffect(() => {
+    if (hash) {
+      onTransactionSubmitted?.(hash);
+    }
+  }, [hash, onTransactionSubmitted]);
+
+  useEffect(() => {
+    if (isConfirmed) {
+      onTransactionConfirmed?.();
+    }
+  }, [isConfirmed, onTransactionConfirmed]);
+
+  useEffect(() => {
+    if (error) {
+      onTransactionFailed?.();
+    }
+  }, [error, onTransactionFailed]);
 
   return (
     <div>
