@@ -6,12 +6,16 @@ const features = [
   { icon: "🏆", title: "Compete", description: "Play matches and earn rewards" },
 ];
 
-const WelcomeSection = () => (
+interface WelcomeSectionProps {
+  teamName?: string;
+}
+
+const WelcomeSection = ({ teamName }: WelcomeSectionProps) => (
   <div className="welcome-section">
     <div className="welcome-card">
       <div className="welcome-header">
         <h1>Welcome to CryptoBalls</h1>
-        <p className="welcome-subtitle">Start Building Your Legend</p>
+        <p className="welcome-subtitle">{teamName ? `${teamName} is ready to rise` : "Start Building Your Legend"}</p>
       </div>
 
       <div className="welcome-content">

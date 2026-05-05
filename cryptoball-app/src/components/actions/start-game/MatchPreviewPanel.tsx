@@ -1,3 +1,5 @@
+import generateName from "../../utils/teamName";
+
 interface MatchPreviewPanelProps {
   awayAddress: string;
   hasReadyFixture: boolean;
@@ -13,8 +15,8 @@ const MatchPreviewPanel = ({
   statusLabel,
   wager,
 }: MatchPreviewPanelProps) => {
-  const shortHome = homeAddress ? `${homeAddress.slice(0, 6)}...${homeAddress.slice(-4)}` : "Assign home wallet";
-  const shortAway = awayAddress ? `${awayAddress.slice(0, 6)}...${awayAddress.slice(-4)}` : "Assign away wallet";
+  const shortHome = homeAddress ? generateName(homeAddress) : "Assign home wallet";
+  const shortAway = awayAddress ? generateName(awayAddress) : "Assign away wallet";
 
   return (
     <aside className={`match-summary-panel ${hasReadyFixture ? "match-summary-panel-ready" : ""}`}>

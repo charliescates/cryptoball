@@ -12,6 +12,7 @@ const dashboardLinks = [
 
 interface SquadDashboardProps {
   players: Player[];
+  teamName?: string;
 }
 
 const getAverageOverall = (players: Player[]) => {
@@ -26,7 +27,7 @@ const getBestPlayer = (players: Player[]) =>
     return player.attack + player.defense > best.attack + best.defense ? player : best;
   }, null);
 
-const SquadDashboard = ({ players }: SquadDashboardProps) => {
+const SquadDashboard = ({ players, teamName }: SquadDashboardProps) => {
   const bestPlayer = getBestPlayer(players);
   const matchReadyCount = players.filter((player) => player.gamesLeft > 0n).length;
   const highPotentialCount = players.filter((player) => player.potential >= 80n).length;
@@ -38,6 +39,7 @@ const SquadDashboard = ({ players }: SquadDashboardProps) => {
         <div>
           <p className="dashboard-kicker">Club overview</p>
           <h1>Your Squad Dashboard</h1>
+          {teamName ? <p className="dashboard-team-name">{teamName}</p> : null}
           <p className="dashboard-next-action">{nextAction}</p>
         </div>
         <div className="squad-stats">

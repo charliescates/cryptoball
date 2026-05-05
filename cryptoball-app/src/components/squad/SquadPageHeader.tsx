@@ -2,13 +2,14 @@ import type { SquadMetric } from "./squadViewModel";
 
 interface SquadPageHeaderProps {
   metrics: SquadMetric[];
+  teamName?: string;
 }
 
-const SquadPageHeader = ({ metrics }: SquadPageHeaderProps) => (
+const SquadPageHeader = ({ metrics, teamName }: SquadPageHeaderProps) => (
   <section className="squad-page-header" aria-labelledby="squad-title">
     <div className="squad-page-heading">
       <p className="squad-page-kicker">Club management</p>
-      <h1 id="squad-title">Squad</h1>
+      <h1 id="squad-title">{teamName}</h1>
       <p>Review your players, spot role coverage, and pick who is ready for the next match.</p>
     </div>
 

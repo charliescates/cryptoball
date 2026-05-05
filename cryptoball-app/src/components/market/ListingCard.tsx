@@ -3,6 +3,7 @@ import { BaseError, formatEther, parseEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
 import { getPlayerName } from '../utils/playerName'
+import generateName from '../utils/teamName'
 import ListingPlayerInfo from './ListingPlayerInfo'
 import type { Listing } from './marketSubgraph'
 import type { RawPlayer } from './ListingPlayerInfo'
@@ -195,7 +196,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
       <dl className="market-listing-details">
         <div>
           <dt>Seller</dt>
-          <dd>{shortenAddress(listing.seller)}</dd>
+          <dd>{`${generateName(listing.seller)} (${shortenAddress(listing.seller)})`}</dd>
         </div>
         <div>
           <dt>Buy Now</dt>
@@ -209,7 +210,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
           <dt>Highest Bid</dt>
           <dd>
             {listing.highestBid > 0n
-              ? `${formatEther(listing.highestBid)} POL by ${shortenAddress(listing.highestBidder)}`
+              ? `${formatEther(listing.highestBid)} POL by ${generateName(listing.highestBidder)}`
               : 'No bids yet'}
           </dd>
         </div>

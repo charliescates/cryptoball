@@ -1611,7 +1611,7 @@ form {
   margin-bottom: 6px;
 }
 
-.player-stats span {
+.player-stats > span {
   background: rgba(255, 255, 255, 0.04);
   padding: 5px 8px;
   border-radius: 999px;
@@ -3641,7 +3641,7 @@ form {
   margin-bottom: 0;
 }
 
-.player-stats span {
+.player-stats > span {
   background: rgba(255, 255, 255, 0.05);
   padding: 10px 12px;
   border-radius: 12px;
@@ -3654,7 +3654,7 @@ form {
   box-sizing: border-box;
 }
 
-.player-stats span strong {
+.player-stats > span strong {
   color: var(--text-color);
   font-size: 0.98rem;
 }
@@ -4074,7 +4074,7 @@ form {
     gap: 6px;
   }
 
-  .squad-player-grid .player-stats span {
+  .squad-player-grid .player-stats > span {
     padding: 8px 9px;
     gap: 6px;
   }
@@ -5278,7 +5278,7 @@ form {
     gap: 5px;
   }
 
-  .squad-player-grid .player-stats span {
+  .squad-player-grid .player-stats > span {
     flex-direction: column;
     align-items: flex-start;
     padding: 7px;

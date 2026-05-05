@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ShowMatches from "./show-matches";
+import generateName from "../utils/teamName";
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: vi.fn(),
@@ -19,6 +20,8 @@ vi.mock("wagmi", () => ({
 }));
 
 const { useQuery } = await import("@tanstack/react-query");
+const HOME_ADDRESS = "0x0000000000000000000000000000000000000001";
+const AWAY_ADDRESS = "0x0000000000000000000000000000000000000002";
 
 const renderShowMatches = (initialEntry = "/games/recent") =>
   render(
@@ -64,8 +67,8 @@ describe("ShowMatches", () => {
             homeScore: 3,
             awayScore: 1,
             blockTimestamp: "1714300000",
-            homeAddress: "0x0000000000000000000000000000000000000001",
-            awayAddress: "0x0000000000000000000000000000000000000002",
+            homeAddress: HOME_ADDRESS,
+            awayAddress: AWAY_ADDRESS,
             homeAttackingPlayers: ["1", "0", "2"],
             homeMidfieldPlayers: ["0", "3", "0"],
             homeDefensivePlayers: ["4", "0", "5"],
@@ -118,8 +121,8 @@ describe("ShowMatches", () => {
             homeScore: 0,
             awayScore: 5,
             blockTimestamp: "1714300000",
-            homeAddress: "0x0000000000000000000000000000000000000001",
-            awayAddress: "0x0000000000000000000000000000000000000002",
+            homeAddress: HOME_ADDRESS,
+            awayAddress: AWAY_ADDRESS,
             homeAttackingPlayers: ["1", "0", "2"],
             homeMidfieldPlayers: ["0", "3", "0"],
             homeDefensivePlayers: ["4", "0", "5"],
@@ -151,9 +154,8 @@ describe("ShowMatches", () => {
       "href",
       expect.stringContaining("/games/start?"),
     );
-    expect(screen.getByRole("heading", { name: /goal events/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/home team/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/away team/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(generateName(HOME_ADDRESS)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(generateName(AWAY_ADDRESS)).length).toBeGreaterThan(0);
   });
 
   it("auto-reveals the target match when launched from play match", () => {
@@ -167,8 +169,8 @@ describe("ShowMatches", () => {
             homeScore: 3,
             awayScore: 1,
             blockTimestamp: "1714300000",
-            homeAddress: "0x0000000000000000000000000000000000000001",
-            awayAddress: "0x0000000000000000000000000000000000000002",
+            homeAddress: HOME_ADDRESS,
+            awayAddress: AWAY_ADDRESS,
             homeAttackingPlayers: ["1", "0", "2"],
             homeMidfieldPlayers: ["0", "3", "0"],
             homeDefensivePlayers: ["4", "0", "5"],

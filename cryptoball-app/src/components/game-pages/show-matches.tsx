@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { ReplayPositionCard } from "../formation-grid-parts/ReplayPositionCard";
 import { getPlayerName } from "../utils/playerName";
+import generateName from "../utils/teamName";
 import {
   type MatchesResponse,
   type PlayedMatch,
@@ -24,14 +25,6 @@ function formatMatchTime(blockTimestamp: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value * 1000));
-}
-
-function shortenAddress(address: string) {
-  if (!address || address.length < 10) {
-    return address;
-  }
-
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 function normalizePlayerIds(playerIds: string[]) {
@@ -127,10 +120,31 @@ function renderFormationRow(
 
 type GoalEvent = ReturnType<typeof getGoalTimeline>[number];
 
-function shuffleArray<T>(arr: T[]): T[] {
+function hashStringSeed(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createSeededRandom(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleArray<T>(arr: T[], seedKey: string): T[] {
   const copy = [...arr];
+  const random = createSeededRandom(hashStringSeed(seedKey));
   for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(random() * (i + 1));
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
@@ -145,13 +159,17 @@ function getVisibleScore(visibleGoals: GoalEvent[]) {
 
 function ReplayBroadcastHeader({
   awayScore,
+  awayTeamName,
   homeScore,
+  homeTeamName,
   latestGoal,
   totalGoals,
   visibleGoalCount,
 }: {
   awayScore: number | string;
+  awayTeamName: string;
   homeScore: number | string;
+  homeTeamName: string;
   latestGoal: GoalEvent | null;
   totalGoals: number;
   visibleGoalCount: number;
@@ -165,11 +183,11 @@ function ReplayBroadcastHeader({
         <span>Match Replay</span>
       </div>
       <div className="matches-history-broadcast-score">
-        <span>Home</span>
+        <span>{homeTeamName}</span>
         <strong>
           {homeScore} - {awayScore}
         </strong>
-        <span>Away</span>
+        <span>{awayTeamName}</span>
       </div>
       <div className="matches-history-replay-progress" aria-label={`Replay progress ${progress}%`}>
         <span style={{ width: `${progress}%` }} />
@@ -215,7 +233,7 @@ function RematchPanel({ currentAddress, match }: { currentAddress?: string; matc
     <section className="rematch-panel" aria-label="Post-match actions">
       <div>
         <span>Run it back</span>
-        <strong>Play again vs {shortenAddress(opponentAddress)}</strong>
+        <strong>Play again vs {generateName(opponentAddress)}</strong>
         <p>
           {isKnownManager
             ? "Creates a new fixture with this opponent prefilled."
@@ -279,7 +297,7 @@ export default function ShowMatches() {
   const startReveal = useCallback(
     (matchId: string) => {
       const match = matches.find((m) => m.id === matchId);
-      const shuffled = match ? shuffleArray(getGoalTimeline(match)) : [];
+      const shuffled = match ? shuffleArray(getGoalTimeline(match), match.matchId) : [];
       setShuffledTimelines((prev) => ({ ...prev, [matchId]: shuffled }));
       setRevealPhases((prev) => ({ ...prev, [matchId]: "animating" }));
       setAnimSteps((prev) => ({ ...prev, [matchId]: 0 }));
@@ -343,6 +361,8 @@ export default function ShowMatches() {
             const step = animSteps[match.id] ?? 0;
             const timeline = getGoalTimeline(match);
             const playerOfMatch = getPlayerOfMatch(timeline);
+            const homeTeamName = generateName(match.homeAddress);
+            const awayTeamName = generateName(match.awayAddress);
             const animTimeline = shuffledTimelines[match.id] ?? timeline;
             const visibleGoals = animTimeline.slice(0, step);
             const latestScorer = visibleGoals.length > 0 ? visibleGoals[visibleGoals.length - 1].playerId : null;
@@ -397,7 +417,9 @@ export default function ShowMatches() {
                   <div className="matches-history-animation-body">
                     <ReplayBroadcastHeader
                       awayScore={visibleScore.away}
+                      awayTeamName={awayTeamName}
                       homeScore={visibleScore.home}
+                      homeTeamName={homeTeamName}
                       latestGoal={latestGoal}
                       totalGoals={animTimeline.length}
                       visibleGoalCount={visibleGoals.length}
@@ -406,9 +428,9 @@ export default function ShowMatches() {
                     <div className="matches-history-replay-teams">
                       <section
                         className="matches-history-team-card matches-history-team-card--replay"
-                        aria-label={`Home team for match ${match.matchId}`}
+                        aria-label={`${homeTeamName} formation for match ${match.matchId}`}
                       >
-                        <h3>Home Team</h3>
+                        <h3>{homeTeamName}</h3>
                         <div className="formation-grid-wrapper">
                           {renderFormationRow(
                             "ATTACK",
@@ -439,9 +461,9 @@ export default function ShowMatches() {
 
                       <section
                         className="matches-history-team-card matches-history-team-card--replay"
-                        aria-label={`Away team for match ${match.matchId}`}
+                        aria-label={`${awayTeamName} formation for match ${match.matchId}`}
                       >
-                        <h3>Away Team</h3>
+                        <h3>{awayTeamName}</h3>
                         <div className="formation-grid-wrapper">
                           {renderFormationRow(
                             "ATTACK",
@@ -471,27 +493,6 @@ export default function ShowMatches() {
                       </section>
                     </div>
 
-                    <section className="matches-history-goal-reveal-panel">
-                      <h3>Goals</h3>
-                      {visibleGoals.length === 0 ? (
-                        <p className="matches-history-kickoff-hint">Kick off...</p>
-                      ) : (
-                        <ol className="matches-history-goal-list">
-                          {visibleGoals.map((goal, i) => (
-                            <li
-                              key={goal.id}
-                              className={`matches-history-goal-item${i === visibleGoals.length - 1 ? " matches-history-goal-item--new" : ""}`}
-                            >
-                              <span className="matches-history-goal-index">{i + 1}</span>
-                              <div>
-                                <strong>{goal.teamLabel}</strong>
-                                <p>{goal.playerName}</p>
-                              </div>
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                    </section>
                   </div>
                 )}
 
@@ -499,7 +500,9 @@ export default function ShowMatches() {
                   <div className="matches-history-reveal-body">
                     <ReplayBroadcastHeader
                       awayScore={match.awayScore}
+                      awayTeamName={awayTeamName}
                       homeScore={match.homeScore}
+                      homeTeamName={homeTeamName}
                       latestGoal={timeline.length > 0 ? timeline[timeline.length - 1] : null}
                       totalGoals={timeline.length}
                       visibleGoalCount={timeline.length}
@@ -527,14 +530,12 @@ export default function ShowMatches() {
                     <div className="matches-history-scoreboard">
                       <div className="matches-history-team-summary">
                         <span className="matches-history-side-label">Home Team</span>
-                        <strong>{shortenAddress(match.homeAddress)}</strong>
                       </div>
                       <strong className="matches-history-score matches-history-score--revealed">
                         {match.homeScore} - {match.awayScore}
                       </strong>
                       <div className="matches-history-team-summary matches-history-team-summary-away">
                         <span className="matches-history-side-label">Away Team</span>
-                        <strong>{shortenAddress(match.awayAddress)}</strong>
                       </div>
                     </div>
 
@@ -545,9 +546,9 @@ export default function ShowMatches() {
                           <>
                             <section
                               className="matches-history-team-card matches-history-team-card--replay"
-                              aria-label={`Home team for match ${match.matchId}`}
+                              aria-label={`${homeTeamName} formation for match ${match.matchId}`}
                             >
-                              <h3>Home Team</h3>
+                              <h3>{homeTeamName}</h3>
                               <div className="formation-grid-wrapper">
                                 {renderFormationRow("ATTACK", "⚔️", homeFormation.attack, fullCounts, null, "#32ff7e")}
                                 {renderFormationRow(
@@ -563,9 +564,9 @@ export default function ShowMatches() {
                             </section>
                             <section
                               className="matches-history-team-card matches-history-team-card--replay"
-                              aria-label={`Away team for match ${match.matchId}`}
+                              aria-label={`${awayTeamName} formation for match ${match.matchId}`}
                             >
-                              <h3>Away Team</h3>
+                              <h3>{awayTeamName}</h3>
                               <div className="formation-grid-wrapper">
                                 {renderFormationRow("ATTACK", "⚔️", awayFormation.attack, fullCounts, null, "#1e90ff")}
                                 {renderFormationRow(
@@ -584,24 +585,6 @@ export default function ShowMatches() {
                       })()}
                     </div>
 
-                    <section className="matches-history-goals-panel">
-                      <h3>Goal Events</h3>
-                      {timeline.length > 0 ? (
-                        <ol className="matches-history-goal-list">
-                          {timeline.map((goal, index) => (
-                            <li className="matches-history-goal-item" key={goal.id}>
-                              <span className="matches-history-goal-index">{index + 1}</span>
-                              <div>
-                                <strong>{goal.teamLabel}</strong>
-                                <p>{goal.playerName}</p>
-                              </div>
-                            </li>
-                          ))}
-                        </ol>
-                      ) : (
-                        <div className="matches-history-state">No scorer events were indexed for this match.</div>
-                      )}
-                    </section>
                     <RematchPanel currentAddress={address} match={match} />
                   </div>
                 )}

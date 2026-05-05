@@ -11,6 +11,7 @@ import SquadInsights from "./squad/SquadInsights";
 import SquadPageHeader from "./squad/SquadPageHeader";
 import SquadPlanner from "./squad/SquadPlanner";
 import SquadToolbar from "./squad/SquadToolbar";
+import generateName from "./utils/teamName";
 import {
   type SquadFilter,
   type SquadSort,
@@ -44,6 +45,7 @@ const GetPlayers = () => {
   const squadMetrics = useMemo(() => getSquadMetrics(players), [players]);
   const squadInsights = useMemo(() => getSquadInsights(players), [players]);
   const visiblePlayers = useMemo(() => getVisibleSquadPlayers(players, filter, sort), [filter, players, sort]);
+  const teamName = account.address ? generateName(account.address) : undefined;
 
   if (error) {
     console.error("Failed to fetch players:", error);
@@ -52,7 +54,7 @@ const GetPlayers = () => {
 
   return (
     <main className="squad-page">
-      <SquadPageHeader metrics={squadMetrics} />
+      <SquadPageHeader metrics={squadMetrics} teamName={teamName} />
 
       {players.length > 0 ? (
         <>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { NavLink } from 'react-router-dom';
+import generateName from './utils/teamName';
 import './header.css';
 
 function Header() {
@@ -9,7 +10,7 @@ function Header() {
   const { disconnect } = useDisconnect();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const shortAddress = account.address ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}` : null;
+  const teamName = account.address ? generateName(account.address) : null;
 
   return (
     <header className="header">
@@ -44,7 +45,7 @@ function Header() {
         <nav className="connection">
           <div className="wallet-panel">
             <div className="wallet-panel-copy">
-              <strong>{shortAddress ?? 'No wallet connected'}</strong>
+              <strong>{teamName ?? 'No wallet connected'}</strong>
               <span className={`wallet-status-inline wallet-status-${account.status}`}>
                 <span className="wallet-status-dot" />
                 {account.status === 'connected' ? 'Linked' : account.status === 'connecting' ? 'Connecting' : 'Offline'}

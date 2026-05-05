@@ -7,6 +7,7 @@ import HomeDisconnected from "./home/HomeDisconnected";
 import SquadDashboard from "./home/SquadDashboard";
 import WelcomeSection from "./home/WelcomeSection";
 import type { Player } from "./player";
+import generateName from "./utils/teamName";
 import "./home.css";
 
 const Home = () => {
@@ -28,15 +29,16 @@ const Home = () => {
     (p) => !listedTokenIds.has(p.id),
   );
   const playerCount = players.length;
+  const teamName = account.address ? generateName(account.address) : null;
 
   return (
     <div className="home-container">
       {!account.isConnected ? (
         <HomeDisconnected />
       ) : playerCount === 0 ? (
-        <WelcomeSection />
+        <WelcomeSection teamName={teamName ?? undefined} />
       ) : (
-        <SquadDashboard players={players} />
+        <SquadDashboard players={players} teamName={teamName ?? undefined} />
       )}
     </div>
   );
