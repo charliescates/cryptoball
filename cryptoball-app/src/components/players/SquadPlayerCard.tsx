@@ -51,6 +51,8 @@ const SquadPlayerCard = ({ onOpenDetails, player, roleFitLabel, teamAddress }: S
                 padding: "0 8px",
                 borderRadius: "999px",
                 fontSize: "12px",
+                backgroundColor: playerTypeColor,
+                color: "#ffffff",
               }}
               title={playerTypeName}
             >

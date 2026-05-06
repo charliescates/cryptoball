@@ -56,14 +56,14 @@ export const getTeamKitTraitsFromAddress = (address?: string): TeamKitTraits | u
   const secondarySatSeed = readHashValue(hash, 42);
   const secondaryLightSeed = readHashValue(hash, 50);
 
-  const primaryHue = hueSeed % 360;
-  const primarySaturation = 58 + (satSeed % 33);
-  const primaryLightness = 34 + (lightSeed % 22);
+  const primaryHue = (hueSeed + 120) % 360;
+  const primarySaturation = 70 + (satSeed % 25);
+  const primaryLightness = 38 + (lightSeed % 18);
 
-  const hueShift = schemeSeed % 3 === 0 ? 180 : schemeSeed % 3 === 1 ? (schemeSeed % 2 === 0 ? 28 : -28) : 120;
-  const secondaryHue = primaryHue + hueShift;
-  const secondarySaturation = 18 + (secondarySatSeed % 44);
-  const secondaryLightness = 72 + (secondaryLightSeed % 20);
+  const hueShift = schemeSeed % 3 === 0 ? 240 : schemeSeed % 3 === 1 ? (schemeSeed % 2 === 0 ? 75 : -75) : 110;
+  const secondaryHue = (primaryHue + hueShift) % 360;
+  const secondarySaturation = 42 + (secondarySatSeed % 40);
+  const secondaryLightness = 60 + (secondaryLightSeed % 28);
 
   return {
     bodyStyle: BODY_STYLES[styleSeed % BODY_STYLES.length],
