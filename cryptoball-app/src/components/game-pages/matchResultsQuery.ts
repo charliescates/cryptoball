@@ -62,6 +62,19 @@ export const playedMatchByMatchIdQuery = gql`
   }
 `;
 
+export const myMatchesQuery = gql`
+  query MyMatches($address: Bytes!) {
+    playedMatches(
+      first: 20
+      orderBy: blockTimestamp
+      orderDirection: desc
+      where: { or: [{ homeAddress: $address }, { awayAddress: $address }] }
+    ) {
+      ${playedMatchFields}
+    }
+  }
+`;
+
 export const matchResultsUrl = "https://api.studio.thegraph.com/query/1747934/match-results/version/latest";
 const graphApiKey = import.meta.env.VITE_GRAPH_API_KEY;
 export const matchResultsHeaders = graphApiKey ? { Authorization: `Bearer ${graphApiKey}` } : undefined;

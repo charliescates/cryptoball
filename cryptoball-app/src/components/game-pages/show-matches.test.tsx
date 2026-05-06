@@ -17,9 +17,11 @@ vi.mock("graphql-request", () => ({
 
 vi.mock("wagmi", () => ({
   useAccount: () => ({ address: "0x0000000000000000000000000000000000000001" }),
+  useReadContracts: () => ({ data: undefined }),
 }));
 
 const { useQuery } = await import("@tanstack/react-query");
+const { request } = await import("graphql-request");
 const HOME_ADDRESS = "0x0000000000000000000000000000000000000001";
 const AWAY_ADDRESS = "0x0000000000000000000000000000000000000002";
 
@@ -187,5 +189,59 @@ describe("ShowMatches", () => {
 
     expect(screen.queryByText(/replay hidden until reveal/i)).not.toBeInTheDocument();
     expect(screen.getByText(/match replay/i)).toBeInTheDocument();
+  });
+
+  it("shows a My Games toggle button when a wallet is connected", () => {
+    vi.mocked(useQuery).mockReturnValue({
+      status: "success",
+      data: { playedMatches: [] },
+    } as never);
+
+    renderShowMatches();
+
+    expect(screen.getByRole("button", { name: /my games/i })).toBeInTheDocument();
+  });
+
+  it("switches to the myMatchesQuery and shows a different empty state when My Games is active", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useQuery).mockReturnValue({
+      status: "success",
+      data: { playedMatches: [] },
+    } as never);
+
+    renderShowMatches();
+
+    const toggle = screen.getByRole("button", { name: /my games/i });
+    await user.click(toggle);
+
+    expect(screen.getByRole("button", { name: /all replays/i })).toBeInTheDocument();
+    expect(screen.getByText(/no completed matches found for your address/i)).toBeInTheDocument();
+
+    const queryCall = vi.mocked(useQuery).mock.lastCall?.[0] as { queryKey: unknown[] };
+    expect(queryCall?.queryKey).toEqual(["my-matches", HOME_ADDRESS]);
+  });
+
+  it("uses the myMatchesQuery with lowercased address in queryFn", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useQuery).mockImplementation((opts: { queryFn?: () => Promise<unknown>; queryKey?: unknown[] }) => {
+      void opts.queryFn?.();
+      return { status: "success", data: { playedMatches: [] } } as never;
+    });
+    vi.mocked(request).mockResolvedValue({ playedMatches: [] });
+
+    const { myMatchesQuery } = await import("./matchResultsQuery");
+    const { matchResultsUrl, matchResultsHeaders } = await import("./matchResultsQuery");
+
+    renderShowMatches();
+
+    const toggle = screen.getByRole("button", { name: /my games/i });
+    await user.click(toggle);
+
+    expect(vi.mocked(request)).toHaveBeenCalledWith(
+      matchResultsUrl,
+      myMatchesQuery,
+      { address: HOME_ADDRESS.toLowerCase() },
+      matchResultsHeaders,
+    );
   });
 });

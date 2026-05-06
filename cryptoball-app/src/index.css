@@ -203,6 +203,29 @@ form {
   color: rgba(176, 184, 193, 0.8);
 }
 
+.matches-filter-toggle {
+  margin-top: 14px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(176, 184, 193, 0.9);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.matches-filter-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.matches-filter-toggle--active {
+  background: rgba(99, 179, 237, 0.15);
+  border-color: rgba(99, 179, 237, 0.5);
+  color: #63b3ed;
+}
+
 .matches-history-state {
   margin-top: 20px;
   padding: 16px;

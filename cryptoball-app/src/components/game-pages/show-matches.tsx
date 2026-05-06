@@ -12,6 +12,7 @@ import {
   type PlayedMatch,
   matchResultsHeaders,
   matchResultsUrl,
+  myMatchesQuery,
   recentMatchesQuery,
 } from "./matchResultsQuery";
 
@@ -258,12 +259,16 @@ export default function ShowMatches() {
   const [revealPhases, setRevealPhases] = useState<Record<string, RevealPhase>>({});
   const [animSteps, setAnimSteps] = useState<Record<string, number>>({});
   const [shuffledTimelines, setShuffledTimelines] = useState<Record<string, GoalEvent[]>>({});
+  const [myGamesOnly, setMyGamesOnly] = useState(false);
   const autoplayMatchId = searchParams.get("matchId");
   const shouldAutoplay = searchParams.get("autoplay") === "1";
 
   const { data, status, error } = useQuery<MatchesResponse>({
-    queryKey: ["recent-matches"],
+    queryKey: myGamesOnly && address ? ["my-matches", address] : ["recent-matches"],
     async queryFn() {
+      if (myGamesOnly && address) {
+        return await request(matchResultsUrl, myMatchesQuery, { address: address.toLowerCase() }, matchResultsHeaders);
+      }
       return await request(matchResultsUrl, recentMatchesQuery, {}, matchResultsHeaders);
     },
     refetchInterval: shouldAutoplay && autoplayMatchId ? 4000 : false,
@@ -377,8 +382,19 @@ export default function ShowMatches() {
         <p>
           {autoplayMatchId
             ? "The selected match is pinned here and will reveal automatically when ready."
-            : "Recent completed fixtures with replay reveals and goal events."}
+            : myGamesOnly
+              ? "Showing only matches you played."
+              : "Recent completed fixtures with replay reveals and goal events."}
         </p>
+        {!autoplayMatchId && address && (
+          <button
+            type="button"
+            className={`matches-filter-toggle ${myGamesOnly ? "matches-filter-toggle--active" : ""}`}
+            onClick={() => setMyGamesOnly((prev) => !prev)}
+          >
+            {myGamesOnly ? "All Replays" : "My Games"}
+          </button>
+        )}
       </div>
 
       {status === "pending" ? <div className="matches-history-state">Loading recent matches...</div> : null}
@@ -389,7 +405,9 @@ export default function ShowMatches() {
       ) : null}
 
       {status === "success" && matches.length === 0 ? (
-        <div className="matches-history-state">No completed matches found yet.</div>
+        <div className="matches-history-state">
+          {myGamesOnly ? "No completed matches found for your address." : "No completed matches found yet."}
+        </div>
       ) : null}
 
       {status === "success" &&
