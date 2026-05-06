@@ -223,8 +223,9 @@ describe("ShowMatches", () => {
 
   it("uses the myMatchesQuery with lowercased address in queryFn", async () => {
     const user = userEvent.setup();
-    vi.mocked(useQuery).mockImplementation((opts: { queryFn?: () => Promise<unknown>; queryKey?: unknown[] }) => {
-      void opts.queryFn?.();
+    vi.mocked(useQuery).mockImplementation((opts) => {
+      const fn = opts.queryFn;
+      if (typeof fn === "function") void (fn as () => Promise<unknown>)();
       return { status: "success", data: { playedMatches: [] } } as never;
     });
     vi.mocked(request).mockResolvedValue({ playedMatches: [] });
