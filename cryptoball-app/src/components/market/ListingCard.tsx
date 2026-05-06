@@ -16,23 +16,13 @@ type Props = {
 
 type ListingTuple = [string, bigint, bigint, bigint, bigint, string, bigint, boolean]
 
-function shortenAddress(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
-}
-
 function formatCountdown(endTime: bigint) {
   const remaining = Number(endTime) - Math.floor(Date.now() / 1000)
   if (remaining <= 0) return 'Ended'
-  const h = Math.floor(remaining / 3600)
+  const d = Math.floor(remaining / 86400)
+  const h = Math.floor((remaining % 86400) / 3600)
   const m = Math.floor((remaining % 3600) / 60)
-  return `${h}h ${m}m remaining`
-}
-
-function getExplorerTxUrl(chainId: number | undefined, hash: `0x${string}` | undefined) {
-  if (!hash) return null
-  if (chainId === 137) return `https://polygonscan.com/tx/${hash}`
-  if (chainId === 80002) return `https://amoy.polygonscan.com/tx/${hash}`
-  return null
+  return d > 0 ? `${d}d ${h}h ${m}m remaining` : `${h}h ${m}m remaining`
 }
 
 function getErrorMessage(error: unknown) {
@@ -80,8 +70,6 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
     isError: isReceiptError,
     error: receiptError,
   } = useWaitForTransactionReceipt({ hash })
-
-  const txUrl = getExplorerTxUrl(chainId, hash)
 
   useEffect(() => {
     if (!writeError) return
@@ -196,7 +184,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
       <dl className="market-listing-details">
         <div>
           <dt>Seller</dt>
-          <dd>{`${generateName(listing.seller)} (${shortenAddress(listing.seller)})`}</dd>
+          <dd>{generateName(listing.seller)}</dd>
         </div>
         <div>
           <dt>Buy Now</dt>
@@ -274,17 +262,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
         </p>
       )}
 
-      {hash && (
-        <p className="market-step-label">
-          Tx hash: {hash}
-          {txUrl ? (
-            <>
-              {' '}
-              <a href={txUrl} target="_blank" rel="noreferrer">View on block explorer</a>
-            </>
-          ) : null}
-        </p>
-      )}
+      {isConfirmed && <p className="market-step-label" role="status">Transaction confirmed.</p>}
     </li>
   )
 }
