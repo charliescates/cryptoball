@@ -22,6 +22,7 @@ import {
   playedMatchByMatchIdQuery,
 } from "./matchResultsQuery";
 import { getRecentMatchSquad, restoreRecentMatchSquad, saveRecentMatchSquad } from "./recentMatchSquad";
+import { isVisibleMatchId } from "../utils/matchVisibility";
 
 const hasSubmittedTeam = (team?: MatchDetails["homeTeam"]) =>
   !!team &&
@@ -136,7 +137,7 @@ const JoinMatchPage = () => {
   });
 
   const ownedPlayers = (myPlayers as Player[] | undefined) ?? [];
-  const matchList = ((matches as bigint[] | undefined) ?? []).map(Number).filter((id) => id > 0);
+  const matchList = ((matches as bigint[] | undefined) ?? []).map(Number).filter((id) => id > 0 && isVisibleMatchId(id));
   const typedMatchDetails = matchDetails as MatchDetails | undefined;
 
   const matchContracts = useMemo(
