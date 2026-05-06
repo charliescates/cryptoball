@@ -76,6 +76,7 @@ const GetPlayers = () => {
                 key={player.id.toString()}
                 player={player}
                 roleFitLabel={getRoleFitLabel(player)}
+                teamAddress={account.address}
                 onOpenDetails={setSelectedPlayer}
               />
             ))}
@@ -89,7 +90,12 @@ const GetPlayers = () => {
         </section>
       )}
 
-      <PlayerDetailDrawer kind="squad" player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
+      <PlayerDetailDrawer
+        kind="squad"
+        player={selectedPlayer}
+        teamAddress={account.address}
+        onClose={() => setSelectedPlayer(null)}
+      />
     </main>
   );
 };

@@ -13,6 +13,7 @@ interface TeamBuilderProps {
   selectedCount: number;
   selectedFormation: Formation;
   selectedPlayerIds: Set<bigint>;
+  teamAddress?: string;
   onAutoPick: () => void;
   onClearFormation: () => void;
   onFormationChange: (formationName: string) => void;
@@ -32,6 +33,7 @@ const TeamBuilder = ({
   selectedCount,
   selectedFormation,
   selectedPlayerIds,
+  teamAddress,
   onAutoPick,
   onClearFormation,
   onFormationChange,
@@ -130,6 +132,7 @@ const TeamBuilder = ({
         <FormationGrid
           teamColour="#32ff7e"
           teamName="Your Team"
+          teamAddress={teamAddress}
           formation={formation}
           selectedFormation={selectedFormation}
           activePositionIndex={activePositionIndex}

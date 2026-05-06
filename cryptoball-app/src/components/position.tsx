@@ -1,6 +1,7 @@
 import FootballPlayerAvatar from "./avatar/FootballPlayerAvatar";
 import type { Player } from "./player";
 import { getPlayerName } from "./utils/playerName";
+import { getTeamKitTraitsFromAddress } from "./utils/teamKit";
 import { getPlayerTypeColor, getPlayerTypeIcon } from "./utils/playerType";
 
 type PositionProps = {
@@ -8,11 +9,14 @@ type PositionProps = {
   teamColour: string;
   index: number;
   player: Player | null;
+  teamAddress?: string;
   isActive?: boolean;
   onPositionClick: (index: number) => void;
 };
 
-const Position = ({ positionName, teamColour, index, player, isActive = false, onPositionClick }: PositionProps) => {
+const Position = ({ positionName, teamColour, index, player, teamAddress, isActive = false, onPositionClick }: PositionProps) => {
+  const teamKitTraits = getTeamKitTraitsFromAddress(teamAddress);
+
   return (
     <button
       className={`position ${player ? "filled" : "empty"} ${isActive ? "active" : ""}`}
@@ -36,10 +40,12 @@ const Position = ({ positionName, teamColour, index, player, isActive = false, o
                 seed={`${player.id.toString()}-${player.playerType.toString()}`}
                 size={52}
                 showBadge={false}
-                traits={{
-                  primaryKitColor: getPlayerTypeColor(player.playerType),
-                  secondaryKitColor: "#ffffff",
-                }}
+                traits={
+                  teamKitTraits ?? {
+                    primaryKitColor: getPlayerTypeColor(player.playerType),
+                    secondaryKitColor: "#ffffff",
+                  }
+                }
               />
             </div>
             <div className="position-title-wrap">

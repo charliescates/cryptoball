@@ -407,7 +407,7 @@ form {
 
 .matches-history-broadcast {
   display: grid;
-  grid-template-columns: minmax(150px, 0.8fr) minmax(190px, 1fr) minmax(180px, 1.1fr);
+  grid-template-columns: 1fr minmax(190px, 1fr) 1fr;
   align-items: center;
   gap: 14px;
   padding: 16px;

@@ -4,6 +4,7 @@ import { formatPol } from "../academy/formatters";
 import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
 import type { Player } from "../player";
 import { getPlayerName } from "../utils/playerName";
+import { getTeamKitTraitsFromAddress } from "../utils/teamKit";
 import { getPlayerTypeColor, getPlayerTypeIcon, getPlayerTypeName } from "../utils/playerType";
 import type { AcademyPlayer } from "../utils/playerUtils";
 
@@ -12,11 +13,13 @@ type PlayerDetailDrawerProps =
       kind: "squad";
       player: Player | null;
       onClose: () => void;
+      teamAddress?: string;
     }
   | {
       kind: "academy";
       player: AcademyPlayer | null;
       onClose: () => void;
+      teamAddress?: string;
     };
 
 const getProgressLabel = (potential: bigint, attack: bigint, defense: bigint) => {
@@ -58,6 +61,7 @@ const PlayerDetailDrawer = (props: PlayerDetailDrawerProps) => {
   const playerTypeName = getPlayerTypeName(player.playerType);
   const playerName = getPlayerName(player.id);
   const progressLabel = getProgressLabel(player.potential, player.attack, player.defense);
+  const teamKitTraits = getTeamKitTraitsFromAddress(props.teamAddress);
   const closeOnBackdropPress = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       props.onClose();
@@ -77,10 +81,12 @@ const PlayerDetailDrawer = (props: PlayerDetailDrawerProps) => {
               seed={`${player.id.toString()}-${player.playerType.toString()}`}
               size={136}
               showBadge={false}
-              traits={{
-                primaryKitColor: playerTypeColor,
-                secondaryKitColor: "#ffffff",
-              }}
+              traits={
+                teamKitTraits ?? {
+                  primaryKitColor: playerTypeColor,
+                  secondaryKitColor: "#ffffff",
+                }
+              }
             />
           </div>
           <div>

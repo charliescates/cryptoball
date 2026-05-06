@@ -1,11 +1,14 @@
 import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
 import { getPlayerName } from "../utils/playerName";
+import { getTeamKitTraitsFromAddress } from "../utils/teamKit";
 
 interface ReplayPositionCardProps {
   goalCount: number;
   isLatestScorer: boolean;
   playerId: string;
+  playerType?: string;
   positionLabel: string;
+  teamAddress?: string;
   teamColour: string;
 }
 
@@ -13,11 +16,14 @@ export function ReplayPositionCard({
   goalCount,
   isLatestScorer,
   playerId,
+  playerType,
   positionLabel,
+  teamAddress,
   teamColour,
 }: ReplayPositionCardProps) {
   const name = getPlayerName(BigInt(playerId));
   const isScorer = goalCount > 0;
+  const teamKitTraits = getTeamKitTraitsFromAddress(teamAddress);
 
   const borderColor = isLatestScorer ? "#7ef0a7" : isScorer ? "rgba(126, 240, 167, 0.55)" : teamColour;
 
@@ -34,13 +40,15 @@ export function ReplayPositionCard({
             style={{ borderColor: isScorer ? "rgba(126, 240, 167, 0.3)" : "rgba(255, 255, 255, 0.08)" }}
           >
             <FootballPlayerAvatar
-              seed={playerId}
+              seed={playerType !== undefined ? `${playerId}-${playerType}` : playerId}
               size={52}
               showBadge={false}
-              traits={{
-                primaryKitColor: teamColour,
-                secondaryKitColor: "#ffffff",
-              }}
+              traits={
+                teamKitTraits ?? {
+                  primaryKitColor: teamColour,
+                  secondaryKitColor: "#ffffff",
+                }
+              }
             />
           </div>
           <div className="position-title-wrap">

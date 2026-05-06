@@ -1,6 +1,7 @@
 import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
 import type { Player } from "../player";
 import { getPlayerName } from "../utils/playerName";
+import { getTeamKitTraitsFromAddress } from "../utils/teamKit";
 import { getPlayerTypeColor, getPlayerTypeIcon, getPlayerTypeName } from "../utils/playerType";
 import PlayerStat from "./PlayerStat";
 
@@ -8,13 +9,15 @@ interface SquadPlayerCardProps {
   onOpenDetails?: (player: Player) => void;
   player: Player;
   roleFitLabel?: string;
+  teamAddress?: string;
 }
 
-const SquadPlayerCard = ({ onOpenDetails, player, roleFitLabel }: SquadPlayerCardProps) => {
+const SquadPlayerCard = ({ onOpenDetails, player, roleFitLabel, teamAddress }: SquadPlayerCardProps) => {
   const playerTypeColor = getPlayerTypeColor(player.playerType);
   const playerTypeName = getPlayerTypeName(player.playerType);
   const attackDelta = player.attack - player.originalAttack;
   const defenseDelta = player.defense - player.originalDefense;
+  const teamKitTraits = getTeamKitTraitsFromAddress(teamAddress);
 
   return (
     <div className="player-card player-card-roster">
@@ -24,10 +27,12 @@ const SquadPlayerCard = ({ onOpenDetails, player, roleFitLabel }: SquadPlayerCar
             seed={`${player.id.toString()}-${player.playerType.toString()}`}
             size={92}
             showBadge={false}
-            traits={{
-              primaryKitColor: playerTypeColor,
-              secondaryKitColor: "#ffffff",
-            }}
+            traits={
+              teamKitTraits ?? {
+                primaryKitColor: playerTypeColor,
+                secondaryKitColor: "#ffffff",
+              }
+            }
           />
         </div>
 

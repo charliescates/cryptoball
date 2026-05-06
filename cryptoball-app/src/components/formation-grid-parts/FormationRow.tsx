@@ -9,6 +9,7 @@ interface FormationRowProps {
   label: string;
   onPositionClick: (index: number) => void;
   startIndex: number;
+  teamAddress?: string;
   teamColour: string;
 }
 
@@ -20,6 +21,7 @@ const FormationRow = ({
   label,
   onPositionClick,
   startIndex,
+  teamAddress,
   teamColour,
 }: FormationRowProps) => {
   if (count === 0) {
@@ -40,6 +42,7 @@ const FormationRow = ({
               key={index}
               positionName={label}
               teamColour={teamColour}
+              teamAddress={teamAddress}
               index={index}
               player={formation[index]}
               isActive={activePositionIndex === index}

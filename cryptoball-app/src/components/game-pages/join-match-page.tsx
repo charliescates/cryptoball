@@ -323,6 +323,7 @@ const JoinMatchPage = () => {
               selectedCount={formationBuilder.selectedCount}
               selectedFormation={formationBuilder.selectedFormation}
               selectedPlayerIds={formationBuilder.selectedPlayerIds}
+              teamAddress={account.address}
               onAutoPick={() => formationBuilder.autoPickFormation(ownedPlayers)}
               onClearFormation={formationBuilder.clearFormation}
               onFormationChange={formationBuilder.handleFormationChange}

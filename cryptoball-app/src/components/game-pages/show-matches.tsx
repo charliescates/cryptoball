@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { request } from "graphql-request";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useAccount } from "wagmi";
+import { useAccount, useReadContracts } from "wagmi";
 import { ReplayPositionCard } from "../formation-grid-parts/ReplayPositionCard";
 import { getPlayerName } from "../utils/playerName";
 import generateName from "../utils/teamName";
+import { playerContract } from "../../contracts/playerContract";
 import {
   type MatchesResponse,
   type PlayedMatch,
@@ -96,7 +97,9 @@ function renderFormationRow(
   playerIds: string[],
   goalCounts: Record<string, number>,
   latestScorer: string | null,
+  teamAddress: string,
   teamColour: string,
+  playerTypeMap: Map<string, string>,
 ) {
   if (playerIds.length === 0) return null;
   return (
@@ -107,9 +110,11 @@ function renderFormationRow(
           <ReplayPositionCard
             key={id}
             playerId={id}
+            playerType={playerTypeMap.get(id)}
             goalCount={goalCounts[id] ?? 0}
             isLatestScorer={id === latestScorer}
             positionLabel={label}
+            teamAddress={teamAddress}
             teamColour={teamColour}
           />
         ))}
@@ -265,6 +270,46 @@ export default function ShowMatches() {
   });
 
   const matches = data?.playedMatches ?? [];
+
+  const allPlayerIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const match of matches) {
+      for (const id of [
+        ...match.homeAttackingPlayers,
+        ...match.homeMidfieldPlayers,
+        ...match.homeDefensivePlayers,
+        ...match.awayAttackingPlayers,
+        ...match.awayMidfieldPlayers,
+        ...match.awayDefensivePlayers,
+      ]) {
+        if (id !== "0") ids.add(id);
+      }
+    }
+    return [...ids];
+  }, [matches]);
+
+  const { data: playerAttributeResults } = useReadContracts({
+    contracts: allPlayerIds.map((id) => ({
+      address: playerContract.address,
+      abi: playerContract.abi,
+      functionName: "getPlayerAttributes" as const,
+      args: [BigInt(id)] as const,
+    })),
+    query: { enabled: allPlayerIds.length > 0 },
+  });
+
+  const playerTypeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    playerAttributeResults?.forEach((result, index) => {
+      if (result.status !== "success") return;
+      const attrs = result.result as readonly bigint[];
+      const playerType = attrs[7];
+      if (playerType !== undefined) {
+        map.set(allPlayerIds[index], playerType.toString());
+      }
+    });
+    return map;
+  }, [playerAttributeResults, allPlayerIds]);
   const orderedMatches = useMemo(() => {
     if (!autoplayMatchId) return matches;
     const prioritized = matches.find((match) => match.matchId === autoplayMatchId);
@@ -438,7 +483,9 @@ export default function ShowMatches() {
                             homeFormation.attack,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
+                            match.homeAddress,
                             "#32ff7e",
+                            playerTypeMap,
                           )}
                           {renderFormationRow(
                             "MIDFIELD",
@@ -446,7 +493,9 @@ export default function ShowMatches() {
                             homeFormation.midfield,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
+                            match.homeAddress,
                             "#32ff7e",
+                            playerTypeMap,
                           )}
                           {renderFormationRow(
                             "DEFENSE",
@@ -454,7 +503,9 @@ export default function ShowMatches() {
                             homeFormation.defense,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
+                            match.homeAddress,
                             "#32ff7e",
+                            playerTypeMap,
                           )}
                         </div>
                       </section>
@@ -471,7 +522,9 @@ export default function ShowMatches() {
                             awayFormation.attack,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
+                            match.awayAddress,
                             "#1e90ff",
+                            playerTypeMap,
                           )}
                           {renderFormationRow(
                             "MIDFIELD",
@@ -479,7 +532,9 @@ export default function ShowMatches() {
                             awayFormation.midfield,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
+                            match.awayAddress,
                             "#1e90ff",
+                            playerTypeMap,
                           )}
                           {renderFormationRow(
                             "DEFENSE",
@@ -487,7 +542,9 @@ export default function ShowMatches() {
                             awayFormation.defense,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
+                            match.awayAddress,
                             "#1e90ff",
+                            playerTypeMap,
                           )}
                         </div>
                       </section>
@@ -550,16 +607,36 @@ export default function ShowMatches() {
                             >
                               <h3>{homeTeamName}</h3>
                               <div className="formation-grid-wrapper">
-                                {renderFormationRow("ATTACK", "⚔️", homeFormation.attack, fullCounts, null, "#32ff7e")}
+                                {renderFormationRow(
+                                  "ATTACK",
+                                  "⚔️",
+                                  homeFormation.attack,
+                                  fullCounts,
+                                  null,
+                                  match.homeAddress,
+                                  "#32ff7e",
+                                  playerTypeMap,
+                                )}
                                 {renderFormationRow(
                                   "MIDFIELD",
                                   "⚡",
                                   homeFormation.midfield,
                                   fullCounts,
                                   null,
+                                  match.homeAddress,
                                   "#32ff7e",
+                                  playerTypeMap,
                                 )}
-                                {renderFormationRow("DEFENSE", "🛡️", homeFormation.defense, fullCounts, null, "#32ff7e")}
+                                {renderFormationRow(
+                                  "DEFENSE",
+                                  "🛡️",
+                                  homeFormation.defense,
+                                  fullCounts,
+                                  null,
+                                  match.homeAddress,
+                                  "#32ff7e",
+                                  playerTypeMap,
+                                )}
                               </div>
                             </section>
                             <section
@@ -568,16 +645,36 @@ export default function ShowMatches() {
                             >
                               <h3>{awayTeamName}</h3>
                               <div className="formation-grid-wrapper">
-                                {renderFormationRow("ATTACK", "⚔️", awayFormation.attack, fullCounts, null, "#1e90ff")}
+                                {renderFormationRow(
+                                  "ATTACK",
+                                  "⚔️",
+                                  awayFormation.attack,
+                                  fullCounts,
+                                  null,
+                                  match.awayAddress,
+                                  "#1e90ff",
+                                  playerTypeMap,
+                                )}
                                 {renderFormationRow(
                                   "MIDFIELD",
                                   "⚡",
                                   awayFormation.midfield,
                                   fullCounts,
                                   null,
+                                  match.awayAddress,
                                   "#1e90ff",
+                                  playerTypeMap,
                                 )}
-                                {renderFormationRow("DEFENSE", "🛡️", awayFormation.defense, fullCounts, null, "#1e90ff")}
+                                {renderFormationRow(
+                                  "DEFENSE",
+                                  "🛡️",
+                                  awayFormation.defense,
+                                  fullCounts,
+                                  null,
+                                  match.awayAddress,
+                                  "#1e90ff",
+                                  playerTypeMap,
+                                )}
                               </div>
                             </section>
                           </>

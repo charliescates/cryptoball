@@ -13,6 +13,7 @@ interface FormationGridProps {
   formation: (Player | null)[];
   selectedFormation: Formation;
   activePositionIndex?: number | null;
+  teamAddress?: string;
   onPositionClick: (index: number) => void;
 }
 
@@ -22,6 +23,7 @@ const FormationGrid = ({
   formation,
   selectedFormation,
   activePositionIndex = null,
+  teamAddress,
   onPositionClick,
 }: FormationGridProps) => {
   const [showBonusBreakdown, setShowBonusBreakdown] = useState(false);
@@ -42,6 +44,7 @@ const FormationGrid = ({
         startIndex={0}
         count={selectedFormation.attack}
         formation={formation}
+        teamAddress={teamAddress}
         teamColour={teamColour}
         activePositionIndex={activePositionIndex}
         onPositionClick={onPositionClick}
@@ -52,6 +55,7 @@ const FormationGrid = ({
         startIndex={selectedFormation.attack}
         count={selectedFormation.midfield}
         formation={formation}
+        teamAddress={teamAddress}
         teamColour={teamColour}
         activePositionIndex={activePositionIndex}
         onPositionClick={onPositionClick}
@@ -62,6 +66,7 @@ const FormationGrid = ({
         startIndex={selectedFormation.attack + selectedFormation.midfield}
         count={selectedFormation.defense}
         formation={formation}
+        teamAddress={teamAddress}
         teamColour={teamColour}
         activePositionIndex={activePositionIndex}
         onPositionClick={onPositionClick}
