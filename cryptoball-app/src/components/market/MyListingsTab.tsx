@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { gql, request } from 'graphql-request'
 import { useAccount } from 'wagmi'
+import { isVisiblePlayerId } from '../utils/playerVisibility'
 import ListingCard from './ListingCard'
 import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type SubgraphListing } from './marketSubgraph'
 
@@ -48,7 +49,7 @@ export default function MyListingsTab() {
   if (isLoading) return <p className="market-empty">Loading your listings...</p>
   if (error) return <p className="market-empty">Failed to load your listings.</p>
 
-  const listings = (data?.listings ?? []).map(mapListing)
+  const listings = (data?.listings ?? []).map(mapListing).filter((listing) => isVisiblePlayerId(listing.tokenId))
   if (listings.length === 0) {
     return <p className="market-empty">You do not have any active listings right now.</p>
   }

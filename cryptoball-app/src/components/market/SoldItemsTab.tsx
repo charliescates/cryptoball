@@ -5,6 +5,7 @@ import { formatEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
 import { getPlayerName } from '../utils/playerName'
+import { isVisiblePlayerId } from '../utils/playerVisibility'
 import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type Listing, type SubgraphListing } from './marketSubgraph'
 import ListingPlayerInfo from './ListingPlayerInfo'
 
@@ -118,7 +119,7 @@ export default function SoldItemsTab() {
   if (isLoading) return <p className="market-empty">Loading your sold items...</p>
   if (error) return <p className="market-empty">Failed to load sold items.</p>
 
-  const soldItems = (data?.listings ?? []).map(mapListing)
+  const soldItems = (data?.listings ?? []).map(mapListing).filter((listing) => isVisiblePlayerId(listing.tokenId))
 
   return (
     <div className="market-activity-layout">

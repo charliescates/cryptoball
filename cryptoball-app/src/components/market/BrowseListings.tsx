@@ -4,6 +4,7 @@ import { gql, request } from 'graphql-request'
 import { parseEther } from 'viem'
 import { useReadContracts } from 'wagmi'
 import { playerContract } from '../../contracts/playerContract'
+import { isVisiblePlayerId } from '../utils/playerVisibility'
 import ListingCard from './ListingCard'
 import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type SubgraphListing } from './marketSubgraph'
 import type { RawPlayer } from './ListingPlayerInfo'
@@ -47,7 +48,7 @@ export default function BrowseListings() {
     refetchInterval: 30_000,
   })
 
-  const listings = (data?.listings ?? []).map(mapListing)
+  const listings = (data?.listings ?? []).map(mapListing).filter((listing) => isVisiblePlayerId(listing.tokenId))
   const playerContracts = listings.map((listing) => ({
     address: playerContract.address,
     abi: playerContract.abi,

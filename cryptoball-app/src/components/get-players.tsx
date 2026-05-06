@@ -12,6 +12,7 @@ import SquadPageHeader from "./squad/SquadPageHeader";
 import SquadPlanner from "./squad/SquadPlanner";
 import SquadToolbar from "./squad/SquadToolbar";
 import generateName from "./utils/teamName";
+import { isVisiblePlayerId } from "./utils/playerVisibility";
 import {
   type SquadFilter,
   type SquadSort,
@@ -40,7 +41,7 @@ const GetPlayers = () => {
 
   const listedTokenIds = useMyListedTokenIds();
   const players = ((allPlayers as Player[] | undefined) ?? []).filter(
-    (p) => !listedTokenIds.has(p.id),
+    (p) => !listedTokenIds.has(p.id) && isVisiblePlayerId(p.id),
   );
   const squadMetrics = useMemo(() => getSquadMetrics(players), [players]);
   const squadInsights = useMemo(() => getSquadInsights(players), [players]);

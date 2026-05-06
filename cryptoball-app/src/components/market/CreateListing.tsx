@@ -6,6 +6,7 @@ import { marketContract } from '../../contracts/marketContract'
 import { playerContract } from '../../contracts/playerContract'
 import { getPlayerName } from '../utils/playerName'
 import { getPlayerTypeColor, getPlayerTypeIcon, getPlayerTypeName } from '../utils/playerType'
+import { isVisiblePlayerId } from '../utils/playerVisibility'
 import type { Player } from '../player'
 import { useMyListedTokenIds } from './useMyListedTokenIds'
 
@@ -54,7 +55,7 @@ export default function CreateListing({ onCreated }: Props) {
 
   const listedTokenIds = useMyListedTokenIds()
   const players = ((allPlayers as Player[] | undefined) ?? []).filter(
-    (p) => !listedTokenIds.has(p.id),
+    (p) => !listedTokenIds.has(p.id) && isVisiblePlayerId(p.id),
   )
   const selectedPlayer =
     selectedTokenId === null ? null : players.find((player) => player.id === selectedTokenId) ?? null

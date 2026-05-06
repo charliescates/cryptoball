@@ -51,9 +51,9 @@ describe("GetPlayers", () => {
     render(<GetPlayers />);
 
     expect(screen.getByRole("heading", { name: "Squad" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Squad summary")).toHaveTextContent("Players2");
+    expect(screen.getByLabelText("Squad summary")).toHaveTextContent("Players1");
     expect(screen.getByText("Player 1 Attack fit").parentElement).toHaveClass("squad-player-grid");
-    expect(screen.getByText("Player 2 Defense fit")).toBeInTheDocument();
+    expect(screen.queryByText("Player 2 Defense fit")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Squad insights")).toHaveTextContent("Defensive depth");
   });
 
@@ -76,12 +76,11 @@ describe("GetPlayers", () => {
     expect(screen.getAllByTestId("squad-card").map((card) => card.textContent?.trim().replace(/\s+/g, " "))).toEqual([
       "Player 1 Elite prospect",
       "Player 3 Defense fit",
-      "Player 2 Attack fit",
     ]);
 
     await user.selectOptions(screen.getByLabelText("Filter"), "high-potential");
 
-    expect(screen.getByLabelText("Squad controls")).toHaveTextContent("2of 3 shown");
+    expect(screen.getByLabelText("Squad controls")).toHaveTextContent("2of 2 shown");
     expect(screen.getByText("Player 1 Elite prospect")).toBeInTheDocument();
     expect(screen.getByText("Player 3 Defense fit")).toBeInTheDocument();
     expect(screen.queryByText("Player 2 Attack fit")).not.toBeInTheDocument();
