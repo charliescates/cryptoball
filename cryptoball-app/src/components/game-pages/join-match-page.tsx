@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { type Log, decodeEventLog } from "viem";
 import { zeroAddress } from "viem";
-import { useAccount, useReadContract, useWatchContractEvent } from "wagmi";
+import { useAccount, useReadContract, useReadContracts, useWatchContractEvent } from "wagmi";
 
 import { gameContract } from "../../contracts/gameContract";
 import { playerContract } from "../../contracts/playerContract";
@@ -139,6 +139,39 @@ const JoinMatchPage = () => {
   const matchList = ((matches as bigint[] | undefined) ?? []).map(Number).filter((id) => id > 0);
   const typedMatchDetails = matchDetails as MatchDetails | undefined;
 
+  const matchContracts = useMemo(
+    () =>
+      matchList.map((id) => ({
+        abi: gameContract.abi,
+        address: gameContract.address,
+        functionName: "getMatch" as const,
+        args: [id] as const,
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [matchList.join(",")],
+  );
+
+  const { data: allMatchDetailsRaw } = useReadContracts({
+    contracts: matchContracts,
+    query: { enabled: matchList.length > 0 },
+  });
+
+  const userMatchesWithDetails = useMemo(() => {
+    if (!allMatchDetailsRaw || !account.address) return [];
+    const userAddr = account.address.toLowerCase();
+    return matchList
+      .map((id, i) => {
+        const result = allMatchDetailsRaw[i];
+        if (result?.status !== "success") return null;
+        const details = result.result as MatchDetails;
+        const isInvolved =
+          details.homeAddress.toLowerCase() === userAddr || details.awayAddress.toLowerCase() === userAddr;
+        if (!isInvolved) return null;
+        return { id, details };
+      })
+      .filter((item): item is { id: number; details: MatchDetails } => item !== null);
+  }, [allMatchDetailsRaw, matchList, account.address]);
+
   const bothTeamsSubmitted = useMemo(() => {
     if (!typedMatchDetails) return false;
     return hasSubmittedTeam(typedMatchDetails.homeTeam) && hasSubmittedTeam(typedMatchDetails.awayTeam);
@@ -262,15 +295,16 @@ const JoinMatchPage = () => {
   return (
     <div className="tab-panel">
       <MatchSelector
+        currentAddress={account.address}
         matchDetails={typedMatchDetails}
-        matchList={matchList}
+        matchesWithDetails={userMatchesWithDetails}
         selectedMatchId={selectedMatchId}
         disabled={hasLockedTeam}
         onMatchChange={handleMatchChange}
       />
 
       {selectedMatchId === null ? (
-        <MatchRequiredPanel hasMatches={matchList.length > 0} />
+        <MatchRequiredPanel hasMatches={userMatchesWithDetails.length > 0} />
       ) : (
         <>
           {hasLockedTeam ? (

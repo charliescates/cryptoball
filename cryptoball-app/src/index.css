@@ -1341,6 +1341,137 @@ form {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Match card grid (replaces dropdown) */
+.match-selection-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.match-selection-header h2 {
+  margin: 0;
+}
+
+.match-selection-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(0, 255, 109, 0.1);
+  border: 1px solid rgba(0, 255, 109, 0.22);
+  color: rgba(0, 255, 109, 0.86);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.match-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.match-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.025) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+}
+
+.match-card:hover:not(:disabled) {
+  border-color: rgba(0, 255, 109, 0.45);
+  background: linear-gradient(180deg, rgba(0, 255, 109, 0.07) 0%, rgba(0, 255, 109, 0.03) 100%);
+  box-shadow: 0 0 0 3px rgba(0, 255, 109, 0.08);
+}
+
+.match-card--selected {
+  border-color: rgba(0, 255, 109, 0.65) !important;
+  background: linear-gradient(180deg, rgba(0, 255, 109, 0.12) 0%, rgba(0, 255, 109, 0.05) 100%) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 109, 0.14) !important;
+}
+
+.match-card--disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.match-card-id {
+  color: rgba(0, 255, 109, 0.86);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.match-card-opponent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.match-card-opponent strong {
+  display: block;
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-card-vs {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 255, 109, 0.1);
+  border: 1px solid rgba(0, 255, 109, 0.22);
+  color: var(--heading-color);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+}
+
+.match-card-wager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.match-card-wager span {
+  color: rgba(176, 184, 193, 0.7);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.match-card-wager strong {
+  color: #7ef0a7;
+  font-size: 0.9rem;
+}
+
 .match-select {
   width: 100%;
   max-width: 400px;
