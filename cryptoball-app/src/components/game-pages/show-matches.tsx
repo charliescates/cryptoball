@@ -629,6 +629,12 @@ function GoalEventsPanel({
   homeTeamName: string;
   awayTeamName: string;
 }) {
+  const getGoalTimeLabel = (goal: GoalEvent) => {
+    if (goal.isGoldenGoal) return "Golden Goal";
+    if (goal.minute > 20) return "ET";
+    return `${goal.minute}'`;
+  };
+
   return (
     <section className="matches-history-goals-panel" aria-label={title}>
       <h3>{title}</h3>
@@ -642,9 +648,8 @@ function GoalEventsPanel({
               <div>
                 <strong>{goal.playerName}</strong>
                 <p>
-                  {goal.isGoldenGoal ? "Golden Goal" : `${goal.minute}'`} |{" "}
+                  {getGoalTimeLabel(goal)} |{" "}
                   {goal.teamLabel === "Home" ? homeTeamName : goal.teamLabel === "Away" ? awayTeamName : "Unknown Team"}
-                  {(goal.isGoldenGoal || goal.minute > 20) && " | ET"}
                 </p>
               </div>
             </li>
