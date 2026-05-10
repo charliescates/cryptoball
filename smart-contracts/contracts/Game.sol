@@ -40,7 +40,32 @@ contract Game {
         Team awayTeam
     );
     event MatchPlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
+    event ExtraTimePlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
+    event GoldenGoalPlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
     event PlayerScored(uint256 matchId, uint256 playerId);
+    event PlayerStatsUpdated(uint256 matchId, uint256 playerId, string position);
+    event TeamStatsCalculated(uint256 matchId, address team, uint256 totalAttack, uint256 totalDefense);
+    event WinningsDistributed(
+        uint256 matchId,
+        address winner,
+        uint256 winnings,
+        address academy,
+        uint256 academyShare,
+        address executor,
+        uint256 executorFee
+    );
+    event PlayerMatchInfo(
+            uint256 matchId,
+            uint256 playerId,
+            address owner,
+            uint256 attack,
+            uint256 defense,
+            uint256 potential,
+            uint256 gamesLeft,
+            uint256 goals,
+            uint8 playerType,
+            string position
+    );
 
     constructor(address playerTokenAddress, address academyAddress) {
         playerToken = PlayerToken(playerTokenAddress);
@@ -121,6 +146,9 @@ contract Game {
         Match memory game = matches[matchId];
         
         (homeGoals, awayGoals) = iterateThroughGame(
+            matchId,
+            game.homeAddress,
+            game.awayAddress,
             game.homeTeam.attackingPlayers,
             game.homeTeam.midfieldPlayers,
             game.homeTeam.defensivePlayers,
@@ -129,8 +157,12 @@ contract Game {
             game.awayTeam.defensivePlayers
         );
 
+        // Emit player match info for all players
+        emitPlayerMatchInfo(matchId, game.homeTeam, game.homeAddress);
+        emitPlayerMatchInfo(matchId, game.awayTeam, game.awayAddress);
+
         // Update player stats
-        updatePlayerStats(game.homeTeam, game.awayTeam);
+        updatePlayerStats(matchId, game.homeTeam, game.awayTeam);
 
         // Assign goals to scorers
         assignGoals(matchId, homeGoals, game.homeTeam);
@@ -139,7 +171,7 @@ contract Game {
         emit MatchSnapshot(matchId, game.homeAddress, game.awayAddress, game.homeTeam, game.awayTeam);
 
         // Distribute winnings
-        distributeWinnings(homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress, executor);
+        distributeWinnings(matchId, homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress, executor);
 
         emit MatchPlayed(matchId, homeGoals, awayGoals);
 
@@ -148,30 +180,37 @@ contract Game {
         return (homeGoals, awayGoals);
     }
 
-    function updatePlayerStats(Team memory homeTeam, Team memory awayTeam) private {
+    function updatePlayerStats(uint256 matchId, Team memory homeTeam, Team memory awayTeam) private {
         for (uint i = 0; i < 3; i++) {
             if (homeTeam.attackingPlayers[i] != 0) {
                 playerToken.playAttackGame(homeTeam.attackingPlayers[i]);
+                emit PlayerStatsUpdated(matchId, homeTeam.attackingPlayers[i], "attacking");
             }
             if (homeTeam.midfieldPlayers[i] != 0) {
                 playerToken.playMidfieldGame(homeTeam.midfieldPlayers[i]);
+                emit PlayerStatsUpdated(matchId, homeTeam.midfieldPlayers[i], "midfield");
             }
             if (homeTeam.defensivePlayers[i] != 0) {
                 playerToken.playDefenseGame(homeTeam.defensivePlayers[i]);
+                emit PlayerStatsUpdated(matchId, homeTeam.defensivePlayers[i], "defensive");
             }
             if (awayTeam.attackingPlayers[i] != 0) {
                 playerToken.playAttackGame(awayTeam.attackingPlayers[i]);
+                emit PlayerStatsUpdated(matchId, awayTeam.attackingPlayers[i], "attacking");
             }
             if (awayTeam.midfieldPlayers[i] != 0) {
                 playerToken.playMidfieldGame(awayTeam.midfieldPlayers[i]);
+                emit PlayerStatsUpdated(matchId, awayTeam.midfieldPlayers[i], "midfield");
             }
             if (awayTeam.defensivePlayers[i] != 0) {
                 playerToken.playDefenseGame(awayTeam.defensivePlayers[i]);
+                emit PlayerStatsUpdated(matchId, awayTeam.defensivePlayers[i], "defensive");
             }
         }
     }
 
     function distributeWinnings(
+        uint256 matchId,
         uint8 homeGoals,
         uint8 awayGoals,
         uint256 pot,
@@ -194,15 +233,21 @@ contract Game {
 
         if (homeGoals > awayGoals) {
             payable(homeAddress).transfer(remainingPot);
+            emit WinningsDistributed(matchId, homeAddress, remainingPot, address(academy), academyShare, executor, executorFee);
         } else if (awayGoals > homeGoals) {
             payable(awayAddress).transfer(remainingPot);
+            emit WinningsDistributed(matchId, awayAddress, remainingPot, address(academy), academyShare, executor, executorFee);
         } else {
             payable(homeAddress).transfer(remainingPot / 2);
             payable(awayAddress).transfer(remainingPot / 2);
+            emit WinningsDistributed(matchId, homeAddress, remainingPot / 2, address(academy), academyShare, executor, executorFee);
         }
     }
 
     function iterateThroughGame(
+        uint256 matchId,
+        address homeAddress,
+        address awayAddress,
         uint256[3] memory homeAttackingPlayers,
         uint256[3] memory homeMidfieldPlayers,
         uint256[3] memory homeDefensivePlayers,
@@ -212,9 +257,33 @@ contract Game {
         (uint homeAttack, uint homeDefense) = calculateTeamStats(homeAttackingPlayers, homeMidfieldPlayers, homeDefensivePlayers);
         (uint awayAttack, uint awayDefense) = calculateTeamStats(awayAttackingPlayers, awayMidfieldPlayers, awayDefensivePlayers);
         
+        emit TeamStatsCalculated(matchId, homeAddress, homeAttack, homeDefense);
+        emit TeamStatsCalculated(matchId, awayAddress, awayAttack, awayDefense);
+        
         for (uint i = 0; i < 20; i++) {
             homeGoals += tryAndScore(homeAttack, awayDefense);
             awayGoals += tryAndScore(awayAttack, homeDefense);
+        }
+
+        if (homeGoals == awayGoals) {
+            // Extra-time period for drawn matches.
+            for (uint i = 0; i < 5; i++) {
+                homeGoals += tryAndScore(homeAttack, awayDefense);
+                awayGoals += tryAndScore(awayAttack, homeDefense);
+            }
+
+            emit ExtraTimePlayed(matchId, homeGoals, awayGoals);
+
+            // If still level after extra-time, resolve with a weighted tiebreaker.
+            if (homeGoals == awayGoals) {
+                if (resolveTiebreaker(homeAttack + homeDefense, awayAttack + awayDefense)) {
+                    homeGoals += 1;
+                } else {
+                    awayGoals += 1;
+                }
+
+                emit GoldenGoalPlayed(matchId, homeGoals, awayGoals);
+            }
         }
 
         return (homeGoals, awayGoals);
@@ -233,18 +302,54 @@ contract Game {
                 )
             )
         ) % 100;
-        uint total = attack + defense;
-        uint chanceOfScoring = 60 + (defense * 40) / total;
 
-        if (random % 100 > chanceOfScoring) {
+        uint total = attack + defense;
+        if (total == 0) {
+            return 0;
+        }
+
+        uint linearChance = (attack * 100) / total;
+        uint attackSq = attack * attack;
+        uint defenseSq = defense * defense;
+        uint quadraticChance = (attackSq * 100) / (attackSq + defenseSq);
+
+        // 70% linear + 30% quadratic to keep scoring lower but still stat-sensitive.
+        uint blendedChance = (linearChance * 70 + quadraticChance * 30) / 100;
+
+        // Clamp to 2%-36% to reduce total goals in normal time.
+        uint chanceOfScoring = 2 + (blendedChance * 34) / 100;
+
+        if (random < chanceOfScoring) {
             return 1;
         } else {
             return 0;
         }
     }
 
+    function resolveTiebreaker(uint homeStrength, uint awayStrength) private returns (bool homeWins) {
+        if (randomCounter == type(uint).max) {
+            randomCounter = 0;
+        }
+
+        uint total = homeStrength + awayStrength;
+        uint homeWinChance = total == 0 ? 50 : (homeStrength * 100) / total;
+
+        uint random = uint(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    msg.sender,
+                    homeStrength + awayStrength + randomCounter++,
+                    "tiebreaker"
+                )
+            )
+        ) % 100;
+
+        return random < homeWinChance;
+    }
+
     function validateTeam(uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) private view returns (address owner) {
-        uint[] memory team = new uint[](5);
+        uint256[5] memory team;
         uint playerCount = 0;
         for (uint i = 0; i < 3; i++) {
             if (attack[i] != 0) {
@@ -293,26 +398,30 @@ contract Game {
     }
 
     function assignGoals(uint256 matchId, uint goals, Team memory team) private {
-        uint[] memory players = new uint[](5);
-        uint[] memory attackRange = new uint[](6);
+        uint256[5] memory players;
+        uint256[6] memory attackRange;
         uint playerCount = 0;
+        
         for (uint i = 0; i < 3; i++) {
             if (team.attackingPlayers[i] != 0) {
                 players[playerCount] = team.attackingPlayers[i];
-                ( , uint attackStat, , , , , ,) = playerToken.getPlayerAttributes(team.attackingPlayers[i]);
-                attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
+                uint adjustedAttack = getAdjustedGoalWeight(team.attackingPlayers[i], 110, true, false);
+                
+                attackRange[playerCount + 1] = attackRange[playerCount] + adjustedAttack;
                 playerCount++;
             }
             if (team.midfieldPlayers[i] != 0) {
                 players[playerCount] = team.midfieldPlayers[i];
-                ( , uint attackStat, , , , , ,) = playerToken.getPlayerAttributes(team.midfieldPlayers[i]);
-                attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
+                uint adjustedAttack = getAdjustedGoalWeight(team.midfieldPlayers[i], 100, false, false);
+                
+                attackRange[playerCount + 1] = attackRange[playerCount] + adjustedAttack;
                 playerCount++;
             }
             if (team.defensivePlayers[i] != 0) {
                 players[playerCount] = team.defensivePlayers[i];
-                ( , uint attackStat, , , , , ,) = playerToken.getPlayerAttributes(team.defensivePlayers[i]);
-                attackRange[playerCount + 1] = attackRange[playerCount] + attackStat;
+                uint adjustedAttack = getAdjustedGoalWeight(team.defensivePlayers[i], 90, false, true);
+                
+                attackRange[playerCount + 1] = attackRange[playerCount] + adjustedAttack;
                 playerCount++;
             }
         }
@@ -343,14 +452,17 @@ contract Game {
         uint teamAttack = 0;
         uint teamDefense = 0;
         for (uint8 i = 0; i < 3; i++) {
-            // TODO Add playertype changes in here
-            teamAttack += getAttack(attack[i]) * (110 + getPlayerTypeAdjustment(attack[i], true, false, true)) / 100;
-            teamAttack += getAttack(midfield[i]) * (100 + getPlayerTypeAdjustment(midfield[i], false, false, true)) / 100;
-            teamAttack += getAttack(defense[i]) * (90 + getPlayerTypeAdjustment(defense[i], false, true, true)) / 100;
+            (uint attackAttack, uint attackDefense) = getPositionAdjustedStats(attack[i], 110, 90, true, false);
+            teamAttack += attackAttack;
+            teamDefense += attackDefense;
 
-            teamDefense += getDefense(attack[i]) * (90 + getPlayerTypeAdjustment(attack[i], true, false, false)) / 100;
-            teamDefense += getDefense(midfield[i]) * (100 + getPlayerTypeAdjustment(midfield[i], false, false, false)) / 100;
-            teamDefense += getDefense(defense[i]) * (110 + getPlayerTypeAdjustment(defense[i], false, true, false)) / 100;
+            (uint midfieldAttack, uint midfieldDefense) = getPositionAdjustedStats(midfield[i], 100, 100, false, false);
+            teamAttack += midfieldAttack;
+            teamDefense += midfieldDefense;
+
+            (uint defenseAttack, uint defenseDefense) = getPositionAdjustedStats(defense[i], 90, 110, false, true);
+            teamAttack += defenseAttack;
+            teamDefense += defenseDefense;
         }
 
         // Calculate team chemistry bonuses
@@ -487,9 +599,9 @@ contract Game {
         return (attackBonus, defenseBonus);
     }
 
-    function hasDuplicates(uint256[] memory array) private pure returns (bool) {
-        for (uint i = 0; i < array.length; i++) {
-            for (uint j = i + 1; j < array.length; j++) {
+    function hasDuplicates(uint256[5] memory array) private pure returns (bool) {
+        for (uint i = 0; i < 5; i++) {
+            for (uint j = i + 1; j < 5; j++) {
                 if (array[i] == array[j]) {
                     return true;
                 }
@@ -498,18 +610,36 @@ contract Game {
         return false;
     }
 
-    function getAttack(uint256 playerId) private view returns (uint) {
-        ( , uint attack, , , , , ,) = playerToken.getPlayerAttributes(playerId);
-        return attack;
+    function getAdjustedGoalWeight(uint256 playerId, uint256 positionAttackBase, bool isAttack, bool isDefense) private view returns (uint256) {
+        (, uint attackStat, , , , , , uint playerType) = playerToken.getPlayerAttributes(playerId);
+        uint8 adjustment = getPlayerTypeAdjustmentFromType(playerType, isAttack, isDefense, true);
+        uint256 adjustedAttack = (attackStat * positionAttackBase) / 100;
+        return (adjustedAttack * (100 + adjustment)) / 100;
     }
 
-    function getDefense(uint256 playerId) private view returns (uint) {
-        ( , , , uint defense, , , ,) = playerToken.getPlayerAttributes(playerId);
-        return defense;
+    function getPositionAdjustedStats(
+        uint256 playerId,
+        uint256 attackBase,
+        uint256 defenseBase,
+        bool isAttack,
+        bool isDefense
+    ) private view returns (uint256 adjustedAttack, uint256 adjustedDefense) {
+        if (playerId == 0) {
+            return (0, 0);
+        }
+
+        (, uint attackStat, , uint defenseStat, , , , uint playerType) = playerToken.getPlayerAttributes(playerId);
+        uint8 attackAdjustment = getPlayerTypeAdjustmentFromType(playerType, isAttack, isDefense, true);
+        uint8 defenseAdjustment = getPlayerTypeAdjustmentFromType(playerType, isAttack, isDefense, false);
+
+        uint256 attackWithPosition = (attackStat * attackBase) / 100;
+        uint256 defenseWithPosition = (defenseStat * defenseBase) / 100;
+
+        adjustedAttack = (attackWithPosition * (100 + attackAdjustment)) / 100;
+        adjustedDefense = (defenseWithPosition * (100 + defenseAdjustment)) / 100;
     }
 
-    function getPlayerTypeAdjustment(uint playerId, bool isAttack, bool isDefense, bool isAttackingStat) private view returns (uint8) {
-        ( , , , , , , , uint playerType) = playerToken.getPlayerAttributes(playerId);
+    function getPlayerTypeAdjustmentFromType(uint playerType, bool isAttack, bool isDefense, bool isAttackingStat) private pure returns (uint8) {
         if (playerType == 0) { // Enforcer
             if (isAttack) {
                 return isAttackingStat ? 5 : 0; 
@@ -550,5 +680,26 @@ contract Game {
         wager = wager - wager / 100;
 
         payable(winner).transfer(wager);
+    }
+
+
+    function emitPlayerMatchInfo(uint256 matchId, Team memory team, address) private {
+        for (uint i = 0; i < 3; i++) {
+            if (team.attackingPlayers[i] != 0) {
+                emitPlayerInfo(matchId, team.attackingPlayers[i], "attacking");
+            }
+            if (team.midfieldPlayers[i] != 0) {
+                emitPlayerInfo(matchId, team.midfieldPlayers[i], "midfield");
+            }
+            if (team.defensivePlayers[i] != 0) {
+                emitPlayerInfo(matchId, team.defensivePlayers[i], "defensive");
+            }
+        }
+    }
+
+    function emitPlayerInfo(uint256 matchId, uint256 playerId, string memory position) private {
+        address owner = playerToken.ownerOf(playerId);
+        (,uint256 attack, , uint256 defense, uint256 potential, uint256 gamesLeft, uint256 goals, uint playerType) = playerToken.getPlayerAttributes(playerId);
+        emit PlayerMatchInfo(matchId, playerId, owner, attack, defense, potential, gamesLeft, goals, uint8(playerType), position);
     }
 }

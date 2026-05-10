@@ -1,0 +1,5 @@
+type,scenarios,totalMatches,dominantWins,underdogWins,dominantWinPct,underdogWinPct,homeWins,awayWins,draws
+even,169,338000,0,0,0.00,0.00,169200,168800,0
+slightly_dominant,60,120000,78384,41616,65.32,34.68,60420,59580,0
+moderately_dominant,158,316000,237371,78629,75.12,24.88,157919,158081,0
+heavily_dominant,70,140000,120598,19402,86.14,13.86,69828,70172,0

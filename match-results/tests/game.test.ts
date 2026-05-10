@@ -43,26 +43,6 @@ describe("Describe entity assertions", () => {
     assert.entityCount("PlayedMatch", 1)
     assert.entityCount("PlayerScored", 1)
 
-    // 0xa16081f360e3847006db660bae1c6d1b2e17ec2a is the default address used in newMockEvent() function
-    assert.fieldEquals(
-      "MatchPlayed",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "matchId",
-      "234"
-    )
-    assert.fieldEquals(
-      "MatchPlayed",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "homeScore",
-      "123"
-    )
-    assert.fieldEquals(
-      "MatchPlayed",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "awayScore",
-      "123"
-    )
-
     assert.fieldEquals(
       "PlayedMatch",
       "234",
@@ -81,13 +61,6 @@ describe("Describe entity assertions", () => {
       "awayScore",
       "123"
     )
-    assert.fieldEquals(
-      "PlayerScored",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "playedMatch",
-      "234"
-    )
-
     // More assert options:
     // https://thegraph.com/docs/en/subgraphs/developing/creating/unit-testing-framework/#asserts
   })

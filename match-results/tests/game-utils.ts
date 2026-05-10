@@ -16,6 +16,7 @@ export function createMatchPlayedEvent(
   awayScore: i32
 ): MatchPlayed {
   let matchPlayedEvent = changetype<MatchPlayed>(newMockEvent())
+  matchPlayedEvent.logIndex = BigInt.fromI32(1)
 
   matchPlayedEvent.parameters = new Array()
 
@@ -108,6 +109,7 @@ export function createPlayerScoredEvent(
   playerId: BigInt
 ): PlayerScored {
   let playerScoredEvent = changetype<PlayerScored>(newMockEvent())
+  playerScoredEvent.logIndex = BigInt.fromI32(1)
 
   playerScoredEvent.parameters = new Array()
 

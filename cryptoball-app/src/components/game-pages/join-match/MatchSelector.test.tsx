@@ -59,8 +59,8 @@ describe("MatchSelector", () => {
     );
 
     expect(screen.getByText("Match Details")).toBeInTheDocument();
-    expect(screen.getAllByText(/1 ETH/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/2.5 ETH/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/1 POL/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/2.5 POL/i)).toBeInTheDocument();
   });
 
   it("shows no-matches message when list is empty", () => {

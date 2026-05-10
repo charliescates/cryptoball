@@ -1,0 +1,6 @@
+Generated rows: 5000
+Matches per scenario: 2000
+Attempts per team per match: 20
+Stat values: 180, 240, 300, 360, 420
+Formulas: legacy_base60, linear_ratio, quadratic_ratio, blended_22_78, blended_25_75, blended_04_34, blended_02_36_w70_30, blended_10_62_w40_60
+CSV: /Users/chaz/hardhat-test/cryptoball/smart-contracts/analysis/scoring_formula_simulation.csv

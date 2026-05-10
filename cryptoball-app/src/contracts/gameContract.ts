@@ -1,7 +1,7 @@
 import { Contract } from "./types";
 
 export const gameContract: Contract = {
-  address: '0xbD4680D8A39CB68A11794e235212AD7664504d84' as `0x${string}`,
+  address: '0x4d4621F4df73586e96507b9E749433Ea265dFd87' as `0x${string}`,
   abi: [
     {
       "inputs": [
@@ -18,6 +18,56 @@ export const gameContract: Contract = {
       ],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "matchId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "homeScore",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "awayScore",
+          "type": "uint8"
+        }
+      ],
+      "name": "ExtraTimePlayed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "matchId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "homeScore",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "awayScore",
+          "type": "uint8"
+        }
+      ],
+      "name": "GoldenGoalPlayed",
+      "type": "event"
     },
     {
       "anonymous": false,

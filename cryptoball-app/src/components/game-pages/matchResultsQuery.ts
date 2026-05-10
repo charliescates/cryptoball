@@ -5,9 +5,52 @@ export type PlayerScored = {
   goalOrder: number;
 };
 
+export type PlayerMatchInfo = {
+  playerId: string;
+  owner: string;
+  attack: string;
+  defense: string;
+  potential: string;
+  gamesLeft: string;
+  goals: string;
+  playerType: number;
+  position: string;
+};
+
+export type TeamStatsCalculated = {
+  team: string;
+  totalAttack: string;
+  totalDefense: string;
+};
+
+export type PlayerStatsUpdated = {
+  playerId: string;
+  position: string;
+};
+
+export type WinningsDistributed = {
+  winner: string;
+  winnings: string;
+  academy: string;
+  academyShare: string;
+  executor: string;
+  executorFee: string;
+};
+
+export type ExtraTimePlayed = {
+  homeScore: number;
+  awayScore: number;
+};
+
+export type GoldenGoalPlayed = {
+  homeScore: number;
+  awayScore: number;
+};
+
 export type PlayedMatch = {
   id: string;
   matchId: string;
+  pot?: string;
   homeScore: number;
   awayScore: number;
   blockTimestamp: string;
@@ -20,6 +63,12 @@ export type PlayedMatch = {
   awayMidfieldPlayers: string[];
   awayDefensivePlayers: string[];
   playerScoreds: PlayerScored[];
+  playerMatchInfos?: PlayerMatchInfo[];
+  teamStatsCalculateds?: TeamStatsCalculated[];
+  playerStatsUpdateds?: PlayerStatsUpdated[];
+  winningsDistributeds?: WinningsDistributed[];
+  extraTimePlayeds?: ExtraTimePlayed[];
+  goldenGoalPlayeds?: GoldenGoalPlayed[];
 };
 
 export type MatchesResponse = {
@@ -40,9 +89,45 @@ const playedMatchFields = `
   awayAttackingPlayers
   awayMidfieldPlayers
   awayDefensivePlayers
-  playerScoreds {
+  playerScoreds(orderBy: goalOrder, orderDirection: asc) {
     playerId
     goalOrder
+  }
+  playerMatchInfos(orderBy: blockTimestamp, orderDirection: asc) {
+    playerId
+    owner
+    attack
+    defense
+    potential
+    gamesLeft
+    goals
+    playerType
+    position
+  }
+  teamStatsCalculateds(orderBy: blockTimestamp, orderDirection: asc) {
+    team
+    totalAttack
+    totalDefense
+  }
+  playerStatsUpdateds(orderBy: blockTimestamp, orderDirection: asc) {
+    playerId
+    position
+  }
+  winningsDistributeds(orderBy: blockTimestamp, orderDirection: asc) {
+    winner
+    winnings
+    academy
+    academyShare
+    executor
+    executorFee
+  }
+  extraTimePlayeds(orderBy: blockTimestamp, orderDirection: asc) {
+    homeScore
+    awayScore
+  }
+  goldenGoalPlayeds(orderBy: blockTimestamp, orderDirection: asc) {
+    homeScore
+    awayScore
   }
 `;
 

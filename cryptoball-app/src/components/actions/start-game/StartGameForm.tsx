@@ -83,7 +83,7 @@ const StartGameForm = ({
               onChange={(event) => onWagerChange(event.target.value)}
               disabled={!editable}
             />
-            <span>ETH</span>
+            <span>POL</span>
           </div>
         </div>
       </StartGameSection>

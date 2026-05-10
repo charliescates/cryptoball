@@ -62,7 +62,7 @@ const MatchSelector = ({
                 {Number(wager) > 0 && (
                   <div className="match-card-wager">
                     <span>Wager</span>
-                    <strong>{wager} ETH</strong>
+                    <strong>{wager} POL</strong>
                   </div>
                 )}
               </button>
@@ -88,10 +88,10 @@ const MatchSelector = ({
             </p>
             <p>
               <strong>Wager Required:</strong>{" "}
-              {matchDetails.wagerRequired ? formatEther(matchDetails.wagerRequired) : "0"} ETH
+              {matchDetails.wagerRequired ? formatEther(matchDetails.wagerRequired) : "0"} POL
             </p>
             <p>
-              <strong>Prize Pot:</strong> {matchDetails.pot ? formatEther(matchDetails.pot) : "0"} ETH
+              <strong>Prize Pot:</strong> {matchDetails.pot ? formatEther(matchDetails.pot) : "0"} POL
             </p>
           </div>
         </div>

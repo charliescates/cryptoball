@@ -13,7 +13,7 @@ In metamask, add a new network with the following details:
 Network Name: Hardhat Local
 New RPC URL: http://127.0.0.1:8545
 Chain ID: 31337 (default for Hardhat)
-Currency Symbol: ETH (optional)
+Currency Symbol: POL (optional)
 ```
 
 Connect to the network and add into your metamask a new account, copying the address of one of the ones listed in the node start up.

@@ -33,7 +33,7 @@ const MatchPreviewPanel = ({
         </div>
       </div>
       <div className="summary-grid">
-        <SummaryCell label="Wager" value={`${wager || "0"} ETH`} />
+        <SummaryCell label="Wager" value={`${wager || "0"} POL`} />
         <SummaryCell label="Status" value={statusLabel} />
         <SummaryCell label="Chain action" value={hasReadyFixture ? "Ready to submit" : "Waiting on inputs"} />
       </div>

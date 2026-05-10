@@ -8,7 +8,7 @@ dataSources:
     name: Game
     network: matic
     source:
-      address: "0xbD4680D8A39CB68A11794e235212AD7664504d84"
+      address: "0x4d4621F4df73586e96507b9E749433Ea265dFd87"
       abi: Game
       startBlock: 85397813
     mapping:
@@ -17,9 +17,15 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - MatchPlayed
+        - ExtraTimePlayed
+        - GoldenGoalPlayed
         - PlayedMatch
         - NewMatch
         - PlayerScored
+        - PlayerMatchInfo
+        - PlayerStatsUpdated
+        - TeamStatsCalculated
+        - WinningsDistributed
       abis:
         - name: Game
           file: ./abis/Game.json
@@ -28,8 +34,20 @@ dataSources:
           handler: handleMatchSnapshot
         - event: MatchPlayed(uint256,uint8,uint8)
           handler: handleMatchPlayed
+        - event: ExtraTimePlayed(uint256,uint8,uint8)
+          handler: handleExtraTimePlayed
+        - event: GoldenGoalPlayed(uint256,uint8,uint8)
+          handler: handleGoldenGoalPlayed
         - event: NewMatch(uint256)
           handler: handleNewMatch
+        - event: PlayerMatchInfo(uint256,uint256,address,uint256,uint256,uint256,uint256,uint256,uint8,string)
+          handler: handlePlayerMatchInfo
         - event: PlayerScored(uint256,uint256)
           handler: handlePlayerScored
+        - event: PlayerStatsUpdated(uint256,uint256,string)
+          handler: handlePlayerStatsUpdated
+        - event: TeamStatsCalculated(uint256,address,uint256,uint256)
+          handler: handleTeamStatsCalculated
+        - event: WinningsDistributed(uint256,address,uint256,address,uint256,address,uint256)
+          handler: handleWinningsDistributed
       file: ./src/game.ts

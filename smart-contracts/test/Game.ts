@@ -46,6 +46,37 @@ describe("Game", () => {
             gameCount++;
     }
 
+    async function startGameAndGetParsedLogs(
+        gameContract: any,
+        homeOwner: any,
+        awayOwner: any,
+        wager: bigint,
+        home = homeTeam,
+        away = awayTeam
+    ) {
+        await gameContract.createGame(wager, homeOwner.address, awayOwner.address);
+
+        await gameContract.connect(homeOwner).addTeam(gameCount, home[0], home[1], home[2], { value: wager });
+        const tx = await gameContract.connect(awayOwner).addTeam(gameCount, away[0], away[1], away[2], { value: wager });
+        const receipt = await tx.wait();
+        gameCount++;
+
+        return receipt.logs
+            .map((log: any) => {
+                try {
+                    const parsed = gameContract.interface.parseLog(log);
+                    return {
+                        name: parsed.name,
+                        args: parsed.args,
+                        index: Number(log.index ?? log.logIndex ?? 0),
+                    };
+                } catch {
+                    return null;
+                }
+            })
+            .filter((log: any) => log !== null);
+    }
+
     beforeEach(() => {
         gameCount = 1n;
     })
@@ -173,6 +204,65 @@ describe("Game", () => {
         expect([...snapshotLog.args.awayTeam.attackingPlayers]).to.deep.equal([6n, 0n, 7n]);
         expect([...snapshotLog.args.awayTeam.midfieldPlayers]).to.deep.equal([0n, 8n, 0n]);
         expect([...snapshotLog.args.awayTeam.defensivePlayers]).to.deep.equal([9n, 0n, 10n]);
+    });
+
+    it("should emit ExtraTimePlayed when a match reaches extra time", async function () {
+        this.timeout(120000);
+        const { gameContract, homeOwner, awayOwner } = await deployContracts();
+        const maxMatches = 120;
+        let foundExtraTime = false;
+
+        for (let i = 0; i < maxMatches; i++) {
+            const logs = await startGameAndGetParsedLogs(gameContract, homeOwner, awayOwner, 0n);
+            const extraTimeLog = logs.find((log: any) => log.name === "ExtraTimePlayed");
+            if (extraTimeLog) {
+                foundExtraTime = true;
+                break;
+            }
+        }
+
+        expect(foundExtraTime, "Expected ExtraTimePlayed to be emitted in repeated matches").to.equal(true);
+    });
+
+    it("should emit GoldenGoalPlayed after ExtraTimePlayed and before MatchPlayed", async function () {
+        this.timeout(180000);
+        const { gameContract, homeOwner, awayOwner } = await deployContracts();
+        const maxMatches = 240;
+        let foundGoldenGoalFlow = false;
+
+        for (let i = 0; i < maxMatches; i++) {
+            const logs = await startGameAndGetParsedLogs(gameContract, homeOwner, awayOwner, 0n);
+            const extraTimeLog = logs.find((log: any) => log.name === "ExtraTimePlayed");
+            const goldenGoalLog = logs.find((log: any) => log.name === "GoldenGoalPlayed");
+            const matchPlayedLog = logs.find((log: any) => log.name === "MatchPlayed");
+
+            if (!goldenGoalLog) {
+                continue;
+            }
+
+            expect(extraTimeLog, "Golden goal should only occur after extra time").to.not.be.undefined;
+            expect(matchPlayedLog, "MatchPlayed should exist when golden goal occurs").to.not.be.undefined;
+            expect(extraTimeLog.index).to.be.lessThan(goldenGoalLog.index);
+            expect(goldenGoalLog.index).to.be.lessThan(matchPlayedLog.index);
+
+            const extraHome = Number(extraTimeLog.args.homeScore);
+            const extraAway = Number(extraTimeLog.args.awayScore);
+            const goldenHome = Number(goldenGoalLog.args.homeScore);
+            const goldenAway = Number(goldenGoalLog.args.awayScore);
+            const matchHome = Number(matchPlayedLog.args.homeScore);
+            const matchAway = Number(matchPlayedLog.args.awayScore);
+
+            expect(extraHome).to.equal(extraAway);
+            expect(goldenHome + goldenAway).to.equal(extraHome + extraAway + 1);
+            expect(Math.abs(goldenHome - goldenAway)).to.equal(1);
+            expect(matchHome).to.equal(goldenHome);
+            expect(matchAway).to.equal(goldenAway);
+
+            foundGoldenGoalFlow = true;
+            break;
+        }
+
+        expect(foundGoldenGoalFlow, "Expected to observe a golden-goal-decided match").to.equal(true);
     });
 
     it("should not be able to play a match if you are not the owner of the player", async () => {

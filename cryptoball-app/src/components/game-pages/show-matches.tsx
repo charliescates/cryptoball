@@ -2,14 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { request } from "graphql-request";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useAccount, useReadContracts } from "wagmi";
+import { useAccount } from "wagmi";
+import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
 import { ReplayPositionCard } from "../formation-grid-parts/ReplayPositionCard";
 import { getPlayerName } from "../utils/playerName";
+import { getTeamKitTraitsFromAddress } from "../utils/teamKit";
 import generateName from "../utils/teamName";
-import { playerContract } from "../../contracts/playerContract";
 import {
   type MatchesResponse,
   type PlayedMatch,
+  type PlayerMatchInfo,
+  type TeamStatsCalculated,
+  type WinningsDistributed,
   matchResultsHeaders,
   matchResultsUrl,
   myMatchesQuery,
@@ -56,7 +60,11 @@ function getGoalTimeline(match: PlayedMatch) {
   return [...match.playerScoreds]
     .sort((left, right) => left.goalOrder - right.goalOrder)
     .map((goal, index) => {
-      const teamLabel = homePlayers.has(goal.playerId) ? "Home" : awayPlayers.has(goal.playerId) ? "Away" : "Unknown";
+      const teamLabel: "Home" | "Away" | "Unknown" = homePlayers.has(goal.playerId)
+        ? "Home"
+        : awayPlayers.has(goal.playerId)
+          ? "Away"
+          : "Unknown";
 
       return {
         id: `${match.id}-${index}`,
@@ -67,17 +75,141 @@ function getGoalTimeline(match: PlayedMatch) {
     });
 }
 
-type RevealPhase = "hidden" | "animating" | "complete";
+function hasExtraTime(match: PlayedMatch) {
+  return (match.extraTimePlayeds?.length ?? 0) > 0;
+}
 
-function buildGoalCounts(timeline: ReturnType<typeof getGoalTimeline>): Record<string, number> {
+function hasGoldenGoal(match: PlayedMatch) {
+  return (match.goldenGoalPlayeds?.length ?? 0) > 0;
+}
+
+function getMatchTargetSeconds(match: PlayedMatch) {
+  if (hasGoldenGoal(match)) return 26 * 60;
+  if (hasExtraTime(match)) return 25 * 60;
+  return 20 * 60;
+}
+
+function formatReplayClock(totalSeconds: number) {
+  const clamped = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(clamped / 60)
+    .toString()
+    .padStart(2, "0");
+  const seconds = (clamped % 60).toString().padStart(2, "0");
+  return `${minutes}:${seconds}`;
+}
+
+type RevealPhase = "hidden" | "animating" | "complete";
+type TeamLabel = "Home" | "Away";
+type TeamScopedLabel = TeamLabel | "Unknown";
+type GoalEvent = {
+  id: string;
+  teamLabel: TeamScopedLabel;
+  playerId: string;
+  playerName: string;
+  minute: number;
+  isGoldenGoal: boolean;
+};
+
+type ReplayScriptEvent =
+  | {
+      id: string;
+      kind: "intro-player";
+      playerId: string;
+      teamLabel: TeamLabel;
+    }
+  | {
+      id: string;
+      kind: "formation";
+      teamLabel: TeamLabel;
+    }
+  | {
+      id: string;
+      kind: "team-stats";
+      teamLabel: TeamLabel;
+    }
+  | {
+      id: string;
+      kind: "minute";
+      minute: number;
+      period: "regular" | "extra";
+    }
+  | {
+      id: string;
+      kind: "extra-time";
+    }
+  | {
+      id: string;
+      kind: "golden-goal";
+      teamLabel: TeamScopedLabel;
+    }
+  | {
+      id: string;
+      kind: "goal";
+      goal: GoalEvent;
+    }
+  | {
+      id: string;
+      kind: "winnings";
+      winnings: WinningsDistributed;
+    }
+  | {
+      id: string;
+      kind: "fulltime";
+    };
+
+function buildGoalCounts(timeline: GoalEvent[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const goal of timeline) {
+    if (goal.isGoldenGoal) continue;
     counts[goal.playerId] = (counts[goal.playerId] ?? 0) + 1;
   }
   return counts;
 }
 
-function getPlayerOfMatch(timeline: ReturnType<typeof getGoalTimeline>) {
+function buildTimedGoalTimeline(match: PlayedMatch): GoalEvent[] {
+  const baseTimeline = getGoalTimeline(match);
+  const includeExtraTime = hasExtraTime(match);
+  const includeGolden = hasGoldenGoal(match);
+  const totalMinutes = includeExtraTime ? 25 : 20;
+
+  const timedGoals = baseTimeline.map((goal, index) => {
+    const minute = Math.max(1, Math.ceil(((index + 1) * totalMinutes) / Math.max(1, baseTimeline.length)));
+    return {
+      ...goal,
+      minute,
+      isGoldenGoal: false,
+    };
+  });
+
+  if (!includeGolden) {
+    return timedGoals;
+  }
+
+  const finalHome = Number(match.homeScore);
+  const finalAway = Number(match.awayScore);
+  const playerGoalsHome = timedGoals.filter((goal) => goal.teamLabel === "Home").length;
+  const playerGoalsAway = timedGoals.filter((goal) => goal.teamLabel === "Away").length;
+
+  let goldenTeam: TeamScopedLabel = "Unknown";
+  if (finalHome > playerGoalsHome) {
+    goldenTeam = "Home";
+  } else if (finalAway > playerGoalsAway) {
+    goldenTeam = "Away";
+  }
+
+  timedGoals.push({
+    id: `${match.id}-golden-goal`,
+    teamLabel: goldenTeam,
+    playerId: "golden-goal",
+    playerName: "Golden Goal",
+    minute: 26,
+    isGoldenGoal: true,
+  });
+
+  return timedGoals;
+}
+
+function getPlayerOfMatch(timeline: GoalEvent[]) {
   const counts = buildGoalCounts(timeline);
   const topEntry = Object.entries(counts).sort(([, left], [, right]) => right - left)[0];
 
@@ -92,15 +224,250 @@ function getPlayerOfMatch(timeline: ReturnType<typeof getGoalTimeline>) {
   };
 }
 
+function getPlayerInfoMap(match: PlayedMatch) {
+  const map = new Map<string, PlayerMatchInfo>();
+  for (const info of match.playerMatchInfos ?? []) {
+    map.set(info.playerId, info);
+  }
+  return map;
+}
+
+function getTeamStatsMap(match: PlayedMatch) {
+  const map = new Map<string, TeamStatsCalculated>();
+
+  for (const stats of match.teamStatsCalculateds ?? []) {
+    map.set(stats.team.toLowerCase(), stats);
+  }
+
+  return map;
+}
+
+function toTeamLabel(match: PlayedMatch, teamAddress: string): TeamLabel | null {
+  const lowered = teamAddress.toLowerCase();
+  if (lowered === match.homeAddress.toLowerCase()) return "Home";
+  if (lowered === match.awayAddress.toLowerCase()) return "Away";
+  return null;
+}
+
+function buildReplayScript(match: PlayedMatch): ReplayScriptEvent[] {
+  const script: ReplayScriptEvent[] = [];
+  const homeFormation = buildFormation(match.homeAttackingPlayers, match.homeMidfieldPlayers, match.homeDefensivePlayers);
+  const awayFormation = buildFormation(match.awayAttackingPlayers, match.awayMidfieldPlayers, match.awayDefensivePlayers);
+  const homePlayers = [...homeFormation.attack, ...homeFormation.midfield, ...homeFormation.defense];
+  const awayPlayers = [...awayFormation.attack, ...awayFormation.midfield, ...awayFormation.defense];
+
+  homePlayers.forEach((playerId, index) => {
+    script.push({
+      id: `${match.id}-home-intro-${playerId}-${index}`,
+      kind: "intro-player",
+      playerId,
+      teamLabel: "Home",
+    });
+  });
+
+  awayPlayers.forEach((playerId, index) => {
+    script.push({
+      id: `${match.id}-away-intro-${playerId}-${index}`,
+      kind: "intro-player",
+      playerId,
+      teamLabel: "Away",
+    });
+  });
+
+  script.push({ id: `${match.id}-home-formation`, kind: "formation", teamLabel: "Home" });
+  script.push({ id: `${match.id}-away-formation`, kind: "formation", teamLabel: "Away" });
+
+  const teamStats = getTeamStatsMap(match);
+  const homeStats = teamStats.get(match.homeAddress.toLowerCase());
+  const awayStats = teamStats.get(match.awayAddress.toLowerCase());
+
+  if (homeStats) script.push({ id: `${match.id}-home-stats`, kind: "team-stats", teamLabel: "Home" });
+  if (awayStats) script.push({ id: `${match.id}-away-stats`, kind: "team-stats", teamLabel: "Away" });
+
+  const timedTimeline = buildTimedGoalTimeline(match);
+  const goalsByMinute = new Map<number, GoalEvent[]>();
+  for (const goal of timedTimeline) {
+    const minuteGoals = goalsByMinute.get(goal.minute) ?? [];
+    minuteGoals.push(goal);
+    goalsByMinute.set(goal.minute, minuteGoals);
+  }
+
+  for (let minute = 1; minute <= 20; minute++) {
+    script.push({
+      id: `${match.id}-minute-${minute}`,
+      kind: "minute",
+      minute,
+      period: "regular",
+    });
+
+    for (const goal of goalsByMinute.get(minute) ?? []) {
+      script.push({ id: `${match.id}-goal-${goal.id}`, kind: "goal", goal });
+    }
+  }
+
+  if (hasExtraTime(match)) {
+    script.push({ id: `${match.id}-extra-time-start`, kind: "extra-time" });
+
+    for (let minute = 21; minute <= 25; minute++) {
+      script.push({
+        id: `${match.id}-minute-${minute}`,
+        kind: "minute",
+        minute,
+        period: "extra",
+      });
+
+      for (const goal of goalsByMinute.get(minute) ?? []) {
+        script.push({ id: `${match.id}-goal-${goal.id}`, kind: "goal", goal });
+      }
+    }
+  }
+
+  if (hasGoldenGoal(match)) {
+    const goldenGoal = timedTimeline.find((goal) => goal.isGoldenGoal);
+    if (goldenGoal) {
+      script.push({
+        id: `${match.id}-golden-goal-event`,
+        kind: "golden-goal",
+        teamLabel: goldenGoal.teamLabel,
+      });
+      script.push({ id: `${match.id}-goal-${goldenGoal.id}`, kind: "goal", goal: goldenGoal });
+    }
+  }
+
+  for (const winnings of match.winningsDistributeds ?? []) {
+    script.push({
+      id: `${match.id}-winnings-${winnings.winner}-${winnings.executor}`,
+      kind: "winnings",
+      winnings,
+    });
+  }
+
+  script.push({ id: `${match.id}-fulltime`, kind: "fulltime" });
+
+  return script;
+}
+
+function getReplayDelay(nextEvent?: ReplayScriptEvent) {
+  if (!nextEvent) return 700;
+
+  if (nextEvent.kind === "intro-player") return 180;
+  if (nextEvent.kind === "formation") return 220;
+  if (nextEvent.kind === "team-stats") return 240;
+  if (nextEvent.kind === "minute") return 1800;
+  if (nextEvent.kind === "extra-time") return 900;
+  if (nextEvent.kind === "golden-goal") return 900;
+  if (nextEvent.kind === "goal") return nextEvent.goal.isGoldenGoal ? 700 : 420;
+  if (nextEvent.kind === "winnings") return 700;
+  if (nextEvent.kind === "fulltime") return 600;
+
+  return 500;
+}
+
+const REPLAY_MINUTE_DURATION_MS = 1800;
+
+function formatWei(value: string) {
+  try {
+    const wei = BigInt(value);
+    const whole = wei / 10n ** 18n;
+    const frac = ((wei % 10n ** 18n) / 10n ** 14n).toString().padStart(4, "0");
+    return `${whole.toString()}.${frac}`;
+  } catch {
+    return value;
+  }
+}
+
+function getVisibleGoals(consumedSteps: ReplayScriptEvent[]) {
+  return consumedSteps.filter((step): step is Extract<ReplayScriptEvent, { kind: "goal" }> => step.kind === "goal").map((step) => step.goal);
+}
+
+function getRevealedPlayers(consumedSteps: ReplayScriptEvent[], teamLabel: TeamLabel) {
+  return new Set(
+    consumedSteps
+      .filter(
+        (step): step is Extract<ReplayScriptEvent, { kind: "intro-player" }> =>
+          step.kind === "intro-player" && step.teamLabel === teamLabel,
+      )
+      .map((step) => step.playerId),
+  );
+}
+
+function getVisibleWinnings(consumedSteps: ReplayScriptEvent[]) {
+  return consumedSteps
+    .filter((step): step is Extract<ReplayScriptEvent, { kind: "winnings" }> => step.kind === "winnings")
+    .map((step) => step.winnings);
+}
+
+type ReplayClockAnchor = {
+  baseSeconds: number;
+  sourceStep: number;
+  startedAtMs: number;
+  freeze: boolean;
+};
+
+function getReplayClockSeconds(
+  consumedSteps: ReplayScriptEvent[],
+  match: PlayedMatch,
+  phase: RevealPhase,
+  clockAnchor?: ReplayClockAnchor,
+  nowMs?: number,
+) {
+  if (phase === "complete") {
+    return getMatchTargetSeconds(match);
+  }
+
+  if (consumedSteps.length === 0) {
+    return 0;
+  }
+
+  if (clockAnchor) {
+    if (clockAnchor.freeze || nowMs === undefined) {
+      return clockAnchor.baseSeconds;
+    }
+
+    const elapsedMs = Math.max(0, nowMs - clockAnchor.startedAtMs);
+    const secondsInMinute = Math.min(59, Math.floor((elapsedMs * 60) / REPLAY_MINUTE_DURATION_MS));
+    return clockAnchor.baseSeconds + secondsInMinute;
+  }
+
+  const latestMinute = [...consumedSteps]
+    .reverse()
+    .find((step): step is Extract<ReplayScriptEvent, { kind: "minute" }> => step.kind === "minute");
+
+  const hasGoldenGoalStep = consumedSteps.some(
+    (step) => step.kind === "golden-goal" || (step.kind === "goal" && step.goal.isGoldenGoal),
+  );
+
+  if (hasGoldenGoalStep) {
+    return 26 * 60;
+  }
+
+  if (latestMinute) {
+    return latestMinute.minute * 60;
+  }
+
+  const hasExtraTimeStep = consumedSteps.some((step) => step.kind === "extra-time");
+  if (hasExtraTimeStep) {
+    return 20 * 60;
+  }
+
+  return 0;
+}
+
+function formatFormationString(attack: string[], midfield: string[], defense: string[]) {
+  return `${attack.length}-${midfield.length}-${defense.length}`;
+}
+
 function renderFormationRow(
   label: string,
-  _icon: string,
   playerIds: string[],
   goalCounts: Record<string, number>,
   latestScorer: string | null,
   teamAddress: string,
   teamColour: string,
   playerTypeMap: Map<string, string>,
+  playerInfoMap: Map<string, PlayerMatchInfo>,
+  revealedPlayers: Set<string>,
+  isComplete: boolean,
 ) {
   if (playerIds.length === 0) return null;
   return (
@@ -112,48 +479,29 @@ function renderFormationRow(
             key={id}
             playerId={id}
             playerType={playerTypeMap.get(id)}
+            playerStats={
+              playerInfoMap.get(id)
+                ? {
+                    attack: playerInfoMap.get(id)!.attack,
+                    defense: playerInfoMap.get(id)!.defense,
+                    potential: playerInfoMap.get(id)!.potential,
+                    gamesLeft: playerInfoMap.get(id)!.gamesLeft,
+                    goals: playerInfoMap.get(id)!.goals,
+                    position: playerInfoMap.get(id)!.position,
+                  }
+                : undefined
+            }
             goalCount={goalCounts[id] ?? 0}
             isLatestScorer={id === latestScorer}
             positionLabel={label}
             teamAddress={teamAddress}
             teamColour={teamColour}
+            isRevealed={isComplete || revealedPlayers.has(id)}
           />
         ))}
       </div>
     </div>
   );
-}
-
-type GoalEvent = ReturnType<typeof getGoalTimeline>[number];
-
-function hashStringSeed(value: string): number {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
-function createSeededRandom(seed: number) {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function shuffleArray<T>(arr: T[], seedKey: string): T[] {
-  const copy = [...arr];
-  const random = createSeededRandom(hashStringSeed(seedKey));
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
 }
 
 function getVisibleScore(visibleGoals: GoalEvent[]) {
@@ -166,27 +514,32 @@ function getVisibleScore(visibleGoals: GoalEvent[]) {
 function ReplayBroadcastHeader({
   awayScore,
   awayTeamName,
+  clockSeconds,
+  extraTimeClockSeconds,
   homeScore,
   homeTeamName,
-  latestGoal,
-  totalGoals,
-  visibleGoalCount,
+  isComplete,
 }: {
   awayScore: number | string;
   awayTeamName: string;
+  clockSeconds: number;
+  extraTimeClockSeconds?: number;
   homeScore: number | string;
   homeTeamName: string;
-  latestGoal: GoalEvent | null;
-  totalGoals: number;
-  visibleGoalCount: number;
+  isComplete?: boolean;
 }) {
-  const progress = totalGoals > 0 ? Math.min(100, Math.round((visibleGoalCount / totalGoals) * 100)) : 100;
-
   return (
     <section className="matches-history-broadcast" aria-label="Replay broadcast">
       <div className="matches-history-live-bar">
-        <span className="matches-history-live-dot" aria-hidden="true" />
-        <span>Match Replay</span>
+        {!isComplete && <span className="matches-history-live-dot" aria-hidden="true" />}
+        <span>{isComplete ? "Full Time" : "Match Replay"}</span>
+        <strong>{formatReplayClock(clockSeconds)}</strong>
+        {extraTimeClockSeconds !== undefined && (
+          <>
+            <span className="matches-history-live-badge">ET</span>
+            <strong>{formatReplayClock(extraTimeClockSeconds)}</strong>
+          </>
+        )}
       </div>
       <div className="matches-history-broadcast-score">
         <span>{homeTeamName}</span>
@@ -195,16 +548,282 @@ function ReplayBroadcastHeader({
         </strong>
         <span>{awayTeamName}</span>
       </div>
-      <div className="matches-history-replay-progress" aria-label={`Replay progress ${progress}%`}>
-        <span style={{ width: `${progress}%` }} />
+    </section>
+  );
+}
+
+function TeamStatsPanel({
+  teamAddress,
+  teamLabel,
+  teamStats,
+}: {
+  teamAddress: string;
+  teamLabel: TeamLabel;
+  teamStats?: TeamStatsCalculated;
+}) {
+  return (
+    <section className="matches-history-team-stats" aria-label={`${teamLabel} team stats`}>
+      <h4>{teamLabel} Team Stats</h4>
+      <div>
+        <span>Address</span>
+        <strong>{generateName(teamAddress)}</strong>
       </div>
-      <div className="matches-history-latest-goal">
-        <span>
-          {visibleGoalCount > 0 ? `Goal ${visibleGoalCount} of ${Math.max(totalGoals, visibleGoalCount)}` : "Kick off"}
-        </span>
-        <strong>
-          {latestGoal ? `${latestGoal.teamLabel}: ${latestGoal.playerName}` : "Waiting for the first chance"}
-        </strong>
+      <div>
+        <span>Total attack</span>
+        <strong>{teamStats?.totalAttack ?? "-"}</strong>
+      </div>
+      <div>
+        <span>Total defense</span>
+        <strong>{teamStats?.totalDefense ?? "-"}</strong>
+      </div>
+    </section>
+  );
+}
+
+function WagerEventsPanel({
+  match,
+  winnings,
+}: {
+  match: PlayedMatch;
+  winnings: WinningsDistributed[];
+}) {
+  const inferredPot =
+    match.pot ??
+    (winnings.length > 0
+      ? (BigInt(winnings[0].winnings) + BigInt(winnings[0].academyShare) + BigInt(winnings[0].executorFee)).toString()
+      : undefined);
+  const perPlayerStake = inferredPot ? (BigInt(inferredPot) / 2n).toString() : undefined;
+
+  return (
+    <section className="matches-history-wager-events" aria-label={`Match ${match.matchId} wager payouts`}>
+      <h4>Wager Distribution</h4>
+      <div className="matches-history-wager-pot">
+        Each player's stake: {perPlayerStake ? `${formatWei(perPlayerStake)} POL` : "Unavailable in subgraph payload"}
+      </div>
+      {winnings.length === 0 ? (
+        <p>No payout event revealed yet.</p>
+      ) : (
+        <ul>
+          {winnings.map((entry, index) => (
+            <li key={`${entry.winner}-${entry.executor}-${index}`}>
+              <strong>{generateName(entry.winner)}</strong>
+              <span>Winner: {formatWei(entry.winnings)} POL</span>
+              <span>Academy: {formatWei(entry.academyShare)} POL</span>
+              <span>Executor: {formatWei(entry.executorFee)} POL</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function GoalEventsPanel({
+  goals,
+  title,
+  homeTeamName,
+  awayTeamName,
+}: {
+  goals: GoalEvent[];
+  title: string;
+  homeTeamName: string;
+  awayTeamName: string;
+}) {
+  return (
+    <section className="matches-history-goals-panel" aria-label={title}>
+      <h3>{title}</h3>
+      {goals.length === 0 ? (
+        <p>No goals scored.</p>
+      ) : (
+        <ol className="matches-history-goal-list">
+          {goals.map((goal, index) => (
+            <li className="matches-history-goal-item" key={goal.id}>
+              <span className="matches-history-goal-index">{index + 1}</span>
+              <div>
+                <strong>{goal.playerName}</strong>
+                <p>
+                  {goal.isGoldenGoal ? "Golden Goal" : `${goal.minute}'`} |{" "}
+                  {goal.teamLabel === "Home" ? homeTeamName : goal.teamLabel === "Away" ? awayTeamName : "Unknown Team"}
+                  {(goal.isGoldenGoal || goal.minute > 20) && " | ET"}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function LiveMiniPlayerCard({
+  playerId,
+  playerType,
+  playerInfo,
+  teamAddress,
+  teamColour,
+  goalCount,
+  isLatestScorer,
+  isRevealed,
+}: {
+  playerId: string;
+  playerType?: string;
+  playerInfo?: PlayerMatchInfo;
+  teamAddress: string;
+  teamColour: string;
+  goalCount: number;
+  isLatestScorer: boolean;
+  isRevealed: boolean;
+}) {
+  const name = getPlayerName(BigInt(playerId));
+  const teamKitTraits = getTeamKitTraitsFromAddress(teamAddress);
+
+  return (
+    <div
+      className={[
+        "matches-history-mini-card",
+        teamColour === "#32ff7e" ? "matches-history-mini-card--home" : "matches-history-mini-card--away",
+        !isRevealed ? "matches-history-mini-card--hidden" : "",
+        goalCount > 0 ? "matches-history-mini-card--scored" : "",
+        isLatestScorer ? "matches-history-mini-card--latest" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <div className="matches-history-mini-card-avatar">
+        <FootballPlayerAvatar
+          seed={playerType !== undefined ? `${playerId}-${playerType}` : playerId}
+          size={32}
+          showBadge={false}
+          traits={
+            teamKitTraits ?? {
+              primaryKitColor: teamColour,
+              secondaryKitColor: "#ffffff",
+            }
+          }
+        />
+      </div>
+      <div className="matches-history-mini-card-body">
+        <strong>{isRevealed ? name : "Undisclosed"}</strong>
+        <span>{playerInfo?.position ?? "Player"}</span>
+        <span className="matches-history-mini-card-goal">{goalCount > 0 ? `Goals x${goalCount}` : ""}</span>
+      </div>
+    </div>
+  );
+}
+
+function renderCompactPlayerCards({
+  playerIds,
+  playerTypeMap,
+  playerInfoMap,
+  revealedPlayers,
+  teamAddress,
+  teamColour,
+  goalCounts,
+  latestScorer,
+  isComplete,
+}: {
+  playerIds: string[];
+  playerTypeMap: Map<string, string>;
+  playerInfoMap: Map<string, PlayerMatchInfo>;
+  revealedPlayers: Set<string>;
+  teamAddress: string;
+  teamColour: string;
+  goalCounts: Record<string, number>;
+  latestScorer: string | null;
+  isComplete: boolean;
+}) {
+  return playerIds.map((playerId) => (
+    <LiveMiniPlayerCard
+      key={playerId}
+      playerId={playerId}
+      playerType={playerTypeMap.get(playerId)}
+      playerInfo={playerInfoMap.get(playerId)}
+      teamAddress={teamAddress}
+      teamColour={teamColour}
+      goalCount={goalCounts[playerId] ?? 0}
+      isLatestScorer={playerId === latestScorer}
+      isRevealed={isComplete || revealedPlayers.has(playerId)}
+    />
+  ));
+}
+
+function LiveMiniFormationPanel({
+  homeFormation,
+  awayFormation,
+  homeTeamName,
+  awayTeamName,
+  homeAddress,
+  awayAddress,
+  playerTypeMap,
+  playerInfoMap,
+  revealedHomePlayers,
+  revealedAwayPlayers,
+  goalCounts,
+  latestScorer,
+  isComplete,
+}: {
+  homeFormation: ReturnType<typeof buildFormation>;
+  awayFormation: ReturnType<typeof buildFormation>;
+  homeTeamName: string;
+  awayTeamName: string;
+  homeAddress: string;
+  awayAddress: string;
+  playerTypeMap: Map<string, string>;
+  playerInfoMap: Map<string, PlayerMatchInfo>;
+  revealedHomePlayers: Set<string>;
+  revealedAwayPlayers: Set<string>;
+  goalCounts: Record<string, number>;
+  latestScorer: string | null;
+  isComplete: boolean;
+}) {
+  const rows: Array<{ label: string; home: string[]; away: string[]; icon: string }> = [
+    { label: "ATTACK", home: homeFormation.attack, away: awayFormation.attack, icon: "A" },
+    { label: "MIDFIELD", home: homeFormation.midfield, away: awayFormation.midfield, icon: "M" },
+    { label: "DEFENSE", home: homeFormation.defense, away: awayFormation.defense, icon: "D" },
+  ];
+
+  return (
+    <section className="matches-history-mini-formations" aria-label={`Live formations for ${homeTeamName} vs ${awayTeamName}`}>
+      <div className="matches-history-mini-formations-header">
+        <h4>{homeTeamName}</h4>
+        <span>Live formation</span>
+        <h4>{awayTeamName}</h4>
+      </div>
+      <div className="matches-history-mini-pitch">
+        {rows.map((row) => (
+          <div className="matches-history-mini-duel-line" key={row.label}>
+            <div className="matches-history-mini-cards matches-history-mini-cards--home">
+              {renderCompactPlayerCards({
+                playerIds: row.home,
+                playerTypeMap,
+                playerInfoMap,
+                revealedPlayers: revealedHomePlayers,
+                teamAddress: homeAddress,
+                teamColour: "#32ff7e",
+                goalCounts,
+                latestScorer,
+                isComplete,
+              })}
+            </div>
+            <div className="matches-history-mini-duel-center">
+              <span className={`matches-history-mini-line-icon matches-history-mini-line-icon--${row.label.toLowerCase()}`}>{row.icon}</span>
+              <span>{row.label}</span>
+            </div>
+            <div className="matches-history-mini-cards matches-history-mini-cards--away">
+              {renderCompactPlayerCards({
+                playerIds: row.away,
+                playerTypeMap,
+                playerInfoMap,
+                revealedPlayers: revealedAwayPlayers,
+                teamAddress: awayAddress,
+                teamColour: "#1e90ff",
+                goalCounts,
+                latestScorer,
+                isComplete,
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -258,7 +877,10 @@ export default function ShowMatches() {
   const { address } = useAccount();
   const [revealPhases, setRevealPhases] = useState<Record<string, RevealPhase>>({});
   const [animSteps, setAnimSteps] = useState<Record<string, number>>({});
-  const [shuffledTimelines, setShuffledTimelines] = useState<Record<string, GoalEvent[]>>({});
+  const [replayScripts, setReplayScripts] = useState<Record<string, ReplayScriptEvent[]>>({});
+  const [replayClockAnchors, setReplayClockAnchors] = useState<Record<string, ReplayClockAnchor>>({});
+  const [clockNowMs, setClockNowMs] = useState(() => Date.now());
+  const [fullScreenMatchId, setFullScreenMatchId] = useState<string | null>(null);
   const [myGamesOnly, setMyGamesOnly] = useState(false);
   const autoplayMatchId = searchParams.get("matchId");
   const shouldAutoplay = searchParams.get("autoplay") === "1";
@@ -276,45 +898,16 @@ export default function ShowMatches() {
 
   const matches = data?.playedMatches ?? [];
 
-  const allPlayerIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const match of matches) {
-      for (const id of [
-        ...match.homeAttackingPlayers,
-        ...match.homeMidfieldPlayers,
-        ...match.homeDefensivePlayers,
-        ...match.awayAttackingPlayers,
-        ...match.awayMidfieldPlayers,
-        ...match.awayDefensivePlayers,
-      ]) {
-        if (id !== "0") ids.add(id);
-      }
-    }
-    return [...ids];
-  }, [matches]);
-
-  const { data: playerAttributeResults } = useReadContracts({
-    contracts: allPlayerIds.map((id) => ({
-      address: playerContract.address,
-      abi: playerContract.abi,
-      functionName: "getPlayerAttributes" as const,
-      args: [BigInt(id)] as const,
-    })),
-    query: { enabled: allPlayerIds.length > 0 },
-  });
-
   const playerTypeMap = useMemo(() => {
     const map = new Map<string, string>();
-    playerAttributeResults?.forEach((result, index) => {
-      if (result.status !== "success") return;
-      const attrs = result.result as readonly bigint[];
-      const playerType = attrs[7];
-      if (playerType !== undefined) {
-        map.set(allPlayerIds[index], playerType.toString());
+    for (const match of matches) {
+      for (const info of match.playerMatchInfos ?? []) {
+        map.set(info.playerId, String(info.playerType));
       }
-    });
+    }
     return map;
-  }, [playerAttributeResults, allPlayerIds]);
+  }, [matches]);
+
   const orderedMatches = useMemo(() => {
     if (!autoplayMatchId) return matches;
     const prioritized = matches.find((match) => match.matchId === autoplayMatchId);
@@ -328,12 +921,12 @@ export default function ShowMatches() {
 
     const timers = animating.map(([matchId]) => {
       const match = matches.find((m) => m.id === matchId);
-      const timeline = shuffledTimelines[matchId] ?? (match ? getGoalTimeline(match) : []);
+      const script = replayScripts[matchId] ?? (match ? buildReplayScript(match) : []);
       const step = animSteps[matchId] ?? 0;
-      const delay = step === 0 ? 600 : 900;
+      const delay = getReplayDelay(script[step]);
 
       return setTimeout(() => {
-        if (step >= timeline.length) {
+        if (step >= script.length) {
           setRevealPhases((prev) => ({ ...prev, [matchId]: "complete" }));
         } else {
           setAnimSteps((prev) => ({ ...prev, [matchId]: step + 1 }));
@@ -342,26 +935,159 @@ export default function ShowMatches() {
     });
 
     return () => timers.forEach(clearTimeout);
-  }, [revealPhases, animSteps, matches, shuffledTimelines]);
+  }, [revealPhases, animSteps, matches, replayScripts]);
+
+  useEffect(() => {
+    const hasAnimating = Object.values(revealPhases).some((phase) => phase === "animating");
+    if (!hasAnimating) return;
+
+    const interval = setInterval(() => {
+      setClockNowMs(Date.now());
+    }, 120);
+
+    return () => clearInterval(interval);
+  }, [revealPhases]);
+
+  useEffect(() => {
+    setReplayClockAnchors((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      const now = Date.now();
+
+      for (const [matchId, phase] of Object.entries(revealPhases)) {
+        if (phase === "hidden") {
+          if (next[matchId]) {
+            delete next[matchId];
+            changed = true;
+          }
+          continue;
+        }
+
+        const match = matches.find((entry) => entry.id === matchId);
+        if (!match) continue;
+
+        const script = replayScripts[matchId] ?? buildReplayScript(match);
+        const step = animSteps[matchId] ?? 0;
+        const consumed = step > 0 ? script[step - 1] : undefined;
+
+        if (phase === "complete") {
+          const targetSeconds = getMatchTargetSeconds(match);
+          const prevAnchor = next[matchId];
+          if (!prevAnchor || prevAnchor.baseSeconds !== targetSeconds || !prevAnchor.freeze || prevAnchor.sourceStep !== step) {
+            next[matchId] = {
+              baseSeconds: targetSeconds,
+              sourceStep: step,
+              startedAtMs: now,
+              freeze: true,
+            };
+            changed = true;
+          }
+          continue;
+        }
+
+        if (!consumed) {
+          const prevAnchor = next[matchId];
+          if (!prevAnchor || prevAnchor.baseSeconds !== 0 || prevAnchor.sourceStep !== 0 || prevAnchor.freeze) {
+            next[matchId] = {
+              baseSeconds: 0,
+              sourceStep: 0,
+              startedAtMs: now,
+              freeze: false,
+            };
+            changed = true;
+          }
+          continue;
+        }
+
+        let nextBaseSeconds: number | null = null;
+        let freeze = false;
+
+        if (consumed.kind === "minute") {
+          nextBaseSeconds = consumed.minute * 60;
+        } else if (consumed.kind === "extra-time") {
+          nextBaseSeconds = 20 * 60;
+        } else if (consumed.kind === "golden-goal" || (consumed.kind === "goal" && consumed.goal.isGoldenGoal)) {
+          nextBaseSeconds = 26 * 60;
+          freeze = true;
+        }
+
+        if (nextBaseSeconds === null) {
+          continue;
+        }
+
+        const prevAnchor = next[matchId];
+        if (!prevAnchor || prevAnchor.sourceStep !== step || prevAnchor.baseSeconds !== nextBaseSeconds || prevAnchor.freeze !== freeze) {
+          next[matchId] = {
+            baseSeconds: nextBaseSeconds,
+            sourceStep: step,
+            startedAtMs: now,
+            freeze,
+          };
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [animSteps, matches, replayScripts, revealPhases]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const className = "matches-history-body--replay-lock";
+    if (fullScreenMatchId) {
+      document.body.classList.add(className);
+    } else {
+      document.body.classList.remove(className);
+    }
+
+    return () => {
+      document.body.classList.remove(className);
+    };
+  }, [fullScreenMatchId]);
 
   const startReveal = useCallback(
     (matchId: string) => {
       const match = matches.find((m) => m.id === matchId);
-      const shuffled = match ? shuffleArray(getGoalTimeline(match), match.matchId) : [];
-      setShuffledTimelines((prev) => ({ ...prev, [matchId]: shuffled }));
+      const script = match ? buildReplayScript(match) : [];
+      setReplayScripts((prev) => ({ ...prev, [matchId]: script }));
       setRevealPhases((prev) => ({ ...prev, [matchId]: "animating" }));
       setAnimSteps((prev) => ({ ...prev, [matchId]: 0 }));
+      setReplayClockAnchors((prev) => ({
+        ...prev,
+        [matchId]: {
+          baseSeconds: 0,
+          sourceStep: 0,
+          startedAtMs: Date.now(),
+          freeze: false,
+        },
+      }));
+      setFullScreenMatchId(matchId);
     },
     [matches],
   );
 
   function skipToReveal(matchId: string) {
+    const match = matches.find((m) => m.id === matchId);
+    const script = replayScripts[matchId] ?? (match ? buildReplayScript(match) : []);
+    setAnimSteps((prev) => ({ ...prev, [matchId]: script.length }));
     setRevealPhases((prev) => ({ ...prev, [matchId]: "complete" }));
   }
 
   function hideMatch(matchId: string) {
     setRevealPhases((prev) => ({ ...prev, [matchId]: "hidden" }));
     setAnimSteps((prev) => ({ ...prev, [matchId]: 0 }));
+    setReplayScripts((prev) => ({ ...prev, [matchId]: [] }));
+    setReplayClockAnchors((prev) => {
+      const next = { ...prev };
+      delete next[matchId];
+      return next;
+    });
+    setFullScreenMatchId((prev) => (prev === matchId ? null : prev));
+  }
+
+  function toggleFullscreen(matchId: string) {
+    setFullScreenMatchId((prev) => (prev === matchId ? null : matchId));
   }
 
   useEffect(() => {
@@ -422,15 +1148,18 @@ export default function ShowMatches() {
           {orderedMatches.map((match) => {
             const phase = revealPhases[match.id] ?? "hidden";
             const step = animSteps[match.id] ?? 0;
-            const timeline = getGoalTimeline(match);
+            const timeline = buildTimedGoalTimeline(match);
             const playerOfMatch = getPlayerOfMatch(timeline);
             const homeTeamName = generateName(match.homeAddress);
             const awayTeamName = generateName(match.awayAddress);
-            const animTimeline = shuffledTimelines[match.id] ?? timeline;
-            const visibleGoals = animTimeline.slice(0, step);
+            const playerInfoMap = getPlayerInfoMap(match);
+            const teamStatsMap = getTeamStatsMap(match);
+            const script = replayScripts[match.id] ?? buildReplayScript(match);
+            const consumedSteps = script.slice(0, step);
+            const visibleGoals = getVisibleGoals(consumedSteps);
             const latestScorer = visibleGoals.length > 0 ? visibleGoals[visibleGoals.length - 1].playerId : null;
-            const latestGoal = visibleGoals.length > 0 ? visibleGoals[visibleGoals.length - 1] : null;
             const visibleScore = getVisibleScore(visibleGoals);
+            const visibleWinnings = getVisibleWinnings(consumedSteps);
             const homeFormation = buildFormation(
               match.homeAttackingPlayers,
               match.homeMidfieldPlayers,
@@ -441,14 +1170,57 @@ export default function ShowMatches() {
               match.awayMidfieldPlayers,
               match.awayDefensivePlayers,
             );
+            const revealedHomePlayers =
+              phase === "complete" ? new Set([...homeFormation.attack, ...homeFormation.midfield, ...homeFormation.defense]) : getRevealedPlayers(consumedSteps, "Home");
+            const revealedAwayPlayers =
+              phase === "complete" ? new Set([...awayFormation.attack, ...awayFormation.midfield, ...awayFormation.defense]) : getRevealedPlayers(consumedSteps, "Away");
+            const homeStats = teamStatsMap.get(match.homeAddress.toLowerCase());
+            const awayStats = teamStatsMap.get(match.awayAddress.toLowerCase());
+            const isFullScreen = fullScreenMatchId === match.id;
+            const liveClockSeconds = getReplayClockSeconds(
+              consumedSteps,
+              match,
+              phase,
+              replayClockAnchors[match.id],
+              clockNowMs,
+            );
+            const showExtraTimeClock =
+              hasExtraTime(match) &&
+              (phase === "complete" ||
+                consumedSteps.some(
+                  (event) =>
+                    event.kind === "extra-time" ||
+                    (event.kind === "minute" && event.period === "extra") ||
+                    event.kind === "golden-goal" ||
+                    (event.kind === "goal" && event.goal.minute > 20),
+                ));
+            const extraTimeClockSeconds = showExtraTimeClock ? Math.max(0, liveClockSeconds - 20 * 60) : undefined;
+            const formationLabelHome = formatFormationString(
+              homeFormation.attack,
+              homeFormation.midfield,
+              homeFormation.defense,
+            );
+            const formationLabelAway = formatFormationString(
+              awayFormation.attack,
+              awayFormation.midfield,
+              awayFormation.defense,
+            );
 
             return (
-              <li className="matches-history-item matches-history-item-reveal" key={match.id}>
+              <li
+                className={`matches-history-item matches-history-item-reveal${isFullScreen ? " matches-history-item-reveal--fullscreen" : ""}`}
+                key={match.id}
+              >
                 <div className="matches-history-item-header">
                   <div>
                     <span className="matches-history-match-id">Match #{match.matchId}</span>
                     <p className="matches-history-timestamp">{formatMatchTime(match.blockTimestamp)}</p>
                   </div>
+                  {(phase === "animating" || phase === "complete") && (
+                    <button className="matches-history-reveal-button" onClick={() => toggleFullscreen(match.id)} type="button">
+                      {isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    </button>
+                  )}
                   {phase === "hidden" && (
                     <button
                       className="matches-history-reveal-button"
@@ -464,7 +1236,7 @@ export default function ShowMatches() {
                       onClick={() => skipToReveal(match.id)}
                       type="button"
                     >
-                      Skip →
+                      Skip
                     </button>
                   )}
                   {phase === "complete" && (
@@ -481,11 +1253,34 @@ export default function ShowMatches() {
                     <ReplayBroadcastHeader
                       awayScore={visibleScore.away}
                       awayTeamName={awayTeamName}
+                      clockSeconds={liveClockSeconds}
+                      extraTimeClockSeconds={extraTimeClockSeconds}
                       homeScore={visibleScore.home}
                       homeTeamName={homeTeamName}
-                      latestGoal={latestGoal}
-                      totalGoals={animTimeline.length}
-                      visibleGoalCount={visibleGoals.length}
+                      isComplete={false}
+                    />
+
+                    <LiveMiniFormationPanel
+                      awayAddress={match.awayAddress}
+                      awayFormation={awayFormation}
+                      awayTeamName={awayTeamName}
+                      goalCounts={buildGoalCounts(visibleGoals)}
+                      homeAddress={match.homeAddress}
+                      homeFormation={homeFormation}
+                      homeTeamName={homeTeamName}
+                      isComplete={false}
+                      latestScorer={latestScorer}
+                      playerInfoMap={playerInfoMap}
+                      playerTypeMap={playerTypeMap}
+                      revealedAwayPlayers={revealedAwayPlayers}
+                      revealedHomePlayers={revealedHomePlayers}
+                    />
+
+                    <GoalEventsPanel
+                      goals={visibleGoals}
+                      title="Events"
+                      homeTeamName={homeTeamName}
+                      awayTeamName={awayTeamName}
                     />
 
                     <div className="matches-history-replay-teams">
@@ -497,33 +1292,39 @@ export default function ShowMatches() {
                         <div className="formation-grid-wrapper">
                           {renderFormationRow(
                             "ATTACK",
-                            "⚔️",
                             homeFormation.attack,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
                             match.homeAddress,
                             "#32ff7e",
                             playerTypeMap,
+                            playerInfoMap,
+                            revealedHomePlayers,
+                            false,
                           )}
                           {renderFormationRow(
                             "MIDFIELD",
-                            "⚡",
                             homeFormation.midfield,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
                             match.homeAddress,
                             "#32ff7e",
                             playerTypeMap,
+                            playerInfoMap,
+                            revealedHomePlayers,
+                            false,
                           )}
                           {renderFormationRow(
                             "DEFENSE",
-                            "🛡️",
                             homeFormation.defense,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
                             match.homeAddress,
                             "#32ff7e",
                             playerTypeMap,
+                            playerInfoMap,
+                            revealedHomePlayers,
+                            false,
                           )}
                         </div>
                       </section>
@@ -536,37 +1337,65 @@ export default function ShowMatches() {
                         <div className="formation-grid-wrapper">
                           {renderFormationRow(
                             "ATTACK",
-                            "⚔️",
                             awayFormation.attack,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
                             match.awayAddress,
                             "#1e90ff",
                             playerTypeMap,
+                            playerInfoMap,
+                            revealedAwayPlayers,
+                            false,
                           )}
                           {renderFormationRow(
                             "MIDFIELD",
-                            "⚡",
                             awayFormation.midfield,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
                             match.awayAddress,
                             "#1e90ff",
                             playerTypeMap,
+                            playerInfoMap,
+                            revealedAwayPlayers,
+                            false,
                           )}
                           {renderFormationRow(
                             "DEFENSE",
-                            "🛡️",
                             awayFormation.defense,
                             buildGoalCounts(visibleGoals),
                             latestScorer,
                             match.awayAddress,
                             "#1e90ff",
                             playerTypeMap,
+                            playerInfoMap,
+                            revealedAwayPlayers,
+                            false,
                           )}
                         </div>
                       </section>
                     </div>
+
+                    <section className="match-centre-summary" aria-label={`Match ${match.matchId} tactical summary`}>
+                      <div>
+                        <span>Home formation</span>
+                        <strong>{formationLabelHome}</strong>
+                      </div>
+                      <div>
+                        <span>Away formation</span>
+                        <strong>{formationLabelAway}</strong>
+                      </div>
+                      <div>
+                        <span>Replay stage</span>
+                        <strong>{consumedSteps.length} / {script.length}</strong>
+                      </div>
+                    </section>
+
+                    <div className="matches-history-team-stats-grid">
+                      <TeamStatsPanel teamAddress={match.homeAddress} teamLabel={toTeamLabel(match, match.homeAddress) ?? "Home"} teamStats={homeStats} />
+                      <TeamStatsPanel teamAddress={match.awayAddress} teamLabel={toTeamLabel(match, match.awayAddress) ?? "Away"} teamStats={awayStats} />
+                    </div>
+
+                    <WagerEventsPanel match={match} winnings={visibleWinnings} />
 
                   </div>
                 )}
@@ -576,11 +1405,18 @@ export default function ShowMatches() {
                     <ReplayBroadcastHeader
                       awayScore={match.awayScore}
                       awayTeamName={awayTeamName}
+                      clockSeconds={liveClockSeconds}
+                      extraTimeClockSeconds={extraTimeClockSeconds}
                       homeScore={match.homeScore}
                       homeTeamName={homeTeamName}
-                      latestGoal={timeline.length > 0 ? timeline[timeline.length - 1] : null}
-                      totalGoals={timeline.length}
-                      visibleGoalCount={timeline.length}
+                      isComplete
+                    />
+
+                    <GoalEventsPanel
+                      goals={timeline}
+                      title="Events"
+                      homeTeamName={homeTeamName}
+                      awayTeamName={awayTeamName}
                     />
 
                     <section className="match-centre-summary" aria-label={`Match ${match.matchId} centre`}>
@@ -600,7 +1436,18 @@ export default function ShowMatches() {
                           {playerOfMatch ? `${playerOfMatch.name} (${playerOfMatch.goals})` : "No scorer"}
                         </strong>
                       </div>
+                      <div>
+                        <span>Formation</span>
+                        <strong>{formationLabelHome} vs {formationLabelAway}</strong>
+                      </div>
                     </section>
+
+                    <WagerEventsPanel match={match} winnings={match.winningsDistributeds ?? []} />
+
+                    <div className="matches-history-team-stats-grid">
+                      <TeamStatsPanel teamAddress={match.homeAddress} teamLabel={toTeamLabel(match, match.homeAddress) ?? "Home"} teamStats={homeStats} />
+                      <TeamStatsPanel teamAddress={match.awayAddress} teamLabel={toTeamLabel(match, match.awayAddress) ?? "Away"} teamStats={awayStats} />
+                    </div>
 
                     <div className="matches-history-scoreboard">
                       <div className="matches-history-team-summary">
@@ -627,33 +1474,39 @@ export default function ShowMatches() {
                               <div className="formation-grid-wrapper">
                                 {renderFormationRow(
                                   "ATTACK",
-                                  "⚔️",
                                   homeFormation.attack,
                                   fullCounts,
                                   null,
                                   match.homeAddress,
                                   "#32ff7e",
                                   playerTypeMap,
+                                  playerInfoMap,
+                                  revealedHomePlayers,
+                                  true,
                                 )}
                                 {renderFormationRow(
                                   "MIDFIELD",
-                                  "⚡",
                                   homeFormation.midfield,
                                   fullCounts,
                                   null,
                                   match.homeAddress,
                                   "#32ff7e",
                                   playerTypeMap,
+                                  playerInfoMap,
+                                  revealedHomePlayers,
+                                  true,
                                 )}
                                 {renderFormationRow(
                                   "DEFENSE",
-                                  "🛡️",
                                   homeFormation.defense,
                                   fullCounts,
                                   null,
                                   match.homeAddress,
                                   "#32ff7e",
                                   playerTypeMap,
+                                  playerInfoMap,
+                                  revealedHomePlayers,
+                                  true,
                                 )}
                               </div>
                             </section>
@@ -665,33 +1518,39 @@ export default function ShowMatches() {
                               <div className="formation-grid-wrapper">
                                 {renderFormationRow(
                                   "ATTACK",
-                                  "⚔️",
                                   awayFormation.attack,
                                   fullCounts,
                                   null,
                                   match.awayAddress,
                                   "#1e90ff",
                                   playerTypeMap,
+                                  playerInfoMap,
+                                  revealedAwayPlayers,
+                                  true,
                                 )}
                                 {renderFormationRow(
                                   "MIDFIELD",
-                                  "⚡",
                                   awayFormation.midfield,
                                   fullCounts,
                                   null,
                                   match.awayAddress,
                                   "#1e90ff",
                                   playerTypeMap,
+                                  playerInfoMap,
+                                  revealedAwayPlayers,
+                                  true,
                                 )}
                                 {renderFormationRow(
                                   "DEFENSE",
-                                  "🛡️",
                                   awayFormation.defense,
                                   fullCounts,
                                   null,
                                   match.awayAddress,
                                   "#1e90ff",
                                   playerTypeMap,
+                                  playerInfoMap,
+                                  revealedAwayPlayers,
+                                  true,
                                 )}
                               </div>
                             </section>
