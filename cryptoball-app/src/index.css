@@ -1174,6 +1174,64 @@ body.matches-history-body--replay-lock {
     border-radius: 0;
     padding: 12px;
   }
+
+  .matches-history-panel {
+    padding: 14px;
+  }
+
+  .matches-history-item-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .matches-history-reveal-button {
+    padding: 8px 12px;
+  }
+
+  .rematch-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rematch-button {
+    text-align: center;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Make the 6-column pitch scroll horizontally so cards stay legible */
+  .matches-history-mini-formations {
+    padding: 8px;
+  }
+
+  .matches-history-mini-pitch {
+    grid-template-columns: repeat(6, minmax(80px, 1fr));
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(126, 240, 167, 0.3) transparent;
+  }
+
+  .matches-history-mini-card {
+    max-width: none;
+  }
+
+  .matches-history-broadcast-score strong {
+    font-size: clamp(1.6rem, 8vw, 2.4rem);
+  }
+
+  .matches-history-broadcast-score span {
+    font-size: 0.6rem;
+  }
+
+  .match-centre-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .matches-history-team-card--replay .position {
+    flex: 1 1 140px;
+  }
 }
 
 .tab-panel {
@@ -5135,6 +5193,35 @@ body.matches-history-body--replay-lock {
 
   .position-stats {
     font-size: 10px;
+  }
+
+  .matches-history-panel {
+    padding: 10px;
+  }
+
+  .matches-history-animation-body,
+  .matches-history-reveal-body {
+    gap: 12px;
+  }
+
+  .matches-history-team-card--replay {
+    padding: 12px;
+  }
+
+  .matches-history-team-card--replay .position {
+    flex: 1 1 120px;
+  }
+
+  .matches-history-mini-card-body strong {
+    font-size: 0.58rem;
+  }
+
+  .match-centre-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .match-centre-summary div {
+    padding: 10px;
   }
 }
 
