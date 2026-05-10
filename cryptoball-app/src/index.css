@@ -458,7 +458,27 @@ form {
 
 .matches-history-mini-pitch {
   display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
+}
+
+.matches-history-mini-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.matches-history-mini-column-header {
+  color: rgba(176, 184, 193, 0.8);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  text-align: center;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .matches-history-mini-duel-line {
@@ -511,16 +531,17 @@ form {
 
 .matches-history-mini-cards {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
 }
 
 .matches-history-mini-cards--home {
-  justify-content: flex-end;
 }
 
 .matches-history-mini-cards--away {
-  justify-content: flex-start;
 }
 
 .matches-history-mini-card {

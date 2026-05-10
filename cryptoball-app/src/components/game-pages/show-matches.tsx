@@ -776,10 +776,13 @@ function LiveMiniFormationPanel({
   latestScorer: string | null;
   isComplete: boolean;
 }) {
-  const rows: Array<{ label: string; home: string[]; away: string[]; icon: string }> = [
-    { label: "ATTACK", home: homeFormation.attack, away: awayFormation.attack, icon: "A" },
-    { label: "MIDFIELD", home: homeFormation.midfield, away: awayFormation.midfield, icon: "M" },
-    { label: "DEFENSE", home: homeFormation.defense, away: awayFormation.defense, icon: "D" },
+  const columns: Array<{ label: string; playerIds: string[]; teamLabel: "Home" | "Away" }> = [
+    { label: "home defense", playerIds: homeFormation.defense, teamLabel: "Home" },
+    { label: "home mid", playerIds: homeFormation.midfield, teamLabel: "Home" },
+    { label: "home att", playerIds: homeFormation.attack, teamLabel: "Home" },
+    { label: "away att", playerIds: awayFormation.attack, teamLabel: "Away" },
+    { label: "away mid", playerIds: awayFormation.midfield, teamLabel: "Away" },
+    { label: "away def", playerIds: awayFormation.defense, teamLabel: "Away" },
   ];
 
   return (
@@ -790,33 +793,17 @@ function LiveMiniFormationPanel({
         <h4>{awayTeamName}</h4>
       </div>
       <div className="matches-history-mini-pitch">
-        {rows.map((row) => (
-          <div className="matches-history-mini-duel-line" key={row.label}>
-            <div className="matches-history-mini-cards matches-history-mini-cards--home">
+        {columns.map((column) => (
+          <div className="matches-history-mini-column" key={column.label}>
+            <div className="matches-history-mini-column-header">{column.label}</div>
+            <div className={`matches-history-mini-cards matches-history-mini-cards--${column.teamLabel.toLowerCase()}`}>
               {renderCompactPlayerCards({
-                playerIds: row.home,
+                playerIds: column.playerIds,
                 playerTypeMap,
                 playerInfoMap,
-                revealedPlayers: revealedHomePlayers,
-                teamAddress: homeAddress,
-                teamColour: "#32ff7e",
-                goalCounts,
-                latestScorer,
-                isComplete,
-              })}
-            </div>
-            <div className="matches-history-mini-duel-center">
-              <span className={`matches-history-mini-line-icon matches-history-mini-line-icon--${row.label.toLowerCase()}`}>{row.icon}</span>
-              <span>{row.label}</span>
-            </div>
-            <div className="matches-history-mini-cards matches-history-mini-cards--away">
-              {renderCompactPlayerCards({
-                playerIds: row.away,
-                playerTypeMap,
-                playerInfoMap,
-                revealedPlayers: revealedAwayPlayers,
-                teamAddress: awayAddress,
-                teamColour: "#1e90ff",
+                revealedPlayers: column.teamLabel === "Home" ? revealedHomePlayers : revealedAwayPlayers,
+                teamAddress: column.teamLabel === "Home" ? homeAddress : awayAddress,
+                teamColour: column.teamLabel === "Home" ? "#32ff7e" : "#1e90ff",
                 goalCounts,
                 latestScorer,
                 isComplete,
