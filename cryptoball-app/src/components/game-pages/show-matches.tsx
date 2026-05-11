@@ -166,14 +166,32 @@ function buildGoalCounts(timeline: GoalEvent[]): Record<string, number> {
   return counts;
 }
 
+function seededRandom(seed: string): () => number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+
+  return function () {
+    hash = (hash * 9301 + 49297) % 233280;
+    return hash / 233280;
+  };
+}
+
 function buildTimedGoalTimeline(match: PlayedMatch): GoalEvent[] {
   const baseTimeline = getGoalTimeline(match);
   const includeExtraTime = hasExtraTime(match);
   const includeGolden = hasGoldenGoal(match);
   const totalMinutes = includeExtraTime ? 25 : 20;
 
-  const timedGoals = baseTimeline.map((goal, index) => {
-    const minute = Math.max(1, Math.ceil(((index + 1) * totalMinutes) / Math.max(1, baseTimeline.length)));
+  // Shuffle goals deterministically based on match ID
+  const rng = seededRandom(match.id);
+  const shuffledGoals = [...baseTimeline].sort(() => rng() - 0.5);
+
+  const timedGoals = shuffledGoals.map((goal, index) => {
+    const minute = Math.max(0, Math.ceil(((index + 1) * totalMinutes) / Math.max(1, shuffledGoals.length)) - 1);
     return {
       ...goal,
       minute,
@@ -292,7 +310,7 @@ function buildReplayScript(match: PlayedMatch): ReplayScriptEvent[] {
     goalsByMinute.set(goal.minute, minuteGoals);
   }
 
-  for (let minute = 1; minute <= 20; minute++) {
+  for (let minute = 0; minute < 20; minute++) {
     script.push({
       id: `${match.id}-minute-${minute}`,
       kind: "minute",
@@ -1000,6 +1018,9 @@ export default function ShowMatches() {
           nextBaseSeconds = 20 * 60;
         } else if (consumed.kind === "golden-goal" || (consumed.kind === "goal" && consumed.goal.isGoldenGoal)) {
           nextBaseSeconds = 26 * 60;
+          freeze = true;
+        } else if (consumed.kind === "intro-player" || consumed.kind === "formation" || consumed.kind === "team-stats") {
+          nextBaseSeconds = 0;
           freeze = true;
         }
 
