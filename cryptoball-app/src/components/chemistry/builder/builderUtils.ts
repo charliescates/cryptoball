@@ -51,21 +51,21 @@ export const getNearMissTips = (slots: BuilderSlot[]) => {
   const defenseSlots = getSlotsByRole(slots, "defense");
   const tips: string[] = [];
 
-  const strikePieces = [
-    midfieldSlots[0]?.playerType === PlayerType.PLAYMAKER,
-    attackSlots[0]?.playerType === PlayerType.TARGET_MAN,
-    attackSlots[1]?.playerType === PlayerType.TARGET_MAN,
-  ].filter(Boolean).length;
-  const wallPieces = [
-    defenseSlots[0]?.playerType === PlayerType.ANCHOR,
-    defenseSlots[1]?.playerType === PlayerType.ENFORCER,
-    defenseSlots[2]?.playerType === PlayerType.ENFORCER,
-  ].filter(Boolean).length;
+  const attackTargetMen = attackSlots.filter((slot) => slot.playerType === PlayerType.TARGET_MAN).length;
+  const midfieldPlaymakers = midfieldSlots.filter((slot) => slot.playerType === PlayerType.PLAYMAKER).length;
+  const defenseAnchors = defenseSlots.filter((slot) => slot.playerType === PlayerType.ANCHOR).length;
+  const defenseEnforcers = defenseSlots.filter((slot) => slot.playerType === PlayerType.ENFORCER).length;
 
-  if (strikePieces === 2) {
+  const canBuildStrikeForce = attackSlots.length >= 2 && midfieldSlots.length >= 1;
+  const canBuildDefensiveWall = defenseSlots.length >= 3;
+
+  const strikePieces = Math.min(midfieldPlaymakers, 1) + Math.min(attackTargetMen, 2);
+  const wallPieces = Math.min(defenseAnchors, 1) + Math.min(defenseEnforcers, 2);
+
+  if (canBuildStrikeForce && strikePieces === 2) {
     tips.push("You are one role away from Strike Force: Playmaker plus two Target Men.");
   }
-  if (wallPieces === 2) {
+  if (canBuildDefensiveWall && wallPieces === 2) {
     tips.push("You are one role away from Defensive Wall: Anchor plus two Enforcers.");
   }
 
