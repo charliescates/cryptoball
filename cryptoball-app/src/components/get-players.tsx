@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { zeroAddress } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
-import { playerContract } from "./contracts/playerContract";
+import { playerContract } from "../contracts/playerContract";
 import { useMyListedTokenIds } from "./market/useMyListedTokenIds";
 import type { Player } from "./player";
 import PlayerDetailDrawer from "./players/PlayerDetailDrawer";

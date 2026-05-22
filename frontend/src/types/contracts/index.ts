@@ -5,4 +5,6 @@ import type * as marketSol from "./Market.sol";
 export type { marketSol };
 export type { Academy } from "./Academy";
 export type { Game } from "./Game";
+export type { MaliciousReentrancy } from "./MaliciousReentrancy";
 export type { PlayerToken } from "./PlayerToken";
+export type { Tournement } from "./Tournement";

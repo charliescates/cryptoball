@@ -1,0 +1,32 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: tournement
+    network: matic
+    source:
+      address: "0x3EE3D991B977f8Ee569e345D9ef615b762973901"
+      abi: tournement
+      startBlock: 86994583
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - TournementCompleted
+        - TournementCreated
+        - TournementMatchStarted
+      abis:
+        - name: tournement
+          file: ./abis/tournement.json
+      eventHandlers:
+        - event: TournementCompleted(indexed uint256,address)
+          handler: handleTournementCompleted
+        - event: TournementCreated(indexed uint256,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
+          handler: handleTournementCreated
+        - event: TournementMatchStarted(indexed uint256,indexed uint8,address,address)
+          handler: handleTournementMatchStarted
+      file: ./src/tournement.ts

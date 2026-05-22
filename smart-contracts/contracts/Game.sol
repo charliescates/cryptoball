@@ -3,13 +3,12 @@ pragma solidity 0.8.21;
 
 import "./PlayerToken.sol";
 import "./Academy.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-/**
- * Refactor to replace uint with uint8 where possible
- */
-contract Game {
+contract Game is ReentrancyGuard {
     uint256 private _tokenIdCounter = 1;
-    uint256 public constant EXECUTION_FEE_BPS = 100; // 1% of pot
+    uint256 public constant MIN_WAGER = 3 ether;
     PlayerToken playerToken;
     Academy academy;
     uint randomCounter = 0;
@@ -40,6 +39,15 @@ contract Game {
         Team awayTeam
     );
     event MatchPlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
+    event TournamentMatchPlayed(
+        uint256 indexed tournementId,
+        uint8 indexed round,
+        address homeAddress,
+        address awayAddress,
+        address winner,
+        uint8 homeScore,
+        uint8 awayScore
+    );
     event ExtraTimePlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
     event GoldenGoalPlayed(uint256 matchId, uint8 homeScore, uint8 awayScore);
     event PlayerScored(uint256 matchId, uint256 playerId);
@@ -73,6 +81,8 @@ contract Game {
     }
 
     function createGame(uint wagerRequired, address homeAddress, address awayAddress) external payable {
+        require(wagerRequired >= MIN_WAGER, "Wager must be at least 3 POL to ensure winner payouts exceed minimum execution fee");
+
         Match memory game;
         game.wagerRequired = wagerRequired;
         game.homeAddress = homeAddress;
@@ -103,7 +113,7 @@ contract Game {
         uint256 matchId,
         uint256[3] memory attackingPlayers,
         uint256[3] memory midfieldPlayers,
-        uint256[3] memory defensivePlayers) external payable {
+        uint256[3] memory defensivePlayers) external payable nonReentrant {
         Match storage game = matches[matchId];
         require(
             msg.sender == game.homeAddress || msg.sender == game.awayAddress,
@@ -117,17 +127,67 @@ contract Game {
 
         if (msg.sender == game.homeAddress) {
             require(isEmpty(game.homeTeam), "Home team already submitted");
-            validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
+            address owner = _validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
+            require(owner == msg.sender, "You must own all players in your team");
             game.homeTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
         } else {
             require(isEmpty(game.awayTeam), "Away team already submitted");
-            validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
+            address owner = _validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
+            require(owner == msg.sender, "You must own all players in your team");
             game.awayTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
         }
 
         if (!isEmpty(game.homeTeam) && !isEmpty(game.awayTeam)) {
-            playMatch(matchId, msg.sender);
+            _playMatch(matchId, msg.sender);
         }
+    }
+
+    function playMatch(uint256 matchId, address executor) external returns (uint8 homeGoals, uint8 awayGoals) {
+        return _playMatch(matchId, executor);
+    }
+
+    function playTournamentMatch(
+        address homeAddress,
+        Team memory homeTeam,
+        address awayAddress,
+        Team memory awayTeam,
+        uint256 tournementId,
+        uint8 round
+    ) external returns (address winner, uint8 homeGoals, uint8 awayGoals) {
+        (homeGoals, awayGoals) = _simulateMatch(0, homeAddress, homeTeam, awayAddress, awayTeam);
+
+        if (homeGoals > awayGoals) {
+            winner = homeAddress;
+        } else {
+            winner = awayAddress;
+        }
+
+        emit TournamentMatchPlayed(tournementId, round, homeAddress, awayAddress, winner, homeGoals, awayGoals);
+
+        return (winner, homeGoals, awayGoals);
+    }
+
+    function validateTeam(
+        uint256[3] memory attack,
+        uint256[3] memory midfield,
+        uint256[3] memory defense,
+        address expectedOwner
+    ) external view returns (bool) {
+        address owner = _validateTeam(attack, midfield, defense);
+        return owner == expectedOwner;
+    }
+
+    function getPlayerAttributes(uint256 playerId) external view returns (
+        uint256 id,
+        uint256 attack,
+        uint256 level,
+        uint256 defense,
+        uint256 potential,
+        uint256 gamesLeft,
+        uint256 goals,
+        uint256 playerType
+    ) {
+        return playerToken.getPlayerAttributes(playerId);
     }
 
     function isEmpty(Team memory team) private pure returns (bool) {
@@ -142,40 +202,65 @@ contract Game {
         && team.defensivePlayers[2] == 0;
     }
 
-    function playMatch(uint256 matchId, address executor) internal returns (uint8 homeGoals, uint8 awayGoals) {
+    function _playMatch(uint256 matchId, address executor) internal returns (uint8 homeGoals, uint8 awayGoals) {
         Match memory game = matches[matchId];
-        
-        (homeGoals, awayGoals) = iterateThroughGame(
+        uint256 gasAtStart = gasleft();
+
+        (homeGoals, awayGoals) = _simulateMatch(
             matchId,
             game.homeAddress,
+            game.homeTeam,
             game.awayAddress,
-            game.homeTeam.attackingPlayers,
-            game.homeTeam.midfieldPlayers,
-            game.homeTeam.defensivePlayers,
-            game.awayTeam.attackingPlayers,
-            game.awayTeam.midfieldPlayers,
-            game.awayTeam.defensivePlayers
+            game.awayTeam
         );
-
-        // Emit player match info for all players
-        emitPlayerMatchInfo(matchId, game.homeTeam, game.homeAddress);
-        emitPlayerMatchInfo(matchId, game.awayTeam, game.awayAddress);
-
-        // Update player stats
-        updatePlayerStats(matchId, game.homeTeam, game.awayTeam);
-
-        // Assign goals to scorers
-        assignGoals(matchId, homeGoals, game.homeTeam);
-        assignGoals(matchId, awayGoals, game.awayTeam);
-
-        emit MatchSnapshot(matchId, game.homeAddress, game.awayAddress, game.homeTeam, game.awayTeam);
-
-        // Distribute winnings
-        distributeWinnings(matchId, homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress, executor);
 
         emit MatchPlayed(matchId, homeGoals, awayGoals);
 
+        // Distribute winnings
+        uint256 gasSpentInMatch = gasAtStart - gasleft();
+        uint256 executorFee = gasSpentInMatch * tx.gasprice;
+        if (executorFee > game.pot) {
+            executorFee = game.pot;
+        }
+        distributeWinnings(matchId, homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress, executor, executorFee);
+
+
         delete matches[matchId];
+
+        return (homeGoals, awayGoals);
+    }
+
+    function _simulateMatch(
+        uint256 matchId,
+        address homeAddress,
+        Team memory homeTeam,
+        address awayAddress,
+        Team memory awayTeam
+    ) private returns (uint8 homeGoals, uint8 awayGoals) {
+        (homeGoals, awayGoals) = iterateThroughGame(
+            matchId,
+            homeAddress,
+            awayAddress,
+            homeTeam.attackingPlayers,
+            homeTeam.midfieldPlayers,
+            homeTeam.defensivePlayers,
+            awayTeam.attackingPlayers,
+            awayTeam.midfieldPlayers,
+            awayTeam.defensivePlayers
+        );
+
+        // Emit player match info for all players
+        emitPlayerMatchInfo(matchId, homeTeam, homeAddress);
+        emitPlayerMatchInfo(matchId, awayTeam, awayAddress);
+
+        // Update player stats
+        updatePlayerStats(matchId, homeTeam, awayTeam);
+
+        // Assign goals to scorers
+        assignGoals(matchId, homeGoals, homeTeam);
+        assignGoals(matchId, awayGoals, awayTeam);
+
+        emit MatchSnapshot(matchId, homeAddress, awayAddress, homeTeam, awayTeam);
 
         return (homeGoals, awayGoals);
     }
@@ -216,31 +301,54 @@ contract Game {
         uint256 pot,
         address homeAddress,
         address awayAddress,
-        address executor
+        address executor,
+        uint256 executorFee
     ) private {
-        uint executorFee = (pot * EXECUTION_FEE_BPS) / 10000;
+        // Calculate amounts before any transfers (checks-effects-interactions pattern)
+        uint payoutPot = pot - executorFee;
+        uint academyShare = (payoutPot * 5) / 100;
+        uint remainingPot = payoutPot - academyShare;
+        
+        address winner;
+        uint256 winnerAmount;
+        
+        if (homeGoals > awayGoals) {
+            winner = homeAddress;
+            winnerAmount = remainingPot;
+        } else if (awayGoals > homeGoals) {
+            winner = awayAddress;
+            winnerAmount = remainingPot;
+        } else {
+            // Draw - split remaining pot
+            winnerAmount = remainingPot / 2;
+        }
+
+        // Emit event before transfers
+        if (homeGoals > awayGoals) {
+            emit WinningsDistributed(matchId, homeAddress, remainingPot, address(academy), academyShare, executor, executorFee);
+        } else if (awayGoals > homeGoals) {
+            emit WinningsDistributed(matchId, awayAddress, remainingPot, address(academy), academyShare, executor, executorFee);
+        } else {
+            emit WinningsDistributed(matchId, homeAddress, remainingPot / 2, address(academy), academyShare, executor, executorFee);
+        }
+
+        // Effects: All state updates done
+        // Interactions: Now do all external transfers
         if (executorFee > 0) {
             payable(executor).transfer(executorFee);
         }
 
-        uint payoutPot = pot - executorFee;
-        uint academyShare = (payoutPot * 5) / 100;
         if (academyShare > 0) {
             academy.deposit{value: academyShare}();
         }
-        
-        uint remainingPot = payoutPot - academyShare;
 
         if (homeGoals > awayGoals) {
-            payable(homeAddress).transfer(remainingPot);
-            emit WinningsDistributed(matchId, homeAddress, remainingPot, address(academy), academyShare, executor, executorFee);
+            payable(homeAddress).transfer(winnerAmount);
         } else if (awayGoals > homeGoals) {
-            payable(awayAddress).transfer(remainingPot);
-            emit WinningsDistributed(matchId, awayAddress, remainingPot, address(academy), academyShare, executor, executorFee);
+            payable(awayAddress).transfer(winnerAmount);
         } else {
-            payable(homeAddress).transfer(remainingPot / 2);
-            payable(awayAddress).transfer(remainingPot / 2);
-            emit WinningsDistributed(matchId, homeAddress, remainingPot / 2, address(academy), academyShare, executor, executorFee);
+            payable(homeAddress).transfer(winnerAmount);
+            payable(awayAddress).transfer(winnerAmount);
         }
     }
 
@@ -348,7 +456,7 @@ contract Game {
         return random < homeWinChance;
     }
 
-    function validateTeam(uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) private view returns (address owner) {
+    function _validateTeam(uint256[3] memory attack, uint256[3] memory midfield, uint256[3] memory defense) internal view returns (address owner) {
         uint256[5] memory team;
         uint playerCount = 0;
         for (uint i = 0; i < 3; i++) {
@@ -477,6 +585,10 @@ contract Game {
         // Get player types for all positions
         uint8[9] memory playerTypes;
         bool[9] memory usedInBonus;
+        for (uint8 i = 0; i < 9; i++) {
+            // 255 means "no player in this slot" so empty slots are never treated as a type.
+            playerTypes[i] = type(uint8).max;
+        }
         
         for (uint i = 0; i < 3; i++) {
             if (defense[i] != 0) {
@@ -498,105 +610,152 @@ contract Game {
 
         // Check for 6-point bonuses first (higher priority)
         
-        // Defense: Anchor + Enforcer + Enforcer = +6 defense
-        if (!usedInBonus[0] && !usedInBonus[1] && !usedInBonus[2]) {
-            if (playerTypes[0] == 3 && playerTypes[1] == 0 && playerTypes[2] == 0) {
+        // Defense: Anchor + Enforcer + Enforcer = +6 defense (any 3 defense slots)
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 0, 2, 3, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 0, 2, 0, 2);
+            if (matched) {
                 defenseBonus += 6;
-                usedInBonus[0] = true;
-                usedInBonus[1] = true;
-                usedInBonus[2] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Midfield: Playmaker + Attack: Target Man + Target Man = +6 attack
-        if (!usedInBonus[3] && !usedInBonus[6] && !usedInBonus[7]) {
-            if (playerTypes[3] == 2 && playerTypes[6] == 1 && playerTypes[7] == 1) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 2, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 6, 8, 1, 2);
+            if (matched) {
                 attackBonus += 6;
-                usedInBonus[3] = true;
-                usedInBonus[6] = true;
-                usedInBonus[7] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Defense: Enforcer + Enforcer = +3 defense
-        if (!usedInBonus[0] && !usedInBonus[1]) {
-            if (playerTypes[0] == 0 && playerTypes[1] == 0) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 0, 2, 0, 2);
+            if (matched) {
                 defenseBonus += 3;
-                usedInBonus[0] = true;
-                usedInBonus[1] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Check for 3-point bonuses
         
         // Defense: Anchor + Enforcer = +3 defense
-        if (!usedInBonus[0] && !usedInBonus[1]) {
-            if (playerTypes[0] == 3 && playerTypes[1] == 0) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 0, 2, 3, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 0, 2, 0, 1);
+            if (matched) {
                 defenseBonus += 3;
-                usedInBonus[0] = true;
-                usedInBonus[1] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Midfield: Playmaker + Attack: Target Man = +3 attack
-        if (!usedInBonus[3] && !usedInBonus[6]) {
-            if (playerTypes[3] == 2 && playerTypes[6] == 1) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 2, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 6, 8, 1, 1);
+            if (matched) {
                 attackBonus += 3;
-                usedInBonus[3] = true;
-                usedInBonus[6] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Defense: Anchor + Midfield: Playmaker + Attack: Target Man = +3 defense, +3 attack
-        if (!usedInBonus[0] && !usedInBonus[3] && !usedInBonus[6]) {
-            if (playerTypes[0] == 3 && playerTypes[3] == 2 && playerTypes[6] == 1) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 0, 2, 3, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 2, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 6, 8, 1, 1);
+            if (matched) {
                 defenseBonus += 3;
                 attackBonus += 3;
-                usedInBonus[0] = true;
-                usedInBonus[3] = true;
-                usedInBonus[6] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Attack: Target Man + Enforcer = +3 attack
-        if (!usedInBonus[6] && !usedInBonus[7]) {
-            if (playerTypes[6] == 1 && playerTypes[7] == 0) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 6, 8, 1, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 6, 8, 0, 1);
+            if (matched) {
                 attackBonus += 3;
-                usedInBonus[6] = true;
-                usedInBonus[7] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Midfield: Playmaker + Anchor = +3 defense
-        if (!usedInBonus[3] && !usedInBonus[4]) {
-            if (playerTypes[3] == 2 && playerTypes[4] == 3) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 2, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 3, 1);
+            if (matched) {
                 defenseBonus += 3;
-                usedInBonus[3] = true;
-                usedInBonus[4] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Midfield: Playmaker + Anchor + Enforcer = +3 defense, +3 attack
-        if (!usedInBonus[3] && !usedInBonus[4] && !usedInBonus[5]) {
-            if (playerTypes[3] == 2 && playerTypes[4] == 3 && playerTypes[5] == 0) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 2, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 3, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 3, 5, 0, 1);
+            if (matched) {
                 defenseBonus += 3;
                 attackBonus += 3;
-                usedInBonus[3] = true;
-                usedInBonus[4] = true;
-                usedInBonus[5] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         // Attack: Target Man + Playmaker = +3 attack
-        if (!usedInBonus[6] && !usedInBonus[7]) {
-            if (playerTypes[6] == 1 && playerTypes[7] == 2) {
+        {
+            bool[9] memory candidateUsed = usedInBonus;
+            bool matched = takeByRoleAndType(playerTypes, candidateUsed, 6, 8, 1, 1)
+                && takeByRoleAndType(playerTypes, candidateUsed, 6, 8, 2, 1);
+            if (matched) {
                 attackBonus += 3;
-                usedInBonus[6] = true;
-                usedInBonus[7] = true;
+                usedInBonus = candidateUsed;
             }
         }
 
         return (attackBonus, defenseBonus);
+    }
+
+    function takeByRoleAndType(
+        uint8[9] memory playerTypes,
+        bool[9] memory usedInBonus,
+        uint8 startIndex,
+        uint8 endIndex,
+        uint8 requiredType,
+        uint8 requiredCount
+    ) private pure returns (bool matched) {
+        uint8[3] memory selectedIndices;
+        uint8 selected = 0;
+
+        for (uint8 i = startIndex; i <= endIndex; i++) {
+            if (!usedInBonus[i] && playerTypes[i] == requiredType) {
+                usedInBonus[i] = true;
+                selectedIndices[selected] = i;
+                selected++;
+                if (selected == requiredCount) {
+                    return true;
+                }
+            }
+        }
+
+        // Roll back any partial picks from this attempt.
+        for (uint8 j = 0; j < selected; j++) {
+            usedInBonus[selectedIndices[j]] = false;
+        }
+
+        return false;
     }
 
     function hasDuplicates(uint256[5] memory array) private pure returns (bool) {
@@ -662,8 +821,7 @@ contract Game {
             } else {
                 return isAttackingStat ? 10 : 0; 
             }
-        } else {
-            // Anchor
+        } else { // Anchor
             if (isAttack) {
                 return 0; 
             } else if (isDefense) {

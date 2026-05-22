@@ -1,0 +1,124 @@
+import { Contract } from "./types";
+
+const configuredAddress = (import.meta.env.VITE_TOURNEMENT_CONTRACT_ADDRESS || "").trim();
+
+export const tournementContract: Contract = {
+  address: (configuredAddress || "0x6284c72097953821C9B6b2467EDD84D211f3B562") as `0x${string}`,
+  abi: [
+    {
+      inputs: [
+        { internalType: "uint8", name: "rounds", type: "uint8" },
+        { internalType: "uint256", name: "entryFee", type: "uint256" },
+        { internalType: "uint8", name: "minAttack", type: "uint8" },
+        { internalType: "uint8", name: "minDefence", type: "uint8" },
+        { internalType: "uint8", name: "maxAttack", type: "uint8" },
+        { internalType: "uint8", name: "maxDefence", type: "uint8" },
+        { internalType: "uint8[]", name: "includeTypes", type: "uint8[]" },
+        { internalType: "uint8[]", name: "excludeTypes", type: "uint8[]" },
+      ],
+      name: "create",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [],
+      name: "getTournements",
+      outputs: [
+        {
+          components: [
+            { internalType: "uint256", name: "tournementId", type: "uint256" },
+            { internalType: "uint8", name: "rounds", type: "uint8" },
+            { internalType: "uint256", name: "entryFee", type: "uint256" },
+            { internalType: "uint8", name: "minAttack", type: "uint8" },
+            { internalType: "uint8", name: "minDefence", type: "uint8" },
+            { internalType: "uint8", name: "maxAttack", type: "uint8" },
+            { internalType: "uint8", name: "maxDefence", type: "uint8" },
+            { internalType: "uint8[]", name: "includeTypes", type: "uint8[]" },
+            { internalType: "uint8[]", name: "excludeTypes", type: "uint8[]" },
+            { internalType: "uint8", name: "teamsEntered", type: "uint8" },
+            { internalType: "uint256", name: "maxTeams", type: "uint256" },
+            { internalType: "bool", name: "isOpen", type: "bool" },
+            { internalType: "address", name: "champion", type: "address" },
+          ],
+          internalType: "struct Tournement.TournementSummary[]",
+          name: "summaries",
+          type: "tuple[]",
+        },
+      ],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "uint256", name: "tournementId", type: "uint256" },
+      ],
+      name: "claimReward",
+      outputs: [],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "uint256", name: "tournementId", type: "uint256" },
+        { internalType: "uint256[3]", name: "attackingPlayers", type: "uint256[3]" },
+        { internalType: "uint256[3]", name: "midfieldPlayers", type: "uint256[3]" },
+        { internalType: "uint256[3]", name: "defensivePlayers", type: "uint256[3]" },
+      ],
+      name: "enter",
+      outputs: [],
+      stateMutability: "payable",
+      type: "function",
+    },
+    {
+      inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+      name: "tournements",
+      outputs: [
+        { internalType: "uint8", name: "rounds", type: "uint8" },
+        { internalType: "uint256", name: "entryFee", type: "uint256" },
+        { internalType: "uint8", name: "minAttack", type: "uint8" },
+        { internalType: "uint8", name: "minDefence", type: "uint8" },
+        { internalType: "uint8", name: "teamsEntered", type: "uint8" },
+        { internalType: "address", name: "champion", type: "address" },
+      ],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, internalType: "uint256", name: "tournementId", type: "uint256" },
+        { indexed: false, internalType: "uint8", name: "rounds", type: "uint8" },
+        { indexed: false, internalType: "uint256", name: "entryFee", type: "uint256" },
+        { indexed: false, internalType: "uint8", name: "minAttack", type: "uint8" },
+        { indexed: false, internalType: "uint8", name: "minDefence", type: "uint8" },
+        { indexed: false, internalType: "uint8", name: "maxAttack", type: "uint8" },
+        { indexed: false, internalType: "uint8", name: "maxDefence", type: "uint8" },
+        { indexed: false, internalType: "uint8[]", name: "includeTypes", type: "uint8[]" },
+        { indexed: false, internalType: "uint8[]", name: "excludeTypes", type: "uint8[]" },
+      ],
+      name: "TournementCreated",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, internalType: "uint256", name: "tournementId", type: "uint256" },
+        { indexed: true, internalType: "uint8", name: "round", type: "uint8" },
+        { indexed: false, internalType: "address", name: "homeAddress", type: "address" },
+        { indexed: false, internalType: "address", name: "awayAddress", type: "address" },
+      ],
+      name: "TournementMatchStarted",
+      type: "event",
+    },
+    {
+      anonymous: false,
+      inputs: [
+        { indexed: true, internalType: "uint256", name: "tournementId", type: "uint256" },
+        { indexed: false, internalType: "address", name: "champion", type: "address" },
+      ],
+      name: "TournementCompleted",
+      type: "event",
+    },
+  ],
+};

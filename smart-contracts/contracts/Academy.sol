@@ -2,11 +2,19 @@
 pragma solidity 0.8.21;
 
 import "./PlayerToken.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "hardhat/console.sol";
 
-contract Academy is IERC721Receiver {
+contract Academy is IERC721Receiver, ReentrancyGuard {
     PlayerToken playerToken;
     address public constant EXTRACT_ADDRESS = 0x05B665d3Ba0a83f5259C114fA3F2d2ECD8A00B29;
+
+    uint256 private constant MIN_STAT = 10;
+    uint256 private constant MAX_STAT = 100;
+    uint256 private constant STAT_COUNT = 3;
+    uint256 private constant MIN_PRICE = 5 ether;
+    uint256 private constant MAX_PRICE = 100 ether;
 
     mapping(uint256 => uint256) public playerValue;
 
@@ -30,10 +38,9 @@ contract Academy is IERC721Receiver {
             (uint256 id, uint attack, uint defense) = playerToken.mintPlayer(
                 address(this)
             );
-            playerValue[id] =
-                1 ether +
-                (1 ether * (attack + defense)) /
-                200;
+
+            (, , , , uint potential, , , ) = playerToken.getPlayerAttributes(id);
+            playerValue[id] = calculateAcademyPrice(attack, defense, potential);
             console.log("Player %d minted with value %d", id, playerValue[id]);
             for (uint i = 1; i < id; i++) {
                 playerValue[i] = (playerValue[i] * 9) / 10;
@@ -50,19 +57,54 @@ contract Academy is IERC721Receiver {
         return playerValue[id];
     }
 
+    function calculateAcademyPrice(
+        uint attack,
+        uint defense,
+        uint potential
+    ) public pure returns (uint256) {
+        uint256 attackScore = clampStat(attack);
+        uint256 defenseScore = clampStat(defense);
+        uint256 potentialScore = clampStat(potential);
+
+        uint256 totalStat = attackScore + defenseScore + potentialScore;
+        uint256 minTotalStat = MIN_STAT * STAT_COUNT;
+        uint256 statRange = (MAX_STAT - MIN_STAT) * STAT_COUNT;
+
+        // Linearly maps 10/10/10 -> 5 POL and 100/100/100 -> 100 POL.
+        return
+            MIN_PRICE +
+            ((totalStat - minTotalStat) * (MAX_PRICE - MIN_PRICE)) /
+            statRange;
+    }
+
+    function clampStat(uint stat) private pure returns (uint256) {
+        if (stat < MIN_STAT) {
+            return MIN_STAT;
+        }
+
+        if (stat > MAX_STAT) {
+            return MAX_STAT;
+        }
+
+        return stat;
+    }
+
     function getBalance() public view returns (uint) {
         return address(this).balance;
     }
 
-    function buyPlayer(address toAccount, uint256 playerId) external payable {
+    function buyPlayer(address toAccount, uint256 playerId) external payable nonReentrant {
         require(playerValue[playerId] > 0, "Player not owned by the academy");
         require(
             msg.value >= playerValue[playerId],
             "You have not sent enough ether for the player"
         );
 
-        playerToken.transfer(address(this), toAccount, playerId);
+        // Effects: Update state before external calls (checks-effects-interactions)
         delete playerValue[playerId];
+        
+        // Interactions: Transfer player token
+        playerToken.transfer(address(this), toAccount, playerId);
     }
 
     function getAcademyPlayers()
@@ -103,11 +145,15 @@ contract Academy is IERC721Receiver {
         return players;
     }
 
-    function extract(uint256 amount) external {
+    function extract(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount must be greater than zero");
         require(address(this).balance >= amount, "Insufficient contract balance");
 
-        (bool success, ) = EXTRACT_ADDRESS.call{value: amount}("");
+        // Effects: Update state before external calls
+        // (No state changes needed here, but pattern is maintained)
+        
+        // Interactions: Send funds
+        (bool success, ) = payable(EXTRACT_ADDRESS).call{value: amount}("");
         require(success, "Transfer failed");
     }
 

@@ -69,12 +69,16 @@ export declare namespace Game {
 export interface GameInterface extends Interface {
   getFunction(
     nameOrSignature:
-      | "EXECUTION_FEE_BPS"
+      | "MIN_WAGER"
       | "addTeam"
       | "createGame"
       | "getMatch"
       | "getMatchList"
+      | "getPlayerAttributes"
       | "matches"
+      | "playMatch"
+      | "playTournamentMatch"
+      | "validateTeam"
   ): FunctionFragment;
 
   getEvent(
@@ -88,13 +92,11 @@ export interface GameInterface extends Interface {
       | "PlayerScored"
       | "PlayerStatsUpdated"
       | "TeamStatsCalculated"
+      | "TournamentMatchPlayed"
       | "WinningsDistributed"
   ): EventFragment;
 
-  encodeFunctionData(
-    functionFragment: "EXECUTION_FEE_BPS",
-    values?: undefined
-  ): string;
+  encodeFunctionData(functionFragment: "MIN_WAGER", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "addTeam",
     values: [
@@ -117,14 +119,39 @@ export interface GameInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "getPlayerAttributes",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "matches",
     values: [BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "playMatch",
+    values: [BigNumberish, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "playTournamentMatch",
+    values: [
+      AddressLike,
+      Game.TeamStruct,
+      AddressLike,
+      Game.TeamStruct,
+      BigNumberish,
+      BigNumberish
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "validateTeam",
+    values: [
+      [BigNumberish, BigNumberish, BigNumberish],
+      [BigNumberish, BigNumberish, BigNumberish],
+      [BigNumberish, BigNumberish, BigNumberish],
+      AddressLike
+    ]
+  ): string;
 
-  decodeFunctionResult(
-    functionFragment: "EXECUTION_FEE_BPS",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "MIN_WAGER", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "addTeam", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "createGame", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getMatch", data: BytesLike): Result;
@@ -132,7 +159,20 @@ export interface GameInterface extends Interface {
     functionFragment: "getMatchList",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "getPlayerAttributes",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "matches", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "playMatch", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "playTournamentMatch",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "validateTeam",
+    data: BytesLike
+  ): Result;
 }
 
 export namespace ExtraTimePlayedEvent {
@@ -344,6 +384,40 @@ export namespace TeamStatsCalculatedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace TournamentMatchPlayedEvent {
+  export type InputTuple = [
+    tournementId: BigNumberish,
+    round: BigNumberish,
+    homeAddress: AddressLike,
+    awayAddress: AddressLike,
+    winner: AddressLike,
+    homeScore: BigNumberish,
+    awayScore: BigNumberish
+  ];
+  export type OutputTuple = [
+    tournementId: bigint,
+    round: bigint,
+    homeAddress: string,
+    awayAddress: string,
+    winner: string,
+    homeScore: bigint,
+    awayScore: bigint
+  ];
+  export interface OutputObject {
+    tournementId: bigint;
+    round: bigint;
+    homeAddress: string;
+    awayAddress: string;
+    winner: string;
+    homeScore: bigint;
+    awayScore: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace WinningsDistributedEvent {
   export type InputTuple = [
     matchId: BigNumberish,
@@ -421,7 +495,7 @@ export interface Game extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  EXECUTION_FEE_BPS: TypedContractMethod<[], [bigint], "view">;
+  MIN_WAGER: TypedContractMethod<[], [bigint], "view">;
 
   addTeam: TypedContractMethod<
     [
@@ -452,6 +526,23 @@ export interface Game extends BaseContract {
 
   getMatchList: TypedContractMethod<[], [bigint[]], "view">;
 
+  getPlayerAttributes: TypedContractMethod<
+    [playerId: BigNumberish],
+    [
+      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] & {
+        id: bigint;
+        attack: bigint;
+        level: bigint;
+        defense: bigint;
+        potential: bigint;
+        gamesLeft: bigint;
+        goals: bigint;
+        playerType: bigint;
+      }
+    ],
+    "view"
+  >;
+
   matches: TypedContractMethod<
     [arg0: BigNumberish],
     [
@@ -474,12 +565,48 @@ export interface Game extends BaseContract {
     "view"
   >;
 
+  playMatch: TypedContractMethod<
+    [matchId: BigNumberish, executor: AddressLike],
+    [[bigint, bigint] & { homeGoals: bigint; awayGoals: bigint }],
+    "nonpayable"
+  >;
+
+  playTournamentMatch: TypedContractMethod<
+    [
+      homeAddress: AddressLike,
+      homeTeam: Game.TeamStruct,
+      awayAddress: AddressLike,
+      awayTeam: Game.TeamStruct,
+      tournementId: BigNumberish,
+      round: BigNumberish
+    ],
+    [
+      [string, bigint, bigint] & {
+        winner: string;
+        homeGoals: bigint;
+        awayGoals: bigint;
+      }
+    ],
+    "nonpayable"
+  >;
+
+  validateTeam: TypedContractMethod<
+    [
+      attack: [BigNumberish, BigNumberish, BigNumberish],
+      midfield: [BigNumberish, BigNumberish, BigNumberish],
+      defense: [BigNumberish, BigNumberish, BigNumberish],
+      expectedOwner: AddressLike
+    ],
+    [boolean],
+    "view"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
   getFunction(
-    nameOrSignature: "EXECUTION_FEE_BPS"
+    nameOrSignature: "MIN_WAGER"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "addTeam"
@@ -515,6 +642,24 @@ export interface Game extends BaseContract {
     nameOrSignature: "getMatchList"
   ): TypedContractMethod<[], [bigint[]], "view">;
   getFunction(
+    nameOrSignature: "getPlayerAttributes"
+  ): TypedContractMethod<
+    [playerId: BigNumberish],
+    [
+      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint] & {
+        id: bigint;
+        attack: bigint;
+        level: bigint;
+        defense: bigint;
+        potential: bigint;
+        gamesLeft: bigint;
+        goals: bigint;
+        playerType: bigint;
+      }
+    ],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "matches"
   ): TypedContractMethod<
     [arg0: BigNumberish],
@@ -535,6 +680,45 @@ export interface Game extends BaseContract {
         pot: bigint;
       }
     ],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "playMatch"
+  ): TypedContractMethod<
+    [matchId: BigNumberish, executor: AddressLike],
+    [[bigint, bigint] & { homeGoals: bigint; awayGoals: bigint }],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "playTournamentMatch"
+  ): TypedContractMethod<
+    [
+      homeAddress: AddressLike,
+      homeTeam: Game.TeamStruct,
+      awayAddress: AddressLike,
+      awayTeam: Game.TeamStruct,
+      tournementId: BigNumberish,
+      round: BigNumberish
+    ],
+    [
+      [string, bigint, bigint] & {
+        winner: string;
+        homeGoals: bigint;
+        awayGoals: bigint;
+      }
+    ],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "validateTeam"
+  ): TypedContractMethod<
+    [
+      attack: [BigNumberish, BigNumberish, BigNumberish],
+      midfield: [BigNumberish, BigNumberish, BigNumberish],
+      defense: [BigNumberish, BigNumberish, BigNumberish],
+      expectedOwner: AddressLike
+    ],
+    [boolean],
     "view"
   >;
 
@@ -600,6 +784,13 @@ export interface Game extends BaseContract {
     TeamStatsCalculatedEvent.InputTuple,
     TeamStatsCalculatedEvent.OutputTuple,
     TeamStatsCalculatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournamentMatchPlayed"
+  ): TypedContractEvent<
+    TournamentMatchPlayedEvent.InputTuple,
+    TournamentMatchPlayedEvent.OutputTuple,
+    TournamentMatchPlayedEvent.OutputObject
   >;
   getEvent(
     key: "WinningsDistributed"
@@ -707,6 +898,17 @@ export interface Game extends BaseContract {
       TeamStatsCalculatedEvent.InputTuple,
       TeamStatsCalculatedEvent.OutputTuple,
       TeamStatsCalculatedEvent.OutputObject
+    >;
+
+    "TournamentMatchPlayed(uint256,uint8,address,address,address,uint8,uint8)": TypedContractEvent<
+      TournamentMatchPlayedEvent.InputTuple,
+      TournamentMatchPlayedEvent.OutputTuple,
+      TournamentMatchPlayedEvent.OutputObject
+    >;
+    TournamentMatchPlayed: TypedContractEvent<
+      TournamentMatchPlayedEvent.InputTuple,
+      TournamentMatchPlayedEvent.OutputTuple,
+      TournamentMatchPlayedEvent.OutputObject
     >;
 
     "WinningsDistributed(uint256,address,uint256,address,uint256,address,uint256)": TypedContractEvent<

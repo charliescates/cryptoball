@@ -4,4 +4,6 @@
 export * as marketSol from "./Market.sol";
 export { Academy__factory } from "./Academy__factory";
 export { Game__factory } from "./Game__factory";
+export { MaliciousReentrancy__factory } from "./MaliciousReentrancy__factory";
 export { PlayerToken__factory } from "./PlayerToken__factory";
+export { Tournement__factory } from "./Tournement__factory";

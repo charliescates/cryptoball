@@ -53,6 +53,7 @@ export interface AcademyInterface extends Interface {
     nameOrSignature:
       | "EXTRACT_ADDRESS"
       | "buyPlayer"
+      | "calculateAcademyPrice"
       | "deposit"
       | "extract"
       | "getAcademyPlayers"
@@ -69,6 +70,10 @@ export interface AcademyInterface extends Interface {
   encodeFunctionData(
     functionFragment: "buyPlayer",
     values: [AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "calculateAcademyPrice",
+    values: [BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "deposit", values?: undefined): string;
   encodeFunctionData(
@@ -101,6 +106,10 @@ export interface AcademyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "buyPlayer", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "calculateAcademyPrice",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "extract", data: BytesLike): Result;
   decodeFunctionResult(
@@ -173,6 +182,12 @@ export interface Academy extends BaseContract {
     "payable"
   >;
 
+  calculateAcademyPrice: TypedContractMethod<
+    [attack: BigNumberish, defense: BigNumberish, potential: BigNumberish],
+    [bigint],
+    "view"
+  >;
+
   deposit: TypedContractMethod<[], [void], "payable">;
 
   extract: TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
@@ -208,6 +223,13 @@ export interface Academy extends BaseContract {
     [toAccount: AddressLike, playerId: BigNumberish],
     [void],
     "payable"
+  >;
+  getFunction(
+    nameOrSignature: "calculateAcademyPrice"
+  ): TypedContractMethod<
+    [attack: BigNumberish, defense: BigNumberish, potential: BigNumberish],
+    [bigint],
+    "view"
   >;
   getFunction(
     nameOrSignature: "deposit"

@@ -1,0 +1,35 @@
+type TournementCompleted @entity(immutable: true) {
+  id: Bytes!
+  tournementId: BigInt! # uint256
+  champion: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementCreated @entity(immutable: true) {
+  id: Bytes!
+  tournementId: BigInt! # uint256
+  rounds: Int! # uint8
+  entryFee: BigInt! # uint256
+  minAttack: Int! # uint8
+  minDefence: Int! # uint8
+  maxAttack: Int! # uint8
+  maxDefence: Int! # uint8
+  includeTypes: [Int!]! # uint8[]
+  excludeTypes: [Int!]! # uint8[]
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementMatchStarted @entity(immutable: true) {
+  id: Bytes!
+  tournementId: BigInt! # uint256
+  round: Int! # uint8
+  homeAddress: Bytes! # address
+  awayAddress: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

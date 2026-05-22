@@ -1,0 +1,239 @@
+.tournament-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.tournament-modal-content {
+  background: linear-gradient(180deg, rgba(10, 14, 39, 0.95) 0%, rgba(17, 24, 39, 0.90) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+
+.tournament-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.tournament-modal-header h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+.tournament-modal-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.tournament-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.tournament-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tournament-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form-field input,
+.form-field select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(126, 240, 167, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.form-field input::placeholder,
+.form-field select {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: rgba(126, 240, 167, 0.6);
+  background: rgba(126, 240, 167, 0.08);
+  box-shadow: 0 0 0 2px rgba(126, 240, 167, 0.1);
+}
+
+.form-field input:disabled,
+.form-field select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tournament-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tournament-form-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tournament-form-status span {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tournament-form-status strong {
+  color: #7ef0a7;
+  font-size: 0.95rem;
+}
+
+.tournament-create-button {
+  background: linear-gradient(180deg, rgba(126, 240, 167, 0.2) 0%, rgba(126, 240, 167, 0.08) 100%);
+  border: 1px solid rgba(126, 240, 167, 0.4);
+  color: #dfffe9;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tournament-create-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(126, 240, 167, 0.3) 0%, rgba(126, 240, 167, 0.15) 100%);
+  border-color: rgba(126, 240, 167, 0.6);
+  box-shadow: 0 4px 12px rgba(126, 240, 167, 0.15);
+}
+
+.tournament-create-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tournament-transaction-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transaction-status {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transaction-status span {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.transaction-status strong {
+  color: #ffffff;
+  word-break: break-all;
+  max-width: 50%;
+  text-align: right;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.transaction-status.pending {
+  background: rgba(255, 194, 15, 0.08);
+  border-color: rgba(255, 194, 15, 0.3);
+  color: #ffc20f;
+}
+
+.transaction-status.success {
+  background: rgba(126, 240, 167, 0.08);
+  border-color: rgba(126, 240, 167, 0.3);
+  color: #7ef0a7;
+}
+
+.transaction-status.error {
+  background: rgba(255, 71, 87, 0.08);
+  border-color: rgba(255, 71, 87, 0.3);
+  color: #ff4757;
+}
+
+@media (max-width: 640px) {
+  .tournament-modal-content {
+    padding: 24px;
+    max-width: 100%;
+  }
+
+  .tournament-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field.full-width {
+    grid-column: 1;
+  }
+
+  .tournament-form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tournament-create-button {
+    width: 100%;
+  }
+}

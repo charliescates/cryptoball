@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useAccount, useReadContract } from "wagmi";
 
-import { academyContract } from "../../contracts/academyContract";
+import { academyContract } from "../../../contracts/academyContract";
 import type { AcademyPlayer } from "../../utils/playerUtils";
 import { ACADEMY_OWNER_TOOLS_ADDRESS } from "../constants";
 

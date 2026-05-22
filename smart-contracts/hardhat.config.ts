@@ -10,6 +10,12 @@ const config: HardhatUserConfig = {
     outDir: '../frontend/src/types',
     target: 'ethers-v6'
   },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
   solidity: {
     version: "0.8.21",
     settings: {
