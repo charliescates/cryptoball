@@ -5,16 +5,21 @@ import './Game.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 
 contract Tournement is ReentrancyGuard {
+    uint256 public constant MIN_ENTRY_FEE = 3 ether;
     uint256 private tournementCounter = 0;
     Game private game;
 
     mapping(uint256 => TournementInfo) public tournements;
     mapping(uint256 => mapping(address => bool)) public hasEntered;
     mapping(uint256 => mapping(address => bool)) public hasClaimedReward;
+    mapping(uint256 => mapping(address => bool)) public hasRefundedEntry;
+    mapping(uint256 => uint256) public tournementMatchCounts;
+    mapping(uint256 => uint256) public tournementExecutorFees;
 
     struct TournementInfo {
         uint8 rounds;
         uint256 entryFee;
+        address creator;
         uint8 minAttack;
         uint8 minDefence;
         uint8 maxAttack;
@@ -22,13 +27,16 @@ contract Tournement is ReentrancyGuard {
         uint8[] includeTypes;
         uint8[] excludeTypes;
         address[] entrants;
+        address[] roundEntrants;
         mapping(address => Game.Team) teams;
         uint8 teamsEntered;
+        uint8 currentRound;
+        bool cancelled;
         address champion;
     }
 
     struct TournementSummary {
-        uint256 tournementId;
+        uint256 tournamentId;
         uint8 rounds;
         uint256 entryFee;
         uint8 minAttack;
@@ -37,14 +45,26 @@ contract Tournement is ReentrancyGuard {
         uint8 maxDefence;
         uint8[] includeTypes;
         uint8[] excludeTypes;
+        address creator;
         uint8 teamsEntered;
         uint256 maxTeams;
         bool isOpen;
+        bool isReady;
+        bool cancelled;
+        uint8 currentRound;
         address champion;
     }
 
+    struct TeamPlayerDetails {
+        uint256 playerId;
+        uint256 attack;
+        uint256 defense;
+        uint8 playerType;
+    }
+
     event TournementCreated(
-        uint256 indexed tournementId,
+        uint256 indexed tournamentId,
+        address indexed creator,
         uint8 rounds,
         uint256 entryFee,
         uint8 minAttack,
@@ -54,8 +74,27 @@ contract Tournement is ReentrancyGuard {
         uint8[] includeTypes,
         uint8[] excludeTypes
     );
-    event TournementMatchStarted(uint256 indexed tournementId, uint8 indexed round, address homeAddress, address awayAddress);
-    event TournementCompleted(uint256 indexed tournementId, address champion);
+    event TeamEntered(uint256 indexed tournamentId, address indexed player, uint8 teamsEntered);
+    event TournementReady(uint256 indexed tournamentId, uint8 teamsCount);
+    event TournementRoundAdvanced(uint256 indexed tournamentId, uint8 completedRound, uint8 nextRound, uint8 teamsRemaining);
+    event TournementMatchStarted(uint256 indexed tournamentId, uint256 tournamentMatchId, uint8 indexed round, address homeAddress, address awayAddress);
+    event TournementCompleted(
+        uint256 indexed tournamentId,
+        address champion,
+        uint256 championWinnings,
+        Game.Team winningTeam,
+        TeamPlayerDetails[] winningTeamPlayers
+    );
+    event TournementCompletedSummary(
+        uint256 indexed tournamentId,
+        address indexed champion,
+        uint256 championWinnings,
+        uint256 executorFees
+    );
+    event TournementCancelled(uint256 indexed tournamentId, address indexed cancelledBy);
+    event TournementEntryRefunded(uint256 indexed tournamentId, address indexed entrant, uint256 amount);
+    event TournementRewardClaimed(uint256 indexed tournamentId, address indexed champion, uint256 amount);
+    event TournementExecutorCompensated(uint256 indexed tournamentId, address indexed executor, uint256 executorFee);
 
     constructor(address gameAddress) {
         game = Game(gameAddress);
@@ -71,9 +110,29 @@ contract Tournement is ReentrancyGuard {
         uint8[] memory includeTypes,
         uint8[] memory excludeTypes
     ) external {
+        if (rounds == 0 || rounds > 7) {
+            revert("Rounds must be between 1 and 7");
+        }
+
+        if (entryFee < MIN_ENTRY_FEE) {
+            revert("Minimum entry fee is 3 POL");
+        }
+
+        if (maxAttack > 0 && maxAttack < minAttack) {
+            revert("Invalid attack range");
+        }
+
+        if (maxDefence > 0 && maxDefence < minDefence) {
+            revert("Invalid defence range");
+        }
+
+        _validateTypeArray(includeTypes);
+        _validateTypeArray(excludeTypes);
+
         TournementInfo storage info = tournements[tournementCounter];
         info.rounds = rounds;
         info.entryFee = entryFee;
+        info.creator = msg.sender;
         info.minAttack = minAttack;
         info.minDefence = minDefence;
         info.maxAttack = maxAttack;
@@ -81,10 +140,15 @@ contract Tournement is ReentrancyGuard {
         info.includeTypes = includeTypes;
         info.excludeTypes = excludeTypes;
         info.teamsEntered = 0;
+        info.currentRound = 0;
+        info.cancelled = false;
         delete info.entrants;
+        delete info.roundEntrants;
         info.champion = address(0);
 
-        emit TournementCreated(tournementCounter, rounds, entryFee, minAttack, minDefence, maxAttack, maxDefence, includeTypes, excludeTypes);
+        _validateTypeCompatibility(includeTypes, excludeTypes);
+
+        emit TournementCreated(tournementCounter, msg.sender, rounds, entryFee, minAttack, minDefence, maxAttack, maxDefence, includeTypes, excludeTypes);
 
         tournementCounter++;
     }
@@ -97,10 +161,11 @@ contract Tournement is ReentrancyGuard {
             uint256 maxTeams = 2 ** info.rounds;
             uint8[] memory includeTypes = info.includeTypes;
             uint8[] memory excludeTypes = info.excludeTypes;
-            bool isOpen = info.champion == address(0) && info.teamsEntered < maxTeams;
+            bool isOpen = !info.cancelled && info.champion == address(0) && info.currentRound == 0 && info.teamsEntered < maxTeams;
+            bool isReady = !info.cancelled && info.champion == address(0) && info.currentRound == 0 && info.teamsEntered == maxTeams;
 
             summaries[i] = TournementSummary({
-                tournementId: i,
+                tournamentId: i,
                 rounds: info.rounds,
                 entryFee: info.entryFee,
                 minAttack: info.minAttack,
@@ -109,9 +174,13 @@ contract Tournement is ReentrancyGuard {
                 maxDefence: info.maxDefence,
                 includeTypes: includeTypes,
                 excludeTypes: excludeTypes,
+                creator: info.creator,
                 teamsEntered: info.teamsEntered,
                 maxTeams: maxTeams,
                 isOpen: isOpen,
+                isReady: isReady,
+                cancelled: info.cancelled,
+                currentRound: info.currentRound,
                 champion: info.champion
             });
         }
@@ -120,22 +189,30 @@ contract Tournement is ReentrancyGuard {
     }
 
     function enter(
-        uint256 tournementId,
+        uint256 tournamentId,
         uint256[3] memory attackingPlayers,
         uint256[3] memory midfieldPlayers,
         uint256[3] memory defensivePlayers
         ) external payable nonReentrant {
 
-        if (tournementId >= tournementCounter) {
+        if (tournamentId >= tournementCounter) {
             revert("Tournement does not exist");
         }
 
-        TournementInfo storage info = tournements[tournementId];
+        TournementInfo storage info = tournements[tournamentId];
         if (msg.value != info.entryFee) {
             revert("Incorrect entry fee");
         }
 
-        if (hasEntered[tournementId][msg.sender]) {
+        if (info.cancelled) {
+            revert("Tournament cancelled");
+        }
+
+        if (info.currentRound != 0) {
+            revert("Tournament already started");
+        }
+
+        if (hasEntered[tournamentId][msg.sender]) {
             revert("Already entered");
         }
 
@@ -161,59 +238,166 @@ contract Tournement is ReentrancyGuard {
         info.teams[msg.sender] = Game.Team(attackingPlayers, midfieldPlayers, defensivePlayers);
         info.entrants.push(msg.sender);
         info.teamsEntered++;
-        hasEntered[tournementId][msg.sender] = true;
+        hasEntered[tournamentId][msg.sender] = true;
+        
+        emit TeamEntered(tournamentId, msg.sender, info.teamsEntered);
+
+        if (info.teamsEntered == 2 ** info.rounds) {
+            emit TournementReady(tournamentId, info.teamsEntered);
+        }
     }
 
-    function start(uint256 tournementId) external {
-        if (tournementId >= tournementCounter) {
+    function start(uint256 tournamentId) external nonReentrant {
+        if (tournamentId >= tournementCounter) {
             revert("Tournement does not exist");
         }
 
-        TournementInfo storage tournement = tournements[tournementId];
+        TournementInfo storage tournement = tournements[tournamentId];
+        if (tournement.champion != address(0)) {
+            revert("Tournament already completed");
+        }
+
+        if (tournement.cancelled) {
+            revert("Tournament cancelled");
+        }
 
         if (tournement.teamsEntered < 2 ** tournement.rounds) {
             revert("Not enough teams entered");
         }
 
-        address[] memory currentEntrants = tournement.entrants;
-
-        uint8 round = 1;
-
-        while (currentEntrants.length > 1) {
-            address[] memory nextRound = new address[](currentEntrants.length / 2);
-
-            for (uint256 i = 0; i < currentEntrants.length; i += 2) {
-                Game.Team memory homeTeam = tournement.teams[currentEntrants[i]];
-                Game.Team memory awayTeam = tournement.teams[currentEntrants[i + 1]];
-
-                emit TournementMatchStarted(tournementId, round, currentEntrants[i], currentEntrants[i + 1]);
-
-                (address winner, , ) = game.playTournamentMatch(
-                    currentEntrants[i],
-                    homeTeam,
-                    currentEntrants[i + 1],
-                    awayTeam,
-                    tournementId,
-                    round
-                );
-
-                nextRound[i / 2] = winner;
+        if (tournement.currentRound == 0) {
+            delete tournement.roundEntrants;
+            for (uint256 i = 0; i < tournement.entrants.length; i++) {
+                tournement.roundEntrants.push(tournement.entrants[i]);
             }
-
-            currentEntrants = nextRound;
-            round++;
+            tournement.currentRound = 1;
         }
 
-        tournement.champion = currentEntrants[0];
-        emit TournementCompleted(tournementId, tournement.champion);
+        address[] memory currentEntrants = tournement.roundEntrants;
+        if (currentEntrants.length <= 1) {
+            revert("No pending round to run");
+        }
+
+        uint256 gasAtStart = gasleft();
+        uint8 round = tournement.currentRound;
+        address[] memory nextRound = new address[](currentEntrants.length / 2);
+
+        for (uint256 i = 0; i < currentEntrants.length; i += 2) {
+            Game.Team memory homeTeam = tournement.teams[currentEntrants[i]];
+            Game.Team memory awayTeam = tournement.teams[currentEntrants[i + 1]];
+
+            tournementMatchCounts[tournamentId]++;
+            emit TournementMatchStarted(tournamentId, tournementMatchCounts[tournamentId], round, currentEntrants[i], currentEntrants[i + 1]);
+            (address winner, , ) = game.playTournamentMatch(
+                currentEntrants[i],
+                homeTeam,
+                currentEntrants[i + 1],
+                awayTeam,
+                tournamentId,
+                tournementMatchCounts[tournamentId],
+                round
+            );
+
+            nextRound[i / 2] = winner;
+        }
+
+        uint256 prizePot = tournement.entryFee * tournement.teamsEntered;
+        uint256 alreadyCompensated = tournementExecutorFees[tournamentId];
+        uint256 remainingForCompensation = alreadyCompensated >= prizePot ? 0 : (prizePot - alreadyCompensated);
+        uint256 gasSpent = gasAtStart - gasleft();
+        uint256 executorFee = gasSpent * tx.gasprice;
+        if (executorFee > remainingForCompensation) {
+            executorFee = remainingForCompensation;
+        }
+
+        tournementExecutorFees[tournamentId] = alreadyCompensated + executorFee;
+        emit TournementExecutorCompensated(tournamentId, msg.sender, executorFee);
+
+        if (executorFee > 0) {
+            (bool success, ) = payable(msg.sender).call{value: executorFee}("");
+            require(success, "Executor compensation failed");
+        }
+
+        delete tournement.roundEntrants;
+        for (uint256 i = 0; i < nextRound.length; i++) {
+            tournement.roundEntrants.push(nextRound[i]);
+        }
+
+        if (nextRound.length == 1) {
+            tournement.champion = nextRound[0];
+            uint256 championWinnings = prizePot - tournementExecutorFees[tournamentId];
+            Game.Team memory winningTeam = tournement.teams[tournement.champion];
+            TeamPlayerDetails[] memory winningTeamPlayers = _buildTeamPlayerDetails(winningTeam);
+
+            emit TournementCompleted(tournamentId, tournement.champion, championWinnings, winningTeam, winningTeamPlayers);
+            emit TournementCompletedSummary(tournamentId, tournement.champion, championWinnings, tournementExecutorFees[tournamentId]);
+            return;
+        }
+
+        emit TournementRoundAdvanced(tournamentId, round, round + 1, uint8(nextRound.length));
+        tournement.currentRound = round + 1;
     }
 
-    function claimReward(uint256 tournementId) external nonReentrant {
-        if (tournementId >= tournementCounter) {
+    function cancel(uint256 tournamentId) external {
+        if (tournamentId >= tournementCounter) {
             revert("Tournement does not exist");
         }
 
-        TournementInfo storage info = tournements[tournementId];
+        TournementInfo storage info = tournements[tournamentId];
+
+        if (msg.sender != info.creator) {
+            revert("Only creator can cancel");
+        }
+
+        if (info.cancelled) {
+            revert("Tournament already cancelled");
+        }
+
+        if (info.champion != address(0)) {
+            revert("Tournament already completed");
+        }
+
+        if (info.currentRound != 0) {
+            revert("Tournament already started");
+        }
+
+        info.cancelled = true;
+        emit TournementCancelled(tournamentId, msg.sender);
+    }
+
+    function claimCancelledEntry(uint256 tournamentId) external nonReentrant {
+        if (tournamentId >= tournementCounter) {
+            revert("Tournement does not exist");
+        }
+
+        TournementInfo storage info = tournements[tournamentId];
+
+        if (!info.cancelled) {
+            revert("Tournament is not cancelled");
+        }
+
+        if (!hasEntered[tournamentId][msg.sender]) {
+            revert("No entry to refund");
+        }
+
+        if (hasRefundedEntry[tournamentId][msg.sender]) {
+            revert("Entry already refunded");
+        }
+
+        hasRefundedEntry[tournamentId][msg.sender] = true;
+
+        (bool success, ) = payable(msg.sender).call{value: info.entryFee}("");
+        require(success, "Refund transfer failed");
+
+        emit TournementEntryRefunded(tournamentId, msg.sender, info.entryFee);
+    }
+
+    function claimReward(uint256 tournamentId) external nonReentrant {
+        if (tournamentId >= tournementCounter) {
+            revert("Tournement does not exist");
+        }
+
+        TournementInfo storage info = tournements[tournamentId];
         
         if (info.champion == address(0)) {
             revert("Tournament has not completed");
@@ -223,19 +407,29 @@ contract Tournement is ReentrancyGuard {
             revert("Only the champion can claim the reward");
         }
 
-        if (hasClaimedReward[tournementId][msg.sender]) {
+        if (hasClaimedReward[tournamentId][msg.sender]) {
             revert("Reward already claimed");
         }
 
         // Calculate reward: entry fee * number of entrants
-        uint256 reward = info.entryFee * info.teamsEntered;
+        uint256 reward = (info.entryFee * info.teamsEntered) - tournementExecutorFees[tournamentId];
         
         // Mark as claimed before transfer
-        hasClaimedReward[tournementId][msg.sender] = true;
+        hasClaimedReward[tournamentId][msg.sender] = true;
 
         // Transfer reward to champion
         (bool success, ) = payable(msg.sender).call{value: reward}("");
         require(success, "Reward transfer failed");
+
+        emit TournementRewardClaimed(tournamentId, msg.sender, reward);
+    }
+
+    function getCurrentRoundEntrants(uint256 tournamentId) external view returns (address[] memory entrants) {
+        if (tournamentId >= tournementCounter) {
+            revert("Tournement does not exist");
+        }
+
+        return tournements[tournamentId].roundEntrants;
     }
 
     function _validatePlayerStats(
@@ -255,6 +449,60 @@ contract Tournement is ReentrancyGuard {
         );
     }
 
+    function _buildTeamPlayerDetails(Game.Team memory team) private view returns (TeamPlayerDetails[] memory details) {
+        uint256 count = _countNonZeroPlayers(team);
+        details = new TeamPlayerDetails[](count);
+
+        uint256 index = 0;
+        index = _appendRolePlayerDetails(team.attackingPlayers, details, index);
+        index = _appendRolePlayerDetails(team.midfieldPlayers, details, index);
+        _appendRolePlayerDetails(team.defensivePlayers, details, index);
+
+        return details;
+    }
+
+    function _countNonZeroPlayers(Game.Team memory team) private pure returns (uint256 count) {
+        for (uint256 i = 0; i < 3; i++) {
+            if (team.attackingPlayers[i] != 0) {
+                count++;
+            }
+            if (team.midfieldPlayers[i] != 0) {
+                count++;
+            }
+            if (team.defensivePlayers[i] != 0) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    function _appendRolePlayerDetails(
+        uint256[3] memory playerIds,
+        TeamPlayerDetails[] memory details,
+        uint256 startIndex
+    ) private view returns (uint256) {
+        uint256 index = startIndex;
+
+        for (uint256 i = 0; i < 3; i++) {
+            uint256 playerId = playerIds[i];
+            if (playerId == 0) {
+                continue;
+            }
+
+            (, uint256 attack, , uint256 defense, , , , uint256 playerType) = game.getPlayerAttributes(playerId);
+            details[index] = TeamPlayerDetails({
+                playerId: playerId,
+                attack: attack,
+                defense: defense,
+                playerType: uint8(playerType)
+            });
+            index++;
+        }
+
+        return index;
+    }
+
     function _checkPlayerStatsRequirement(
         uint256[3] memory players,
         uint8 minAttack,
@@ -267,16 +515,16 @@ contract Tournement is ReentrancyGuard {
                 // Get player attack and defense stats
                 (, uint attack, , uint defense, , , , ) = Game(address(game)).getPlayerAttributes(players[i]);
                 
-                if (minAttack > 0 && uint8(attack) < minAttack) {
+                if (minAttack > 0 && attack < minAttack) {
                     return false;
                 }
-                if (minDefence > 0 && uint8(defense) < minDefence) {
+                if (minDefence > 0 && defense < minDefence) {
                     return false;
                 }
-                if (maxAttack > 0 && uint8(attack) > maxAttack) {
+                if (maxAttack > 0 && attack > maxAttack) {
                     return false;
                 }
-                if (maxDefence > 0 && uint8(defense) > maxDefence) {
+                if (maxDefence > 0 && defense > maxDefence) {
                     return false;
                 }
             }
@@ -321,6 +569,29 @@ contract Tournement is ReentrancyGuard {
                     }
                 }
                 require(found, "Player type not included in this tournament");
+            }
+        }
+    }
+
+    function _validateTypeArray(uint8[] memory playerTypes) private pure {
+        for (uint i = 0; i < playerTypes.length; i++) {
+            require(playerTypes[i] <= 3, "Invalid player type");
+        }
+    }
+
+    function _validateTypeCompatibility(uint8[] memory includeTypes, uint8[] memory excludeTypes) private pure {
+        for (uint256 i = 0; i < includeTypes.length; i++) {
+            for (uint256 j = i + 1; j < includeTypes.length; j++) {
+                require(includeTypes[i] != includeTypes[j], "Duplicate include type");
+            }
+            for (uint256 k = 0; k < excludeTypes.length; k++) {
+                require(includeTypes[i] != excludeTypes[k], "Type cannot be both included and excluded");
+            }
+        }
+
+        for (uint256 i = 0; i < excludeTypes.length; i++) {
+            for (uint256 j = i + 1; j < excludeTypes.length; j++) {
+                require(excludeTypes[i] != excludeTypes[j], "Duplicate exclude type");
             }
         }
     }

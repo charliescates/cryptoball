@@ -31,6 +31,10 @@ async function main() {
   await tournement.waitForDeployment();
   console.log("Tournement deployed to:", await tournement.getAddress());
 
+  const game = await ethers.getContractAt("Game", '0x666FC08efB36D6BA99AD13Ef9df2aA3B2B566b53');
+  await (await game.setTournamentContract(await tournement.getAddress())).wait();
+  console.log("Game authorized tournament contract");
+
   // // Market
   // const Market = await ethers.getContractFactory("Market");
   // // const market = await Market.deploy(await playerToken.getAddress(), await academy.getAddress());

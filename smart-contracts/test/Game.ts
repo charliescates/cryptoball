@@ -8,7 +8,7 @@ describe("Game", () => {
   async function deployContracts() {
     const [homeOwner, awayOwner] = await ethers.getSigners();
 
-    const playerToken = await ethers.deployContract("PlayerToken");
+    const playerToken: any = await ethers.deployContract("PlayerToken");
     await playerToken.waitForDeployment();
 
     for (let i = 0; i < 5; i++) {
@@ -16,16 +16,16 @@ describe("Game", () => {
       await playerToken.mintPlayer(awayOwner.address);
     }
 
-    const academyContract = await ethers.deployContract("Academy", [await playerToken.getAddress()]);
+    const academyContract: any = await ethers.deployContract("Academy", [await playerToken.getAddress()]);
     await academyContract.waitForDeployment();
 
-    const gameContract = await ethers.deployContract("Game", [
+    const gameContract: any = await ethers.deployContract("Game", [
       await playerToken.getAddress(),
       await academyContract.getAddress(),
     ]);
     await gameContract.waitForDeployment();
 
-    return { gameContract, academyContract, homeOwner, awayOwner };
+    return { gameContract, academyContract, playerToken, homeOwner, awayOwner };
   }
 
   function getParsedGameLogs(gameContract: any, receipt: any) {
@@ -113,48 +113,36 @@ describe("Game", () => {
     expect(match.pot).to.equal(0n);
   });
 
-  it("plays tournament matches via playTournamentMatch and emits TournamentMatchPlayed", async () => {
+  it("rejects direct tournament match simulation from non-tournament callers", async () => {
     const { gameContract, homeOwner, awayOwner } = await deployContracts();
 
-    const tx = await gameContract.playTournamentMatch(
-      homeOwner.address,
-      homeTeam,
-      awayOwner.address,
-      awayTeam,
-      1n,
-      1
-    );
-    const receipt = await tx.wait();
-    const parsedLogs = getParsedGameLogs(gameContract, receipt);
-
-    const tournamentLog = parsedLogs.find((log: any) => log.name === "TournamentMatchPlayed");
-    const normalMatchLog = parsedLogs.find((log: any) => log.name === "MatchPlayed");
-
-    expect(tournamentLog).to.not.equal(undefined);
-    expect(normalMatchLog).to.equal(undefined);
-
-    const winner = tournamentLog.args.winner as string;
-    expect([homeOwner.address, awayOwner.address]).to.include(winner);
-    expect(BigInt(tournamentLog.args.tournementId)).to.equal(1n);
-    expect(Number(tournamentLog.args.round)).to.equal(1);
+    await expect(
+      gameContract.playTournamentMatch(
+        homeOwner.address,
+        homeTeam,
+        awayOwner.address,
+        awayTeam,
+        1n,
+        1,
+        1
+      )
+    ).to.be.revertedWith("Only tournament contract can play matches");
   });
 
-  it("does not emit WinningsDistributed for tournament matches", async () => {
+  it("does not allow direct callers to bypass payout flow via tournament path", async () => {
     const { gameContract, homeOwner, awayOwner } = await deployContracts();
 
-    const tx = await gameContract.playTournamentMatch(
-      homeOwner.address,
-      homeTeam,
-      awayOwner.address,
-      awayTeam,
-      9n,
-      2
-    );
-    const receipt = await tx.wait();
-    const parsedLogs = getParsedGameLogs(gameContract, receipt);
-
-    const distributionLog = parsedLogs.find((log: any) => log.name === "WinningsDistributed");
-    expect(distributionLog).to.equal(undefined);
+    await expect(
+      gameContract.playTournamentMatch(
+        homeOwner.address,
+        homeTeam,
+        awayOwner.address,
+        awayTeam,
+        9n,
+        2,
+        1
+      )
+    ).to.be.revertedWith("Only tournament contract can play matches");
   });
 
   describe("Game Team Validation", () => {
@@ -162,7 +150,6 @@ describe("Game", () => {
       const { gameContract, homeOwner, awayOwner } = await deployContracts();
 
       const invalidTeam = [[1, 0, 0], [0, 5, 0], [7, 0, 0]]; // Only 3 players
-      const validTeam = [[2, 0, 4], [0, 6, 0], [8, 0, 10]];
       const wager = ethers.parseEther("3");
 
       await gameContract.createGame(wager, homeOwner.address, awayOwner.address);
@@ -175,8 +162,7 @@ describe("Game", () => {
     it("rejects duplicate players in team", async () => {
       const { gameContract, homeOwner, awayOwner } = await deployContracts();
 
-      const duplicateTeam = [[1, 1, 3], [0, 5, 0], [7, 0, 9]]; // Player 1 appears twice
-      const validTeam = [[2, 0, 4], [0, 6, 0], [8, 0, 10]];
+      const duplicateTeam = [[1, 1, 3], [0, 5, 0], [0, 0, 7]]; // Player 1 appears twice with exactly 5 selected players
       const wager = ethers.parseEther("3");
 
       await gameContract.createGame(wager, homeOwner.address, awayOwner.address);
@@ -187,21 +173,48 @@ describe("Game", () => {
     });
 
     it("requires team owner to own all players", async () => {
-      const { gameContract, playerToken, homeOwner, awayOwner } = await deployContracts();
+      const { gameContract, homeOwner, awayOwner } = await deployContracts();
 
       // Players 1-5 are owned by homeOwner, 6-10 by awayOwner
-      const mixedTeam = [[1n, 2n, 6n], [0n, 5n, 0n], [7n, 0n, 9n]]; // Player 6 is owned by awayOwner
+      const mixedTeam = [[1n, 2n, 6n], [0n, 5n, 0n], [7n, 0n, 0n]]; // Player 6 is owned by awayOwner
       const wager = ethers.parseEther("3");
 
       await gameContract.createGame(wager, homeOwner.address, awayOwner.address);
 
       await expect(
-        gameContract.connect(homeOwner).addTeam(1n, homeTeam[0], homeTeam[1], homeTeam[2], { value: wager })
-      ).not.to.be.reverted;
+        gameContract.connect(homeOwner).addTeam(1n, mixedTeam[0], mixedTeam[1], mixedTeam[2], { value: wager })
+      ).to.be.revertedWith("Each team must be owned by a signle owner");
+    });
+  });
+
+  describe("Manual playMatch safety", () => {
+    it("reverts manual playMatch for a non-existent match", async () => {
+      const { gameContract, homeOwner } = await deployContracts();
+
+      await expect(gameContract.playMatch(999n, homeOwner.address)).to.be.revertedWith("Match does not exist");
+    });
+
+    it("reverts manual playMatch until both teams are submitted", async () => {
+      const { gameContract, homeOwner, awayOwner } = await deployContracts();
+      const wager = ethers.parseEther("3");
+
+      await gameContract.createGame(wager, homeOwner.address, awayOwner.address);
+      await gameContract.connect(homeOwner).addTeam(1n, homeTeam[0], homeTeam[1], homeTeam[2], { value: wager });
+
+      await expect(gameContract.playMatch(1n, homeOwner.address)).to.be.revertedWith("Both teams must be submitted");
     });
   });
 
   describe("Game Wager Validation", () => {
+    it("rejects addTeam for a non-existent match", async () => {
+      const { gameContract, homeOwner } = await deployContracts();
+      const wager = ethers.parseEther("3");
+
+      await expect(
+        gameContract.connect(homeOwner).addTeam(999n, homeTeam[0], homeTeam[1], homeTeam[2], { value: wager })
+      ).to.be.revertedWith("You must be one of the teams playing in the match");
+    });
+
     it("rejects wager amount mismatch on addTeam", async () => {
       const { gameContract, homeOwner, awayOwner } = await deployContracts();
       const wager = ethers.parseEther("3");
@@ -290,11 +303,21 @@ describe("Game", () => {
       const parsedLogs = getParsedGameLogs(gameContract, receipt);
 
       const distributionLog = parsedLogs.find((log: any) => log.name === "WinningsDistributed");
+      expect(distributionLog).to.not.equal(undefined);
+
+      const winner = distributionLog.args.winner as string;
+      const executor = distributionLog.args.executor as string;
       const executorFee = BigInt(distributionLog.args.executorFee);
       const academyShare = BigInt(distributionLog.args.academyShare);
       const winnerWinnings = BigInt(distributionLog.args.winnings);
+      const expectedWinnerPending = winner === executor ? winnerWinnings + executorFee : winnerWinnings;
 
-      // Total distributed should equal pot minus executor fee
+      expect(await gameContract.pendingWithdrawals(winner)).to.equal(expectedWinnerPending);
+      if (executor !== winner) {
+        expect(await gameContract.pendingWithdrawals(executor)).to.equal(executorFee);
+      }
+
+      // Total distributed should still equal the original pot.
       const totalDistributed = executorFee + academyShare + winnerWinnings;
       expect(totalDistributed).to.equal(pot);
     });
@@ -314,11 +337,41 @@ describe("Game", () => {
       const parsedLogs = getParsedGameLogs(gameContract, receipt);
 
       const distributionLog = parsedLogs.find((log: any) => log.name === "WinningsDistributed");
+      expect(distributionLog).to.not.equal(undefined);
+
       const executorFee = BigInt(distributionLog.args.executorFee);
       const expectedAcademyShare = ((pot - executorFee) * 5n) / 100n;
 
       const academyBalanceAfter = await academyContract.getBalance();
       expect(academyBalanceAfter - academyBalanceBefore).to.equal(expectedAcademyShare);
+    });
+
+    it("allows queued winnings to be withdrawn after a match", async () => {
+      const { gameContract, homeOwner, awayOwner } = await deployContracts();
+      const wager = ethers.parseEther("3");
+
+      await gameContract.createGame(wager, homeOwner.address, awayOwner.address);
+      await gameContract.connect(homeOwner).addTeam(1n, homeTeam[0], homeTeam[1], homeTeam[2], { value: wager });
+
+      const tx = await gameContract.connect(awayOwner).addTeam(1n, awayTeam[0], awayTeam[1], awayTeam[2], { value: wager });
+      const receipt = await tx.wait();
+      const parsedLogs = getParsedGameLogs(gameContract, receipt);
+
+      const distributionLog = parsedLogs.find((log: any) => log.name === "WinningsDistributed");
+      expect(distributionLog).to.not.equal(undefined);
+
+      const winner = distributionLog.args.winner as string;
+      const executor = distributionLog.args.executor as string;
+      const pendingBefore = await gameContract.pendingWithdrawals(winner);
+      const expectedPending = winner === executor
+        ? BigInt(distributionLog.args.winnings) + BigInt(distributionLog.args.executorFee)
+        : BigInt(distributionLog.args.winnings);
+      expect(pendingBefore).to.equal(expectedPending);
+
+      const winnerSigner = winner === homeOwner.address ? homeOwner : awayOwner;
+      await gameContract.connect(winnerSigner).withdraw();
+
+      expect(await gameContract.pendingWithdrawals(winner)).to.equal(0n);
     });
 
     it("handles draw distribution correctly", async () => {

@@ -5,20 +5,20 @@ describe("Reentrancy Protection", () => {
   async function deployContracts() {
     const [owner, attacker, user] = await ethers.getSigners();
 
-    const playerToken = await ethers.deployContract("PlayerToken");
+    const playerToken: any = await ethers.deployContract("PlayerToken");
     await playerToken.waitForDeployment();
 
-    const academy = await ethers.deployContract("Academy", [await playerToken.getAddress()]);
+    const academy: any = await ethers.deployContract("Academy", [await playerToken.getAddress()]);
     await academy.waitForDeployment();
 
-    const game = await ethers.deployContract("Game", [
+    const game: any = await ethers.deployContract("Game", [
       await playerToken.getAddress(),
       await academy.getAddress(),
     ]);
     await game.waitForDeployment();
 
-    const tournement = await ethers.deployContract("Tournement", [await game.getAddress()]);
-    await tournement.waitForDeployment();
+    const tournament: any = await ethers.deployContract("Tournement", [await game.getAddress()]);
+    await tournament.waitForDeployment();
 
     // Deploy a malicious contract for testing reentrancy
     const MaliciousContract = await ethers.getContractFactory("MaliciousReentrancy");
@@ -28,7 +28,7 @@ describe("Reentrancy Protection", () => {
     );
     await malicious.waitForDeployment();
 
-    return { academy, game, tournement, playerToken, owner, attacker, user, malicious };
+    return { academy, game, tournament, playerToken, owner, attacker, user, malicious };
   }
 
   describe("Academy Reentrancy Protection", () => {
@@ -86,7 +86,7 @@ describe("Reentrancy Protection", () => {
 
   describe("Tournament Reentrancy Protection", () => {
     it("should prevent reentrancy in claimReward function", async () => {
-      const { tournement, game, playerToken, attacker, malicious } = await deployContracts();
+      const { tournament, game, playerToken, attacker, malicious } = await deployContracts();
 
       const [p1, p2, p3, p4] = await ethers.getSigners();
       const entrants = [p1, p2, p3, p4];
@@ -98,10 +98,10 @@ describe("Reentrancy Protection", () => {
         }
       }
 
-      const entryFee = ethers.parseEther("1");
+      const entryFee = ethers.parseEther("3");
 
       // Create and complete tournament
-      await tournement.create(2, entryFee, 0, 0, [], []);
+      await tournament.create(2, entryFee, 0, 0, 0, 0, [], []);
 
       // Note: We can't directly complete a tournament and test claim without
       // more setup. This test demonstrates the protection exists.
