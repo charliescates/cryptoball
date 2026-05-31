@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { BaseError, useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { academyContract } from '../../contracts/academyContract';
+import { activeChain } from '../../config/network';
 import { useState, useEffect } from 'react';
 import { parseEther } from 'viem';
 
@@ -40,6 +41,7 @@ export function Deposit() {
             abi: academyContract.abi,
             functionName: 'deposit',
             args: [],
+            chainId: activeChain.id,
             value: parseEther(amount.toString()),
         });
     };

@@ -17,12 +17,12 @@ import { createTournementCompletedEvent } from "./tournement-utils"
 
 describe("Describe entity assertions", () => {
   beforeAll(() => {
-    let tournementId = BigInt.fromI32(234)
+    let tournamentId = BigInt.fromI32(234)
     let champion = Address.fromString(
       "0x0000000000000000000000000000000000000001"
     )
     let newTournementCompletedEvent = createTournementCompletedEvent(
-      tournementId,
+      tournamentId,
       champion
     )
     handleTournementCompleted(newTournementCompletedEvent)
@@ -42,7 +42,7 @@ describe("Describe entity assertions", () => {
     assert.fieldEquals(
       "TournementCompleted",
       "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "tournementId",
+      "tournamentId",
       "234"
     )
     assert.fieldEquals(

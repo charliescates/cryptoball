@@ -1,6 +1,8 @@
 import { formatEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
+import { activeChain } from '../../config/network'
+import { nativeTokenSymbol } from '../../config/network'
 
 export default function WithdrawPanel() {
   const { address } = useAccount()
@@ -28,6 +30,7 @@ export default function WithdrawPanel() {
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'withdraw',
+      chainId: activeChain.id,
       gas: 80_000n,
     })
   }
@@ -45,7 +48,7 @@ export default function WithdrawPanel() {
 
       <div className="market-withdraw-amount">
         <span>Available to withdraw</span>
-        <strong>{formatEther(pendingAmount)} POL</strong>
+        <strong>{formatEther(pendingAmount)} {nativeTokenSymbol}</strong>
       </div>
 
       <button

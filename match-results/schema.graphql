@@ -12,6 +12,7 @@ type ExtraTimePlayed @entity(immutable: true) {
   id: Bytes!
   playedMatch: PlayedMatch!
   matchId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
   homeScore: Int! # uint8
   awayScore: Int! # uint8
   blockNumber: BigInt!
@@ -23,6 +24,7 @@ type GoldenGoalPlayed @entity(immutable: true) {
   id: Bytes!
   playedMatch: PlayedMatch!
   matchId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
   homeScore: Int! # uint8
   awayScore: Int! # uint8
   blockNumber: BigInt!
@@ -33,6 +35,7 @@ type GoldenGoalPlayed @entity(immutable: true) {
 type PlayedMatch @entity(immutable: false) {
   id: String!
   matchId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
   homeScore: Int! # uint8
   awayScore: Int! # uint8
   homeAddress: Bytes!
@@ -50,7 +53,6 @@ type PlayedMatch @entity(immutable: false) {
   goldenGoalPlayeds: [GoldenGoalPlayed!]! @derivedFrom(field: "playedMatch")
   playerMatchInfos: [PlayerMatchInfo!]! @derivedFrom(field: "playedMatch")
   playerScoreds: [PlayerScored!]! @derivedFrom(field: "playedMatch")
-  playerStatsUpdateds: [PlayerStatsUpdated!]! @derivedFrom(field: "playedMatch")
   teamStatsCalculateds: [TeamStatsCalculated!]! @derivedFrom(field: "playedMatch")
   winningsDistributeds: [WinningsDistributed!]! @derivedFrom(field: "playedMatch")
 }
@@ -67,6 +69,7 @@ type PlayerScored @entity(immutable: true) {
   id: Bytes!
   playedMatch: PlayedMatch!
   matchId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
   playerId: BigInt! # uint256
   goalOrder: Int!
   blockNumber: BigInt!
@@ -78,6 +81,7 @@ type PlayerMatchInfo @entity(immutable: true) {
   id: Bytes!
   playedMatch: PlayedMatch!
   matchId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
   playerId: BigInt! # uint256
   owner: Bytes! # address
   attack: BigInt! # uint256
@@ -92,21 +96,11 @@ type PlayerMatchInfo @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type PlayerStatsUpdated @entity(immutable: true) {
-  id: Bytes!
-  playedMatch: PlayedMatch!
-  matchId: BigInt! # uint256
-  playerId: BigInt! # uint256
-  position: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
 type TeamStatsCalculated @entity(immutable: true) {
   id: Bytes!
   playedMatch: PlayedMatch!
   matchId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
   team: Bytes! # address
   totalAttack: BigInt! # uint256
   totalDefense: BigInt! # uint256
@@ -129,3 +123,18 @@ type WinningsDistributed @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+
+  type TournamentMatchPlayed @entity(immutable: true) {
+    id: Bytes!
+    tournamentId: BigInt! # uint256
+    tournamentMatchId: BigInt! # uint256
+    round: Int! # uint8
+    homeAddress: Bytes! # address
+    awayAddress: Bytes! # address
+    winner: Bytes! # address
+    homeScore: Int! # uint8
+    awayScore: Int! # uint8
+    blockNumber: BigInt!
+    blockTimestamp: BigInt!
+    transactionHash: Bytes!
+  }

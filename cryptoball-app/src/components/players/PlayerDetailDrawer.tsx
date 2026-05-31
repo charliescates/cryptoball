@@ -2,6 +2,7 @@ import { type MouseEvent, useEffect } from "react";
 
 import { formatPol } from "../academy/formatters";
 import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
+import { nativeTokenSymbol } from "../../config/network";
 import type { Player } from "../player";
 import { getPlayerName } from "../utils/playerName";
 import { getTeamKitTraitsFromAddress } from "../utils/teamKit";
@@ -132,7 +133,7 @@ const SquadDetailStats = ({ player }: { player: Player }) => (
 
 const AcademyDetailStats = ({ player }: { player: AcademyPlayer }) => (
   <>
-    <DetailStat label="Value" value={`${formatPol(player.value)} POL`} />
+    <DetailStat label="Value" value={`${formatPol(player.value)} ${nativeTokenSymbol}`} />
     <DetailStat label="Recruit fit" value={Number(player.potential) >= 85 ? "Priority" : "Depth"} />
     <DetailStat label="Role" value={getPlayerTypeName(player.playerType)} />
   </>

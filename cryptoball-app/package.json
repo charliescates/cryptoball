@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "vite --mode localhost",
+    "dev:prod": "vite --mode prod",
     "build": "tsc && vite build",
+    "build:local": "tsc && vite build --mode localhost",
+    "build:prod": "tsc && vite build --mode prod",
     "lint": "biome check .",
     "test": "vitest run",
     "test:coverage": "node ./scripts/run-vitest-coverage.mjs",

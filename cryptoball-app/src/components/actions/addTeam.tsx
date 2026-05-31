@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { type BaseError, parseEther } from "viem";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { activeChain } from "../../config/network";
 import { gameContract } from "../../contracts/gameContract";
 import type { Player } from "../player";
 
@@ -49,6 +50,7 @@ export const AddTeam = ({
       abi: gameContract.abi,
       functionName: "addTeam",
       args: [matchId, attackingIds, midfieldIds, defensiveIds],
+      chainId: activeChain.id,
       value: parseEther(wager),
     });
   };

@@ -249,8 +249,7 @@ describe("Tournement", () => {
     await tournement.start(0n);
 
     summaries = await tournement.getTournements();
-    expect(summaries[0].isOpen).to.equal(false);
-    expect(summaries[0].champion).to.not.equal(ethers.ZeroAddress);
+    expect(summaries).to.have.lengthOf(0);
   });
 
   describe("Tournament Reward Claiming", () => {

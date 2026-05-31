@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import './Game.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import 'hardhat/console.sol';
 
 contract Tournement is ReentrancyGuard {
     uint256 public constant MIN_ENTRY_FEE = 3 ether;
@@ -148,23 +149,50 @@ contract Tournement is ReentrancyGuard {
 
         _validateTypeCompatibility(includeTypes, excludeTypes);
 
+        if (_isLocalDebug()) {
+            console.log("[Tournament] Created");
+            console.log("[Tournament] tournamentId", tournementCounter);
+            console.log("[Tournament] creator", msg.sender);
+            console.log("[Tournament] rounds", rounds);
+            console.log("[Tournament] entryFee", entryFee);
+            console.log("[Tournament] minAttack", minAttack);
+            console.log("[Tournament] minDefence", minDefence);
+            console.log("[Tournament] maxAttack", maxAttack);
+            console.log("[Tournament] maxDefence", maxDefence);
+            console.log("[Tournament] includeTypesLength", includeTypes.length);
+            console.log("[Tournament] excludeTypesLength", excludeTypes.length);
+        }
+
         emit TournementCreated(tournementCounter, msg.sender, rounds, entryFee, minAttack, minDefence, maxAttack, maxDefence, includeTypes, excludeTypes);
 
         tournementCounter++;
     }
 
     function getTournements() external view returns (TournementSummary[] memory summaries) {
-        summaries = new TournementSummary[](tournementCounter);
+        uint256 liveCount = 0;
 
         for (uint256 i = 0; i < tournementCounter; i++) {
+            if (_isLiveTournement(tournements[i])) {
+                liveCount++;
+            }
+        }
+
+        summaries = new TournementSummary[](liveCount);
+
+        uint256 summaryIndex = 0;
+        for (uint256 i = 0; i < tournementCounter; i++) {
             TournementInfo storage info = tournements[i];
+            if (!_isLiveTournement(info)) {
+                continue;
+            }
+
             uint256 maxTeams = 2 ** info.rounds;
             uint8[] memory includeTypes = info.includeTypes;
             uint8[] memory excludeTypes = info.excludeTypes;
-            bool isOpen = !info.cancelled && info.champion == address(0) && info.currentRound == 0 && info.teamsEntered < maxTeams;
-            bool isReady = !info.cancelled && info.champion == address(0) && info.currentRound == 0 && info.teamsEntered == maxTeams;
+            bool isOpen = info.currentRound == 0 && info.teamsEntered < maxTeams;
+            bool isReady = info.currentRound == 0 && info.teamsEntered == maxTeams;
 
-            summaries[i] = TournementSummary({
+            summaries[summaryIndex] = TournementSummary({
                 tournamentId: i,
                 rounds: info.rounds,
                 entryFee: info.entryFee,
@@ -183,6 +211,7 @@ contract Tournement is ReentrancyGuard {
                 currentRound: info.currentRound,
                 champion: info.champion
             });
+            summaryIndex++;
         }
 
         return summaries;
@@ -278,6 +307,13 @@ contract Tournement is ReentrancyGuard {
             revert("No pending round to run");
         }
 
+        if (_isLocalDebug()) {
+            console.log("[Tournament] Round start");
+            console.log("[Tournament] tournamentId", tournamentId);
+            console.log("[Tournament] round", tournement.currentRound);
+            console.log("[Tournament] entrantsThisRound", currentEntrants.length);
+        }
+
         uint256 gasAtStart = gasleft();
         uint8 round = tournement.currentRound;
         address[] memory nextRound = new address[](currentEntrants.length / 2);
@@ -298,6 +334,16 @@ contract Tournement is ReentrancyGuard {
                 round
             );
 
+            if (_isLocalDebug()) {
+                console.log("[Tournament] Match resolved");
+                console.log("[Tournament] tournamentId", tournamentId);
+                console.log("[Tournament] round", round);
+                console.log("[Tournament] tournamentMatchId", tournementMatchCounts[tournamentId]);
+                console.log("[Tournament] home", currentEntrants[i]);
+                console.log("[Tournament] away", currentEntrants[i + 1]);
+                console.log("[Tournament] winner", winner);
+            }
+
             nextRound[i / 2] = winner;
         }
 
@@ -308,6 +354,13 @@ contract Tournement is ReentrancyGuard {
         uint256 executorFee = gasSpent * tx.gasprice;
         if (executorFee > remainingForCompensation) {
             executorFee = remainingForCompensation;
+        }
+
+        if (_isLocalDebug()) {
+            console.log("[Tournament] Round gas accounting");
+            console.log("[Tournament] gasSpent", gasSpent);
+            console.log("[Tournament] executorFee", executorFee);
+            console.log("[Tournament] totalExecutorFees", alreadyCompensated + executorFee);
         }
 
         tournementExecutorFees[tournamentId] = alreadyCompensated + executorFee;
@@ -329,6 +382,14 @@ contract Tournement is ReentrancyGuard {
             Game.Team memory winningTeam = tournement.teams[tournement.champion];
             TeamPlayerDetails[] memory winningTeamPlayers = _buildTeamPlayerDetails(winningTeam);
 
+            if (_isLocalDebug()) {
+                console.log("[Tournament] Completed");
+                console.log("[Tournament] tournamentId", tournamentId);
+                console.log("[Tournament] champion", tournement.champion);
+                console.log("[Tournament] championWinnings", championWinnings);
+                console.log("[Tournament] executorFees", tournementExecutorFees[tournamentId]);
+            }
+
             emit TournementCompleted(tournamentId, tournement.champion, championWinnings, winningTeam, winningTeamPlayers);
             emit TournementCompletedSummary(tournamentId, tournement.champion, championWinnings, tournementExecutorFees[tournamentId]);
             return;
@@ -336,6 +397,22 @@ contract Tournement is ReentrancyGuard {
 
         emit TournementRoundAdvanced(tournamentId, round, round + 1, uint8(nextRound.length));
         tournement.currentRound = round + 1;
+
+        if (_isLocalDebug()) {
+            console.log("[Tournament] Round advanced");
+            console.log("[Tournament] tournamentId", tournamentId);
+            console.log("[Tournament] completedRound", round);
+            console.log("[Tournament] nextRound", tournement.currentRound);
+            console.log("[Tournament] teamsRemaining", nextRound.length);
+        }
+    }
+
+    function _isLocalDebug() private view returns (bool) {
+        return block.chainid == 31337 || block.chainid == 1337;
+    }
+
+    function _isLiveTournement(TournementInfo storage info) private view returns (bool) {
+        return !info.cancelled && info.champion == address(0);
     }
 
     function cancel(uint256 tournamentId) external {

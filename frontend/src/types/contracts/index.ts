@@ -7,4 +7,5 @@ export type { Academy } from "./Academy";
 export type { Game } from "./Game";
 export type { MaliciousReentrancy } from "./MaliciousReentrancy";
 export type { PlayerToken } from "./PlayerToken";
+export type { PlayerTokenV2 } from "./PlayerTokenV2";
 export type { Tournement } from "./Tournement";

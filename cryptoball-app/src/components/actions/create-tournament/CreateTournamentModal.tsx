@@ -3,6 +3,8 @@ import { parseEther } from "viem";
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import type { BaseError } from "viem";
 import { tournementContract } from "../../../contracts/tournementContract";
+import { activeChain } from "../../../config/network";
+import { nativeTokenSymbol } from "../../../config/network";
 import "./CreateTournamentModal.css";
 
 interface CreateTournamentModalProps {
@@ -13,7 +15,7 @@ interface CreateTournamentModalProps {
 
 export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: CreateTournamentModalProps) {
   const [rounds, setRounds] = useState("2");
-  const [entryFee, setEntryFee] = useState("0.1");
+  const [entryFee, setEntryFee] = useState("3");
   const [minAttack, setMinAttack] = useState("0");
   const [minDefence, setMinDefence] = useState("0");
   const [maxAttack, setMaxAttack] = useState("99");
@@ -45,6 +47,7 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
       address: tournementContract.address,
       abi: tournementContract.abi,
       functionName: "create",
+      chainId: activeChain.id,
       args: [
         parseInt(rounds, 10),
         parseEther(entryFee),
@@ -68,7 +71,7 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
   const handleClose = () => {
     reset();
     setRounds("2");
-    setEntryFee("0.1");
+    setEntryFee("3");
     setMaxAttack("99");
     setMaxDefence("99");
     setMinAttack("0");
@@ -114,20 +117,22 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
                 <option value="3">3 Rounds (8 teams)</option>
                 <option value="4">4 Rounds (16 teams)</option>
                 <option value="5">5 Rounds (32 teams)</option>
+                <option value="6">6 Rounds (64 teams)</option>
+                <option value="7">7 Rounds (128 teams)</option>
               </select>
             </div>
 
             <div className="form-field">
-              <label htmlFor="entry-fee">Entry Fee (POL)</label>
+              <label htmlFor="entry-fee">{`Entry Fee (${nativeTokenSymbol})`}</label>
               <input
                 id="entry-fee"
                 type="number"
                 step="0.01"
-                min="0"
+                min="3"
                 value={entryFee}
                 onChange={(e) => setEntryFee(e.target.value)}
                 disabled={isLoading}
-                placeholder="0.1"
+                placeholder="3"
               />
             </div>
 

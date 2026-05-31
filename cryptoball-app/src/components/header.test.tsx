@@ -4,12 +4,14 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 import Header from "./header";
+import { activeChain } from "../config/network";
 
 const connectSpy = vi.fn();
 const disconnectSpy = vi.fn();
+const switchChainSpy = vi.fn();
 
 vi.mock("wagmi", () => ({
-  useAccount: () => ({ status: "connected" }),
+  useAccount: () => ({ status: "connected", chainId: activeChain.id, address: "0x1111111111111111111111111111111111111111" }),
   useConnect: () => ({
     connectors: [
       { name: "MetaMask", uid: "mask" },
@@ -19,6 +21,11 @@ vi.mock("wagmi", () => ({
     error: undefined,
   }),
   useDisconnect: () => ({ disconnect: disconnectSpy }),
+  useSwitchChain: () => ({
+    switchChain: switchChainSpy,
+    error: undefined,
+    isPending: false,
+  }),
 }));
 
 describe("Header", () => {
@@ -38,6 +45,7 @@ describe("Header", () => {
     await user.click(screen.getByRole("button", { name: /toggle menu/i }));
 
     expect(screen.getByRole("link", { name: /squad/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /tournaments/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /disconnect/i })).toBeInTheDocument();
   });
 });

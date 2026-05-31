@@ -5,6 +5,7 @@ import "./PlayerToken.sol";
 import "./Academy.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 contract Game is ReentrancyGuard {
     uint256 private _tokenIdCounter = 1;
@@ -164,11 +165,21 @@ contract Game is ReentrancyGuard {
             address teamOwner = _validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
             require(teamOwner == msg.sender, "You must own all players in your team");
             game.homeTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
+            if (_isLocalDebug()) {
+                console.log("[Game] Home team submitted");
+                console.log("[Game] matchId", matchId);
+                console.log("[Game] home", msg.sender);
+            }
         } else {
             require(isEmpty(game.awayTeam), "Away team already submitted");
             address teamOwner = _validateTeam(attackingPlayers, midfieldPlayers, defensivePlayers);
             require(teamOwner == msg.sender, "You must own all players in your team");
             game.awayTeam = Team(attackingPlayers, midfieldPlayers, defensivePlayers);
+            if (_isLocalDebug()) {
+                console.log("[Game] Away team submitted");
+                console.log("[Game] matchId", matchId);
+                console.log("[Game] away", msg.sender);
+            }
         }
 
         if (!isEmpty(game.homeTeam) && !isEmpty(game.awayTeam)) {
@@ -191,6 +202,15 @@ contract Game is ReentrancyGuard {
     ) external returns (address winner, uint8 homeGoals, uint8 awayGoals) {
         require(msg.sender == tournamentContract, "Only tournament contract can play matches");
 
+        if (_isLocalDebug()) {
+            console.log("[Game] Tournament match start");
+            console.log("[Game] tournamentId", tournamentId);
+            console.log("[Game] tournamentMatchId", tournamentMatchId);
+            console.log("[Game] round", round);
+            console.log("[Game] home", homeAddress);
+            console.log("[Game] away", awayAddress);
+        }
+
         (homeGoals, awayGoals) = _simulateMatch(tournamentMatchId, tournamentId, homeAddress, homeTeam, awayAddress, awayTeam);
 
         if (homeGoals > awayGoals) {
@@ -200,6 +220,13 @@ contract Game is ReentrancyGuard {
         }
 
         emit TournamentMatchPlayed(tournamentId, tournamentMatchId, round, homeAddress, awayAddress, winner, homeGoals, awayGoals);
+
+        if (_isLocalDebug()) {
+            console.log("[Game] Tournament match result");
+            console.log("[Game] homeGoals", homeGoals);
+            console.log("[Game] awayGoals", awayGoals);
+            console.log("[Game] winner", winner);
+        }
 
         return (winner, homeGoals, awayGoals);
     }
@@ -243,6 +270,15 @@ contract Game is ReentrancyGuard {
         Match memory game = matches[matchId];
         require(game.homeAddress != address(0) && game.awayAddress != address(0), "Match does not exist");
         require(!isEmpty(game.homeTeam) && !isEmpty(game.awayTeam), "Both teams must be submitted");
+
+        if (_isLocalDebug()) {
+            console.log("[Game] Match start");
+            console.log("[Game] matchId", matchId);
+            console.log("[Game] home", game.homeAddress);
+            console.log("[Game] away", game.awayAddress);
+            console.log("[Game] pot", game.pot);
+        }
+
         uint256 gasAtStart = gasleft();
 
         (homeGoals, awayGoals) = _simulateMatch(
@@ -256,12 +292,25 @@ contract Game is ReentrancyGuard {
 
         emit MatchPlayed(matchId, homeGoals, awayGoals);
 
+        if (_isLocalDebug()) {
+            console.log("[Game] Match result");
+            console.log("[Game] homeGoals", homeGoals);
+            console.log("[Game] awayGoals", awayGoals);
+        }
+
         // Distribute winnings
         uint256 gasSpentInMatch = gasAtStart - gasleft();
         uint256 executorFee = gasSpentInMatch * tx.gasprice;
         if (executorFee > game.pot) {
             executorFee = game.pot;
         }
+
+        if (_isLocalDebug()) {
+            console.log("[Game] Gas and fees");
+            console.log("[Game] gasSpentInMatch", gasSpentInMatch);
+            console.log("[Game] executorFee", executorFee);
+        }
+
         distributeWinnings(matchId, homeGoals, awayGoals, game.pot, game.homeAddress, game.awayAddress, executor, executorFee);
 
 
@@ -282,6 +331,16 @@ contract Game is ReentrancyGuard {
         TeamSnapshot memory awaySnapshot = buildTeamSnapshot(awayTeam);
         (uint homeAttack, uint homeDefense) = calculateTeamStats(homeSnapshot);
         (uint awayAttack, uint awayDefense) = calculateTeamStats(awaySnapshot);
+
+        if (_isLocalDebug()) {
+            console.log("[Game] Team stats");
+            console.log("[Game] matchId", matchId);
+            console.log("[Game] tournamentId", tournamentId);
+            console.log("[Game] homeAttack", homeAttack);
+            console.log("[Game] homeDefense", homeDefense);
+            console.log("[Game] awayAttack", awayAttack);
+            console.log("[Game] awayDefense", awayDefense);
+        }
 
         (homeGoals, awayGoals) = iterateThroughGame(
             matchId,
@@ -308,6 +367,10 @@ contract Game is ReentrancyGuard {
         emit MatchSnapshot(matchId, tournamentId, homeAddress, awayAddress, homeTeam, awayTeam);
 
         return (homeGoals, awayGoals);
+    }
+
+    function _isLocalDebug() private view returns (bool) {
+        return block.chainid == 31337 || block.chainid == 1337;
     }
 
     function updatePlayerStats(uint256, uint256, TeamSnapshot memory homeTeam, TeamSnapshot memory awayTeam) private {

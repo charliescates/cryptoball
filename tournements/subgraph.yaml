@@ -18,15 +18,36 @@ dataSources:
       entities:
         - TournementCompleted
         - TournementCreated
+        - TeamEntered
         - TournementMatchStarted
+        - TournementRoundAdvanced
+        - TournementReady
+        - TournementCancelled
+        - TournementEntryRefunded
+        - TournementExecutorCompensated
+        - TournementRewardClaimed
       abis:
         - name: tournement
           file: ./abis/tournement.json
       eventHandlers:
-        - event: TournementCompleted(indexed uint256,address)
+        - event: TournementCompletedSummary(indexed uint256,indexed address,uint256,uint256)
           handler: handleTournementCompleted
-        - event: TournementCreated(indexed uint256,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
+        - event: TournementCreated(indexed uint256,indexed address,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
           handler: handleTournementCreated
-        - event: TournementMatchStarted(indexed uint256,indexed uint8,address,address)
+        - event: TeamEntered(indexed uint256,indexed address,uint8)
+          handler: handleTeamEntered
+        - event: TournementMatchStarted(indexed uint256,uint256,indexed uint8,address,address)
           handler: handleTournementMatchStarted
+        - event: TournementRoundAdvanced(indexed uint256,uint8,uint8,uint8)
+          handler: handleTournementRoundAdvanced
+        - event: TournementReady(indexed uint256,uint8)
+          handler: handleTournementReady
+        - event: TournementCancelled(indexed uint256,indexed address)
+          handler: handleTournementCancelled
+        - event: TournementEntryRefunded(indexed uint256,indexed address,uint256)
+          handler: handleTournementEntryRefunded
+        - event: TournementExecutorCompensated(indexed uint256,indexed address,uint256)
+          handler: handleTournementExecutorCompensated
+        - event: TournementRewardClaimed(indexed uint256,indexed address,uint256)
+          handler: handleTournementRewardClaimed
       file: ./src/tournement.ts

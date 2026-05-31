@@ -4,6 +4,8 @@ import { gql, request } from 'graphql-request'
 import { formatEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
+import { activeChain } from '../../config/network'
+import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
 import { isVisiblePlayerId } from '../utils/playerVisibility'
 import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type Listing, type SubgraphListing } from './marketSubgraph'
@@ -49,15 +51,15 @@ function SoldItemCard({ listing }: { listing: Listing }) {
         </div>
         <div>
           <dt>Buy Now</dt>
-          <dd>{formatEther(listing.buyNowPrice)} POL</dd>
+          <dd>{formatEther(listing.buyNowPrice)} {nativeTokenSymbol}</dd>
         </div>
         <div>
           <dt>Final Bid</dt>
-          <dd>{listing.highestBid > 0n ? `${formatEther(listing.highestBid)} POL` : 'No bids'}</dd>
+          <dd>{listing.highestBid > 0n ? `${formatEther(listing.highestBid)} ${nativeTokenSymbol}` : 'No bids'}</dd>
         </div>
         <div>
           <dt>Settlement Value</dt>
-          <dd>{formatEther(settlementValue)} POL</dd>
+          <dd>{formatEther(settlementValue)} {nativeTokenSymbol}</dd>
         </div>
       </dl>
     </li>
@@ -108,6 +110,7 @@ export default function SoldItemsTab() {
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'withdraw',
+      chainId: activeChain.id,
       gas: 80_000n,
     })
   }
@@ -125,7 +128,7 @@ export default function SoldItemsTab() {
     <div className="market-activity-layout">
       <div className="market-withdraw-amount">
         <span>Available to withdraw</span>
-        <strong>{formatEther(pendingAmount)} POL</strong>
+        <strong>{formatEther(pendingAmount)} {nativeTokenSymbol}</strong>
       </div>
 
       <button

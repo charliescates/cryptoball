@@ -4,6 +4,7 @@ import { gql, request } from 'graphql-request'
 import { parseEther } from 'viem'
 import { useReadContracts } from 'wagmi'
 import { playerContract } from '../../contracts/playerContract'
+import { nativeTokenSymbol } from '../../config/network'
 import { isVisiblePlayerId } from '../utils/playerVisibility'
 import ListingCard from './ListingCard'
 import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type SubgraphListing } from './marketSubgraph'
@@ -226,7 +227,7 @@ export default function BrowseListings() {
             />
           </label>
           <label className="market-field">
-            <span>Max Bid (POL)</span>
+            <span>{`Max Bid (${nativeTokenSymbol})`}</span>
             <input
               className="market-input"
               type="text"
@@ -237,7 +238,7 @@ export default function BrowseListings() {
             />
           </label>
           <label className="market-field">
-            <span>Max Buy Now (POL)</span>
+            <span>{`Max Buy Now (${nativeTokenSymbol})`}</span>
             <input
               className="market-input"
               type="text"

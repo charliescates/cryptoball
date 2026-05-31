@@ -4,6 +4,8 @@ import { gql, request } from 'graphql-request'
 import { formatEther } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
+import { activeChain } from '../../config/network'
+import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
 import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type Listing, type SubgraphListing } from './marketSubgraph'
 import ListingPlayerInfo from './ListingPlayerInfo'
@@ -79,6 +81,7 @@ function ActiveBidCard({
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'finalize',
+      chainId: activeChain.id,
       args: [listing.listingId],
     })
   }
@@ -101,11 +104,11 @@ function ActiveBidCard({
         </div>
         <div>
           <dt>Your Bid</dt>
-          <dd>{formatEther(listing.highestBid)} POL</dd>
+          <dd>{formatEther(listing.highestBid)} {nativeTokenSymbol}</dd>
         </div>
         <div>
           <dt>Buy Now</dt>
-          <dd>{formatEther(listing.buyNowPrice)} POL</dd>
+          <dd>{formatEther(listing.buyNowPrice)} {nativeTokenSymbol}</dd>
         </div>
       </dl>
 

@@ -13,6 +13,7 @@ import Home from './components/home.tsx'
 import GetPlayers from './components/get-players.tsx'
 import Test from './components/test.tsx'
 import Games from './components/games.tsx'
+import Tournaments from './components/tournaments.tsx'
 import Academy from './components/academy/Academy.tsx'
 import Chemistry from './components/chemistry.tsx'
 import TransferMarket from './components/market/TransferMarket.tsx'
@@ -36,6 +37,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="/" element={<Home />} />
               <Route path="/players" element={<GetPlayers />} />
               <Route path="/games/*" element={<Games />} />
+              <Route path="/tournaments/*" element={<Tournaments />} />
               <Route path="/academy" element={<Academy />} />
               <Route path="/market/*" element={<TransferMarket />} />
               <Route path="/chemistry" element={<Chemistry />} />

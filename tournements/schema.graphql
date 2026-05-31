@@ -1,7 +1,9 @@
 type TournementCompleted @entity(immutable: true) {
   id: Bytes!
-  tournementId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
   champion: Bytes! # address
+  championWinnings: BigInt! # uint256
+  executorFees: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
@@ -9,7 +11,8 @@ type TournementCompleted @entity(immutable: true) {
 
 type TournementCreated @entity(immutable: true) {
   id: Bytes!
-  tournementId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
+  creator: Bytes! # address
   rounds: Int! # uint8
   entryFee: BigInt! # uint256
   minAttack: Int! # uint8
@@ -23,12 +26,82 @@ type TournementCreated @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
+type TeamEntered @entity(immutable: true) {
+  id: Bytes!
+  tournamentId: BigInt! # uint256
+  player: Bytes! # address
+  teamsEntered: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
 type TournementMatchStarted @entity(immutable: true) {
   id: Bytes!
-  tournementId: BigInt! # uint256
+  tournamentId: BigInt! # uint256
+  tournamentMatchId: BigInt! # uint256
   round: Int! # uint8
   homeAddress: Bytes! # address
   awayAddress: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementRoundAdvanced @entity(immutable: true) {
+  id: Bytes!
+  tournamentId: BigInt! # uint256
+  completedRound: Int! # uint8
+  nextRound: Int! # uint8
+  teamsRemaining: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementReady @entity(immutable: true) {
+  id: Bytes!
+  tournamentId: BigInt! # uint256
+  teamsCount: Int! # uint8
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementCancelled @entity(immutable: true) {
+  id: Bytes!
+  tournamentId: BigInt! # uint256
+  cancelledBy: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementEntryRefunded @entity(immutable: true) {
+  id: Bytes!
+  tournamentId: BigInt! # uint256
+  entrant: Bytes! # address
+  amount: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementExecutorCompensated @entity(immutable: true) {
+  id: Bytes!
+  tournamentId: BigInt! # uint256
+  executor: Bytes! # address
+  executorFee: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TournementRewardClaimed @entity(immutable: true) {
+  id: Bytes!
+  tournamentId: BigInt! # uint256
+  champion: Bytes! # address
+  amount: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!

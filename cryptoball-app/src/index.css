@@ -366,6 +366,43 @@ form {
   color: rgba(176, 184, 193, 0.86);
 }
 
+.tournament-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 2px 9px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tournament-status-badge--neutral {
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tournament-status-badge--success {
+  color: #7ef0a7;
+  border-color: rgba(126, 240, 167, 0.36);
+  background: rgba(126, 240, 167, 0.12);
+}
+
+.tournament-status-badge--warning {
+  color: #ffb27a;
+  border-color: rgba(255, 178, 122, 0.38);
+  background: rgba(255, 178, 122, 0.14);
+}
+
+.tournament-status-badge--info {
+  color: #8ed8ff;
+  border-color: rgba(142, 216, 255, 0.36);
+  background: rgba(142, 216, 255, 0.12);
+}
+
 .tournament-detail {
   display: grid;
   gap: 14px;
@@ -401,6 +438,7 @@ form {
 
 .tournament-bracket,
 .tournament-replay,
+.tournament-activity,
 .tournament-claim {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -410,9 +448,59 @@ form {
 
 .tournament-bracket h3,
 .tournament-replay h3,
+.tournament-activity h3,
 .tournament-claim h3 {
   margin: 0 0 10px;
   color: #fff;
+}
+
+.tournament-activity-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.tournament-activity-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(10, 14, 39, 0.45);
+}
+
+.tournament-activity-item strong {
+  color: #ffffff;
+  display: block;
+}
+
+.tournament-activity-item p {
+  margin: 4px 0 0;
+  color: rgba(176, 184, 193, 0.86);
+  font-size: 0.9rem;
+}
+
+.tournament-activity-item > span {
+  color: rgba(176, 184, 193, 0.76);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tournament-activity-item--success {
+  border-color: rgba(126, 240, 167, 0.35);
+}
+
+.tournament-activity-item--warning {
+  border-color: rgba(255, 178, 122, 0.35);
+}
+
+.tournament-activity-item--info {
+  border-color: rgba(142, 216, 255, 0.35);
 }
 
 .tournament-match-list {

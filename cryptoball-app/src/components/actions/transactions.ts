@@ -1,3 +1,5 @@
+import { activeChain } from "../../config/network";
+
 export type Transaction = {
     address: string;
     abi: any;
@@ -8,8 +10,8 @@ export type Transaction = {
 };
 
 /**
- * Check if the current chain is Polygon PoS mainnet (chain ID 137)
+ * Check if the current chain matches the currently configured app network.
  */
 export function isPolygon(chainId?: number): boolean {
-    return chainId === 137;
+    return chainId === activeChain.id;
 }

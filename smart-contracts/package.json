@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "seed:local:players": "node scripts/run_seed_local_players.js",
+    "deploy:player:v2": "hardhat run scripts/deploy_player_token_v2.ts",
+    "migrate:players:v2": "hardhat run scripts/migrate_player_token_v2.ts",
+    "migrate:stack:v2": "hardhat run scripts/deploy_and_migrate_player_v2_stack.ts",
+    "verify:players:v2": "hardhat run scripts/verify_player_migration_v2.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",

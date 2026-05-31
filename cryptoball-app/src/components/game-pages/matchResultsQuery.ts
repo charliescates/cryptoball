@@ -23,11 +23,6 @@ export type TeamStatsCalculated = {
   totalDefense: string;
 };
 
-export type PlayerStatsUpdated = {
-  playerId: string;
-  position: string;
-};
-
 export type WinningsDistributed = {
   winner: string;
   winnings: string;
@@ -50,6 +45,7 @@ export type GoldenGoalPlayed = {
 export type PlayedMatch = {
   id: string;
   matchId: string;
+  tournamentId: string;
   pot?: string;
   homeScore: number;
   awayScore: number;
@@ -65,7 +61,6 @@ export type PlayedMatch = {
   playerScoreds: PlayerScored[];
   playerMatchInfos?: PlayerMatchInfo[];
   teamStatsCalculateds?: TeamStatsCalculated[];
-  playerStatsUpdateds?: PlayerStatsUpdated[];
   winningsDistributeds?: WinningsDistributed[];
   extraTimePlayeds?: ExtraTimePlayed[];
   goldenGoalPlayeds?: GoldenGoalPlayed[];
@@ -78,6 +73,7 @@ export type MatchesResponse = {
 const playedMatchFields = `
   id
   matchId
+  tournamentId
   homeScore
   awayScore
   blockTimestamp
@@ -109,10 +105,6 @@ const playedMatchFields = `
     totalAttack
     totalDefense
   }
-  playerStatsUpdateds(orderBy: blockTimestamp, orderDirection: asc) {
-    playerId
-    position
-  }
   winningsDistributeds(orderBy: blockTimestamp, orderDirection: asc) {
     winner
     winnings
@@ -133,7 +125,7 @@ const playedMatchFields = `
 
 export const recentMatchesQuery = gql`
   {
-    playedMatches(first: 5, orderBy: blockTimestamp, orderDirection: desc) {
+    playedMatches(first: 5, orderBy: blockTimestamp, orderDirection: desc, where: { tournamentId: "0" }) {
       ${playedMatchFields}
     }
   }
@@ -141,7 +133,7 @@ export const recentMatchesQuery = gql`
 
 export const playedMatchByMatchIdQuery = gql`
   query PlayedMatchByMatchId($matchId: String!) {
-    playedMatches(first: 1, where: { matchId: $matchId }) {
+    playedMatches(first: 1, where: { matchId: $matchId, tournamentId: "0" }) {
       ${playedMatchFields}
     }
   }
@@ -153,7 +145,7 @@ export const myMatchesQuery = gql`
       first: 20
       orderBy: blockTimestamp
       orderDirection: desc
-      where: { or: [{ homeAddress: $address }, { awayAddress: $address }] }
+      where: { tournamentId: "0", or: [{ homeAddress: $address }, { awayAddress: $address }] }
     ) {
       ${playedMatchFields}
     }

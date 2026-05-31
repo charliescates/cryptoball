@@ -4,6 +4,8 @@ import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteCont
 import FootballPlayerAvatar from '../avatar/FootballPlayerAvatar'
 import { marketContract } from '../../contracts/marketContract'
 import { playerContract } from '../../contracts/playerContract'
+import { activeChain } from '../../config/network'
+import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
 import { getPlayerTypeColor, getPlayerTypeIcon, getPlayerTypeName } from '../utils/playerType'
 import { isVisiblePlayerId } from '../utils/playerVisibility'
@@ -100,6 +102,7 @@ export default function CreateListing({ onCreated }: Props) {
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'createListing',
+      chainId: activeChain.id,
       args: [
         selectedTokenId,
         parseEther(buyNowPrice),
@@ -157,6 +160,7 @@ export default function CreateListing({ onCreated }: Props) {
       address: playerContract.address,
       abi: playerContract.abi,
       functionName: 'approve',
+      chainId: activeChain.id,
       args: [marketContract.address, selectedTokenId],
     })
   }
@@ -288,7 +292,7 @@ export default function CreateListing({ onCreated }: Props) {
 
       <div className="market-field-row">
         <div className="market-field">
-          <label htmlFor="market-min-bid">Minimum Bid (POL)</label>
+          <label htmlFor="market-min-bid">{`Minimum Bid (${nativeTokenSymbol})`}</label>
           <input
             id="market-min-bid"
             className="market-input"
@@ -303,7 +307,7 @@ export default function CreateListing({ onCreated }: Props) {
         </div>
 
         <div className="market-field">
-          <label htmlFor="market-buy-now">Buy Now Price (POL)</label>
+          <label htmlFor="market-buy-now">{`Buy Now Price (${nativeTokenSymbol})`}</label>
           <input
             id="market-buy-now"
             className="market-input"

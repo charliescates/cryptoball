@@ -7,7 +7,7 @@ import {
 } from "../generated/tournement/tournement"
 
 export function createTournementCompletedEvent(
-  tournementId: BigInt,
+  tournamentId: BigInt,
   champion: Address
 ): TournementCompleted {
   let tournementCompletedEvent = changetype<TournementCompleted>(newMockEvent())
@@ -16,8 +16,8 @@ export function createTournementCompletedEvent(
 
   tournementCompletedEvent.parameters.push(
     new ethereum.EventParam(
-      "tournementId",
-      ethereum.Value.fromUnsignedBigInt(tournementId)
+      "tournamentId",
+      ethereum.Value.fromUnsignedBigInt(tournamentId)
     )
   )
   tournementCompletedEvent.parameters.push(
@@ -28,7 +28,7 @@ export function createTournementCompletedEvent(
 }
 
 export function createTournementCreatedEvent(
-  tournementId: BigInt,
+  tournamentId: BigInt,
   rounds: i32,
   entryFee: BigInt,
   minAttack: i32,
@@ -44,8 +44,8 @@ export function createTournementCreatedEvent(
 
   tournementCreatedEvent.parameters.push(
     new ethereum.EventParam(
-      "tournementId",
-      ethereum.Value.fromUnsignedBigInt(tournementId)
+      "tournamentId",
+      ethereum.Value.fromUnsignedBigInt(tournamentId)
     )
   )
   tournementCreatedEvent.parameters.push(
@@ -101,7 +101,7 @@ export function createTournementCreatedEvent(
 }
 
 export function createTournementMatchStartedEvent(
-  tournementId: BigInt,
+  tournamentId: BigInt,
   round: i32,
   homeAddress: Address,
   awayAddress: Address
@@ -113,8 +113,8 @@ export function createTournementMatchStartedEvent(
 
   tournementMatchStartedEvent.parameters.push(
     new ethereum.EventParam(
-      "tournementId",
-      ethereum.Value.fromUnsignedBigInt(tournementId)
+      "tournamentId",
+      ethereum.Value.fromUnsignedBigInt(tournamentId)
     )
   )
   tournementMatchStartedEvent.parameters.push(

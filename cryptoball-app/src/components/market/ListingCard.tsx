@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { BaseError, formatEther, parseEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
+import { activeChain } from '../../config/network'
+import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
 import generateName from '../utils/teamName'
 import ListingPlayerInfo from './ListingPlayerInfo'
@@ -139,6 +141,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'buyNow',
+      chainId: activeChain.id,
       args: [listing.listingId],
       value: listing.buyNowPrice,
     })
@@ -152,6 +155,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'placeBid',
+      chainId: activeChain.id,
       args: [listing.listingId],
       value: parseEther(bid),
     })
@@ -164,6 +168,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'finalize',
+      chainId: activeChain.id,
       args: [listing.listingId],
     })
   }
@@ -188,17 +193,17 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
         </div>
         <div>
           <dt>Buy Now</dt>
-          <dd>{formatEther(listing.buyNowPrice)} POL</dd>
+          <dd>{formatEther(listing.buyNowPrice)} {nativeTokenSymbol}</dd>
         </div>
         <div>
           <dt>Min Bid</dt>
-          <dd>{formatEther(listing.minBid)} POL</dd>
+          <dd>{formatEther(listing.minBid)} {nativeTokenSymbol}</dd>
         </div>
         <div>
           <dt>Highest Bid</dt>
           <dd>
             {listing.highestBid > 0n
-              ? `${formatEther(listing.highestBid)} POL by ${generateName(listing.highestBidder)}`
+              ? `${formatEther(listing.highestBid)} ${nativeTokenSymbol} by ${generateName(listing.highestBidder)}`
               : 'No bids yet'}
           </dd>
         </div>
@@ -216,7 +221,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
             onClick={handleBuyNow}
             disabled={isPending || isConfirming}
           >
-            {isPending || isConfirming ? 'Confirming...' : `Buy Now — ${formatEther(listing.buyNowPrice)} POL`}
+            {isPending || isConfirming ? 'Confirming...' : `Buy Now — ${formatEther(listing.buyNowPrice)} ${nativeTokenSymbol}`}
           </button>
 
           <div className="market-bid-row">
@@ -225,7 +230,7 @@ export default function ListingCard({ listing, onAction, playerData }: Props) {
               type="number"
               step="0.001"
               min={formatEther(bidFloor)}
-              placeholder={`Min ${formatEther(bidFloor)} POL`}
+              placeholder={`Min ${formatEther(bidFloor)} ${nativeTokenSymbol}`}
               value={bid}
               onChange={(e) => setBid(e.target.value)}
             />

@@ -3,6 +3,7 @@ import { request } from "graphql-request";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAccount } from "wagmi";
+import { nativeTokenSymbol } from "../../config/network";
 import FootballPlayerAvatar from "../avatar/FootballPlayerAvatar";
 import { ReplayPositionCard } from "../formation-grid-parts/ReplayPositionCard";
 import { getPlayerName } from "../utils/playerName";
@@ -616,7 +617,7 @@ function WagerEventsPanel({
     <section className="matches-history-wager-events" aria-label={`Match ${match.matchId} wager payouts`}>
       <h4>Wager Distribution</h4>
       <div className="matches-history-wager-pot">
-        Each player's stake: {perPlayerStake ? `${formatWei(perPlayerStake)} POL` : "Unavailable in subgraph payload"}
+        Each player's stake: {perPlayerStake ? `${formatWei(perPlayerStake)} ${nativeTokenSymbol}` : "Unavailable in subgraph payload"}
       </div>
       {winnings.length === 0 ? (
         <p>No payout event revealed yet.</p>
@@ -625,9 +626,9 @@ function WagerEventsPanel({
           {winnings.map((entry, index) => (
             <li key={`${entry.winner}-${entry.executor}-${index}`}>
               <strong>{generateName(entry.winner)}</strong>
-              <span>Winner: {formatWei(entry.winnings)} POL</span>
-              <span>Academy: {formatWei(entry.academyShare)} POL</span>
-              <span>Executor: {formatWei(entry.executorFee)} POL</span>
+              <span>Winner: {formatWei(entry.winnings)} {nativeTokenSymbol}</span>
+              <span>Academy: {formatWei(entry.academyShare)} {nativeTokenSymbol}</span>
+              <span>Executor: {formatWei(entry.executorFee)} {nativeTokenSymbol}</span>
             </li>
           ))}
         </ul>

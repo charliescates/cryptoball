@@ -76,9 +76,14 @@ export interface GameInterface extends Interface {
       | "getMatchList"
       | "getPlayerAttributes"
       | "matches"
+      | "owner"
+      | "pendingWithdrawals"
       | "playMatch"
       | "playTournamentMatch"
+      | "setTournamentContract"
+      | "tournamentContract"
       | "validateTeam"
+      | "withdraw"
   ): FunctionFragment;
 
   getEvent(
@@ -90,8 +95,8 @@ export interface GameInterface extends Interface {
       | "NewMatch"
       | "PlayerMatchInfo"
       | "PlayerScored"
-      | "PlayerStatsUpdated"
       | "TeamStatsCalculated"
+      | "TournamentContractUpdated"
       | "TournamentMatchPlayed"
       | "WinningsDistributed"
   ): EventFragment;
@@ -126,6 +131,11 @@ export interface GameInterface extends Interface {
     functionFragment: "matches",
     values: [BigNumberish]
   ): string;
+  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "pendingWithdrawals",
+    values: [AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "playMatch",
     values: [BigNumberish, AddressLike]
@@ -138,8 +148,17 @@ export interface GameInterface extends Interface {
       AddressLike,
       Game.TeamStruct,
       BigNumberish,
+      BigNumberish,
       BigNumberish
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setTournamentContract",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tournamentContract",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "validateTeam",
@@ -150,6 +169,7 @@ export interface GameInterface extends Interface {
       AddressLike
     ]
   ): string;
+  encodeFunctionData(functionFragment: "withdraw", values?: undefined): string;
 
   decodeFunctionResult(functionFragment: "MIN_WAGER", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "addTeam", data: BytesLike): Result;
@@ -164,30 +184,47 @@ export interface GameInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "matches", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "pendingWithdrawals",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "playMatch", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "playTournamentMatch",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "setTournamentContract",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tournamentContract",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "validateTeam",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 }
 
 export namespace ExtraTimePlayedEvent {
   export type InputTuple = [
     matchId: BigNumberish,
+    tournamentId: BigNumberish,
     homeScore: BigNumberish,
     awayScore: BigNumberish
   ];
   export type OutputTuple = [
     matchId: bigint,
+    tournamentId: bigint,
     homeScore: bigint,
     awayScore: bigint
   ];
   export interface OutputObject {
     matchId: bigint;
+    tournamentId: bigint;
     homeScore: bigint;
     awayScore: bigint;
   }
@@ -200,16 +237,19 @@ export namespace ExtraTimePlayedEvent {
 export namespace GoldenGoalPlayedEvent {
   export type InputTuple = [
     matchId: BigNumberish,
+    tournamentId: BigNumberish,
     homeScore: BigNumberish,
     awayScore: BigNumberish
   ];
   export type OutputTuple = [
     matchId: bigint,
+    tournamentId: bigint,
     homeScore: bigint,
     awayScore: bigint
   ];
   export interface OutputObject {
     matchId: bigint;
+    tournamentId: bigint;
     homeScore: bigint;
     awayScore: bigint;
   }
@@ -244,6 +284,7 @@ export namespace MatchPlayedEvent {
 export namespace MatchSnapshotEvent {
   export type InputTuple = [
     matchId: BigNumberish,
+    tournamentId: BigNumberish,
     homeAddress: AddressLike,
     awayAddress: AddressLike,
     homeTeam: Game.TeamStruct,
@@ -251,6 +292,7 @@ export namespace MatchSnapshotEvent {
   ];
   export type OutputTuple = [
     matchId: bigint,
+    tournamentId: bigint,
     homeAddress: string,
     awayAddress: string,
     homeTeam: Game.TeamStructOutput,
@@ -258,6 +300,7 @@ export namespace MatchSnapshotEvent {
   ];
   export interface OutputObject {
     matchId: bigint;
+    tournamentId: bigint;
     homeAddress: string;
     awayAddress: string;
     homeTeam: Game.TeamStructOutput;
@@ -284,6 +327,7 @@ export namespace NewMatchEvent {
 export namespace PlayerMatchInfoEvent {
   export type InputTuple = [
     matchId: BigNumberish,
+    tournamentId: BigNumberish,
     playerId: BigNumberish,
     owner: AddressLike,
     attack: BigNumberish,
@@ -292,10 +336,11 @@ export namespace PlayerMatchInfoEvent {
     gamesLeft: BigNumberish,
     goals: BigNumberish,
     playerType: BigNumberish,
-    position: string
+    position: BigNumberish
   ];
   export type OutputTuple = [
     matchId: bigint,
+    tournamentId: bigint,
     playerId: bigint,
     owner: string,
     attack: bigint,
@@ -304,10 +349,11 @@ export namespace PlayerMatchInfoEvent {
     gamesLeft: bigint,
     goals: bigint,
     playerType: bigint,
-    position: string
+    position: bigint
   ];
   export interface OutputObject {
     matchId: bigint;
+    tournamentId: bigint;
     playerId: bigint;
     owner: string;
     attack: bigint;
@@ -316,7 +362,7 @@ export namespace PlayerMatchInfoEvent {
     gamesLeft: bigint;
     goals: bigint;
     playerType: bigint;
-    position: string;
+    position: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -325,33 +371,20 @@ export namespace PlayerMatchInfoEvent {
 }
 
 export namespace PlayerScoredEvent {
-  export type InputTuple = [matchId: BigNumberish, playerId: BigNumberish];
-  export type OutputTuple = [matchId: bigint, playerId: bigint];
-  export interface OutputObject {
-    matchId: bigint;
-    playerId: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace PlayerStatsUpdatedEvent {
   export type InputTuple = [
     matchId: BigNumberish,
-    playerId: BigNumberish,
-    position: string
+    tournamentId: BigNumberish,
+    playerId: BigNumberish
   ];
   export type OutputTuple = [
     matchId: bigint,
-    playerId: bigint,
-    position: string
+    tournamentId: bigint,
+    playerId: bigint
   ];
   export interface OutputObject {
     matchId: bigint;
+    tournamentId: bigint;
     playerId: bigint;
-    position: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -362,18 +395,21 @@ export namespace PlayerStatsUpdatedEvent {
 export namespace TeamStatsCalculatedEvent {
   export type InputTuple = [
     matchId: BigNumberish,
+    tournamentId: BigNumberish,
     team: AddressLike,
     totalAttack: BigNumberish,
     totalDefense: BigNumberish
   ];
   export type OutputTuple = [
     matchId: bigint,
+    tournamentId: bigint,
     team: string,
     totalAttack: bigint,
     totalDefense: bigint
   ];
   export interface OutputObject {
     matchId: bigint;
+    tournamentId: bigint;
     team: string;
     totalAttack: bigint;
     totalDefense: bigint;
@@ -384,9 +420,22 @@ export namespace TeamStatsCalculatedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace TournamentContractUpdatedEvent {
+  export type InputTuple = [tournamentContract: AddressLike];
+  export type OutputTuple = [tournamentContract: string];
+  export interface OutputObject {
+    tournamentContract: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace TournamentMatchPlayedEvent {
   export type InputTuple = [
-    tournementId: BigNumberish,
+    tournamentId: BigNumberish,
+    tournamentMatchId: BigNumberish,
     round: BigNumberish,
     homeAddress: AddressLike,
     awayAddress: AddressLike,
@@ -395,7 +444,8 @@ export namespace TournamentMatchPlayedEvent {
     awayScore: BigNumberish
   ];
   export type OutputTuple = [
-    tournementId: bigint,
+    tournamentId: bigint,
+    tournamentMatchId: bigint,
     round: bigint,
     homeAddress: string,
     awayAddress: string,
@@ -404,7 +454,8 @@ export namespace TournamentMatchPlayedEvent {
     awayScore: bigint
   ];
   export interface OutputObject {
-    tournementId: bigint;
+    tournamentId: bigint;
+    tournamentMatchId: bigint;
     round: bigint;
     homeAddress: string;
     awayAddress: string;
@@ -565,6 +616,14 @@ export interface Game extends BaseContract {
     "view"
   >;
 
+  owner: TypedContractMethod<[], [string], "view">;
+
+  pendingWithdrawals: TypedContractMethod<
+    [arg0: AddressLike],
+    [bigint],
+    "view"
+  >;
+
   playMatch: TypedContractMethod<
     [matchId: BigNumberish, executor: AddressLike],
     [[bigint, bigint] & { homeGoals: bigint; awayGoals: bigint }],
@@ -577,7 +636,8 @@ export interface Game extends BaseContract {
       homeTeam: Game.TeamStruct,
       awayAddress: AddressLike,
       awayTeam: Game.TeamStruct,
-      tournementId: BigNumberish,
+      tournamentId: BigNumberish,
+      tournamentMatchId: BigNumberish,
       round: BigNumberish
     ],
     [
@@ -590,6 +650,14 @@ export interface Game extends BaseContract {
     "nonpayable"
   >;
 
+  setTournamentContract: TypedContractMethod<
+    [tournamentAddress: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  tournamentContract: TypedContractMethod<[], [string], "view">;
+
   validateTeam: TypedContractMethod<
     [
       attack: [BigNumberish, BigNumberish, BigNumberish],
@@ -600,6 +668,8 @@ export interface Game extends BaseContract {
     [boolean],
     "view"
   >;
+
+  withdraw: TypedContractMethod<[], [void], "nonpayable">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -683,6 +753,12 @@ export interface Game extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "pendingWithdrawals"
+  ): TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
+  getFunction(
     nameOrSignature: "playMatch"
   ): TypedContractMethod<
     [matchId: BigNumberish, executor: AddressLike],
@@ -697,7 +773,8 @@ export interface Game extends BaseContract {
       homeTeam: Game.TeamStruct,
       awayAddress: AddressLike,
       awayTeam: Game.TeamStruct,
-      tournementId: BigNumberish,
+      tournamentId: BigNumberish,
+      tournamentMatchId: BigNumberish,
       round: BigNumberish
     ],
     [
@@ -710,6 +787,16 @@ export interface Game extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "setTournamentContract"
+  ): TypedContractMethod<
+    [tournamentAddress: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "tournamentContract"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "validateTeam"
   ): TypedContractMethod<
     [
@@ -721,6 +808,9 @@ export interface Game extends BaseContract {
     [boolean],
     "view"
   >;
+  getFunction(
+    nameOrSignature: "withdraw"
+  ): TypedContractMethod<[], [void], "nonpayable">;
 
   getEvent(
     key: "ExtraTimePlayed"
@@ -772,18 +862,18 @@ export interface Game extends BaseContract {
     PlayerScoredEvent.OutputObject
   >;
   getEvent(
-    key: "PlayerStatsUpdated"
-  ): TypedContractEvent<
-    PlayerStatsUpdatedEvent.InputTuple,
-    PlayerStatsUpdatedEvent.OutputTuple,
-    PlayerStatsUpdatedEvent.OutputObject
-  >;
-  getEvent(
     key: "TeamStatsCalculated"
   ): TypedContractEvent<
     TeamStatsCalculatedEvent.InputTuple,
     TeamStatsCalculatedEvent.OutputTuple,
     TeamStatsCalculatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournamentContractUpdated"
+  ): TypedContractEvent<
+    TournamentContractUpdatedEvent.InputTuple,
+    TournamentContractUpdatedEvent.OutputTuple,
+    TournamentContractUpdatedEvent.OutputObject
   >;
   getEvent(
     key: "TournamentMatchPlayed"
@@ -801,7 +891,7 @@ export interface Game extends BaseContract {
   >;
 
   filters: {
-    "ExtraTimePlayed(uint256,uint8,uint8)": TypedContractEvent<
+    "ExtraTimePlayed(uint256,uint256,uint8,uint8)": TypedContractEvent<
       ExtraTimePlayedEvent.InputTuple,
       ExtraTimePlayedEvent.OutputTuple,
       ExtraTimePlayedEvent.OutputObject
@@ -812,7 +902,7 @@ export interface Game extends BaseContract {
       ExtraTimePlayedEvent.OutputObject
     >;
 
-    "GoldenGoalPlayed(uint256,uint8,uint8)": TypedContractEvent<
+    "GoldenGoalPlayed(uint256,uint256,uint8,uint8)": TypedContractEvent<
       GoldenGoalPlayedEvent.InputTuple,
       GoldenGoalPlayedEvent.OutputTuple,
       GoldenGoalPlayedEvent.OutputObject
@@ -834,7 +924,7 @@ export interface Game extends BaseContract {
       MatchPlayedEvent.OutputObject
     >;
 
-    "MatchSnapshot(uint256,address,address,tuple,tuple)": TypedContractEvent<
+    "MatchSnapshot(uint256,uint256,address,address,tuple,tuple)": TypedContractEvent<
       MatchSnapshotEvent.InputTuple,
       MatchSnapshotEvent.OutputTuple,
       MatchSnapshotEvent.OutputObject
@@ -856,7 +946,7 @@ export interface Game extends BaseContract {
       NewMatchEvent.OutputObject
     >;
 
-    "PlayerMatchInfo(uint256,uint256,address,uint256,uint256,uint256,uint256,uint256,uint8,string)": TypedContractEvent<
+    "PlayerMatchInfo(uint256,uint256,uint256,address,uint256,uint256,uint256,uint256,uint256,uint8,uint8)": TypedContractEvent<
       PlayerMatchInfoEvent.InputTuple,
       PlayerMatchInfoEvent.OutputTuple,
       PlayerMatchInfoEvent.OutputObject
@@ -867,7 +957,7 @@ export interface Game extends BaseContract {
       PlayerMatchInfoEvent.OutputObject
     >;
 
-    "PlayerScored(uint256,uint256)": TypedContractEvent<
+    "PlayerScored(uint256,uint256,uint256)": TypedContractEvent<
       PlayerScoredEvent.InputTuple,
       PlayerScoredEvent.OutputTuple,
       PlayerScoredEvent.OutputObject
@@ -878,18 +968,7 @@ export interface Game extends BaseContract {
       PlayerScoredEvent.OutputObject
     >;
 
-    "PlayerStatsUpdated(uint256,uint256,string)": TypedContractEvent<
-      PlayerStatsUpdatedEvent.InputTuple,
-      PlayerStatsUpdatedEvent.OutputTuple,
-      PlayerStatsUpdatedEvent.OutputObject
-    >;
-    PlayerStatsUpdated: TypedContractEvent<
-      PlayerStatsUpdatedEvent.InputTuple,
-      PlayerStatsUpdatedEvent.OutputTuple,
-      PlayerStatsUpdatedEvent.OutputObject
-    >;
-
-    "TeamStatsCalculated(uint256,address,uint256,uint256)": TypedContractEvent<
+    "TeamStatsCalculated(uint256,uint256,address,uint256,uint256)": TypedContractEvent<
       TeamStatsCalculatedEvent.InputTuple,
       TeamStatsCalculatedEvent.OutputTuple,
       TeamStatsCalculatedEvent.OutputObject
@@ -900,7 +979,18 @@ export interface Game extends BaseContract {
       TeamStatsCalculatedEvent.OutputObject
     >;
 
-    "TournamentMatchPlayed(uint256,uint8,address,address,address,uint8,uint8)": TypedContractEvent<
+    "TournamentContractUpdated(address)": TypedContractEvent<
+      TournamentContractUpdatedEvent.InputTuple,
+      TournamentContractUpdatedEvent.OutputTuple,
+      TournamentContractUpdatedEvent.OutputObject
+    >;
+    TournamentContractUpdated: TypedContractEvent<
+      TournamentContractUpdatedEvent.InputTuple,
+      TournamentContractUpdatedEvent.OutputTuple,
+      TournamentContractUpdatedEvent.OutputObject
+    >;
+
+    "TournamentMatchPlayed(uint256,uint256,uint8,address,address,address,uint8,uint8)": TypedContractEvent<
       TournamentMatchPlayedEvent.InputTuple,
       TournamentMatchPlayedEvent.OutputTuple,
       TournamentMatchPlayedEvent.OutputObject

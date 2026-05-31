@@ -1,6 +1,7 @@
 import { formatEther } from "viem";
 
 import generateName from "../../utils/teamName";
+import { nativeTokenSymbol } from "../../../config/network";
 import type { MatchDetails } from "./types";
 
 interface MatchWithDetails {
@@ -62,7 +63,7 @@ const MatchSelector = ({
                 {Number(wager) > 0 && (
                   <div className="match-card-wager">
                     <span>Wager</span>
-                    <strong>{wager} POL</strong>
+                    <strong>{wager} {nativeTokenSymbol}</strong>
                   </div>
                 )}
               </button>
@@ -88,10 +89,10 @@ const MatchSelector = ({
             </p>
             <p>
               <strong>Wager Required:</strong>{" "}
-              {matchDetails.wagerRequired ? formatEther(matchDetails.wagerRequired) : "0"} POL
+              {matchDetails.wagerRequired ? formatEther(matchDetails.wagerRequired) : "0"} {nativeTokenSymbol}
             </p>
             <p>
-              <strong>Prize Pot:</strong> {matchDetails.pot ? formatEther(matchDetails.pot) : "0"} POL
+              <strong>Prize Pot:</strong> {matchDetails.pot ? formatEther(matchDetails.pot) : "0"} {nativeTokenSymbol}
             </p>
           </div>
         </div>

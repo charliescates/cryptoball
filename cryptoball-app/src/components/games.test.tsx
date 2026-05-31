@@ -17,10 +17,6 @@ vi.mock("./game-pages/show-matches", () => ({
   default: () => <div>Show Matches Page</div>,
 }));
 
-vi.mock("./game-pages/tournement-replays", () => ({
-  default: () => <div>Tournement Replays Page</div>,
-}));
-
 describe("Games", () => {
   it("redirects the index route to the start tab", async () => {
     render(
@@ -69,20 +65,4 @@ describe("Games", () => {
     expect(screen.getByRole("link", { name: /replays/i })).toHaveClass("active");
   });
 
-  it("switches to the tournament tab", async () => {
-    const user = userEvent.setup();
-
-    render(
-      <MemoryRouter initialEntries={["/games/start"]}>
-        <Routes>
-          <Route path="/games/*" element={<Games />} />
-        </Routes>
-      </MemoryRouter>,
-    );
-
-    await user.click(screen.getByRole("link", { name: /tournament/i }));
-
-    expect(screen.getByText("Tournement Replays Page")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /tournament/i })).toHaveClass("active");
-  });
 });

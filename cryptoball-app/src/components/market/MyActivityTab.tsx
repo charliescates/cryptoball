@@ -4,6 +4,8 @@ import { gql, request } from 'graphql-request'
 import { formatEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
+import { activeChain } from '../../config/network'
+import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
 import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type SubgraphListing } from './marketSubgraph'
 
@@ -114,6 +116,7 @@ export default function MyActivityTab() {
       address: marketContract.address,
       abi: marketContract.abi,
       functionName: 'withdraw',
+      chainId: activeChain.id,
       gas: 80_000n,
     })
   }
@@ -136,7 +139,7 @@ export default function MyActivityTab() {
     <div className="market-activity-layout">
       <div className="market-withdraw-amount">
         <span>Available to withdraw</span>
-        <strong>{formatEther(pendingAmount)} POL</strong>
+        <strong>{formatEther(pendingAmount)} {nativeTokenSymbol}</strong>
       </div>
       <button
         className="market-btn market-btn--primary"
@@ -170,11 +173,11 @@ export default function MyActivityTab() {
                   </div>
                   <div>
                     <dt>Your Bid</dt>
-                    <dd>{formatEther(listing.highestBid)} POL</dd>
+                    <dd>{formatEther(listing.highestBid)} {nativeTokenSymbol}</dd>
                   </div>
                   <div>
                     <dt>Buy Now</dt>
-                    <dd>{formatEther(listing.buyNowPrice)} POL</dd>
+                    <dd>{formatEther(listing.buyNowPrice)} {nativeTokenSymbol}</dd>
                   </div>
                 </dl>
               </li>
@@ -187,14 +190,14 @@ export default function MyActivityTab() {
         <section className="market-activity-section" aria-label="Listings you won">
           <h3>Won Listings</h3>
           <p className="market-step-label">
-            Buy now and finalized auction wins transfer the player directly to your wallet. The withdraw button above is only for POL refunds/seller proceeds.
+            Buy now and finalized auction wins transfer the player directly to your wallet. The withdraw button above is only for {nativeTokenSymbol} refunds/seller proceeds.
           </p>
           <ul className="market-activity-list" aria-label="Listings you won">
             {boughtNowWins.map((entry) => (
               <li key={`buy-now-${entry.id}`} className="market-activity-item">
                 <div>
                   <strong>Buy Now Win • Listing #{entry.listingId}</strong>
-                  <p>Paid {formatEther(BigInt(entry.price))} POL on {toDateLabel(entry.blockTimestamp)}</p>
+                  <p>Paid {formatEther(BigInt(entry.price))} {nativeTokenSymbol} on {toDateLabel(entry.blockTimestamp)}</p>
                 </div>
               </li>
             ))}
@@ -203,7 +206,7 @@ export default function MyActivityTab() {
               <li key={`finalized-${entry.id}`} className="market-activity-item">
                 <div>
                   <strong>Auction Win • Listing #{entry.listingId}</strong>
-                  <p>Finalized at {formatEther(BigInt(entry.amount))} POL on {toDateLabel(entry.blockTimestamp)}</p>
+                  <p>Finalized at {formatEther(BigInt(entry.amount))} {nativeTokenSymbol} on {toDateLabel(entry.blockTimestamp)}</p>
                 </div>
               </li>
             ))}

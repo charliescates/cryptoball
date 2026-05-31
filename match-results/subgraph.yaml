@@ -23,31 +23,31 @@ dataSources:
         - NewMatch
         - PlayerScored
         - PlayerMatchInfo
-        - PlayerStatsUpdated
         - TeamStatsCalculated
         - WinningsDistributed
+          - TournamentMatchPlayed
       abis:
         - name: Game
           file: ./abis/Game.json
       eventHandlers:
-        - event: MatchSnapshot(uint256,address,address,(uint256[3],uint256[3],uint256[3]),(uint256[3],uint256[3],uint256[3]))
+        - event: MatchSnapshot(uint256,uint256,address,address,(uint256[3],uint256[3],uint256[3]),(uint256[3],uint256[3],uint256[3]))
           handler: handleMatchSnapshot
         - event: MatchPlayed(uint256,uint8,uint8)
           handler: handleMatchPlayed
-        - event: ExtraTimePlayed(uint256,uint8,uint8)
+        - event: ExtraTimePlayed(uint256,uint256,uint8,uint8)
           handler: handleExtraTimePlayed
-        - event: GoldenGoalPlayed(uint256,uint8,uint8)
+        - event: GoldenGoalPlayed(uint256,uint256,uint8,uint8)
           handler: handleGoldenGoalPlayed
         - event: NewMatch(uint256)
           handler: handleNewMatch
-        - event: PlayerMatchInfo(uint256,uint256,address,uint256,uint256,uint256,uint256,uint256,uint8,string)
+        - event: PlayerMatchInfo(uint256,uint256,uint256,address,uint256,uint256,uint256,uint256,uint256,uint8,uint8)
           handler: handlePlayerMatchInfo
-        - event: PlayerScored(uint256,uint256)
+        - event: PlayerScored(uint256,uint256,uint256)
           handler: handlePlayerScored
-        - event: PlayerStatsUpdated(uint256,uint256,string)
-          handler: handlePlayerStatsUpdated
-        - event: TeamStatsCalculated(uint256,address,uint256,uint256)
+        - event: TeamStatsCalculated(uint256,uint256,address,uint256,uint256)
           handler: handleTeamStatsCalculated
         - event: WinningsDistributed(uint256,address,uint256,address,uint256,address,uint256)
           handler: handleWinningsDistributed
+        - event: TournamentMatchPlayed(indexed uint256,uint256,indexed uint8,address,address,address,uint8,uint8)
+          handler: handleTournamentMatchPlayed
       file: ./src/game.ts

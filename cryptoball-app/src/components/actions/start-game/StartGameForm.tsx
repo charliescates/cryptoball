@@ -1,6 +1,7 @@
 import type { FormEvent, ReactNode } from "react";
 
 import type { BaseError } from "viem";
+import { nativeTokenSymbol } from "../../../config/network";
 
 interface StartGameFormProps {
   awayAddress: string;
@@ -83,7 +84,7 @@ const StartGameForm = ({
               onChange={(event) => onWagerChange(event.target.value)}
               disabled={!editable}
             />
-            <span>POL</span>
+            <span>{nativeTokenSymbol}</span>
           </div>
         </div>
       </StartGameSection>

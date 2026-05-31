@@ -2,7 +2,6 @@ import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import JoinMatchPage from './game-pages/join-match-page';
 import ShowMatches from './game-pages/show-matches';
 import StartGamePage from './game-pages/start-game-page';
-import TournementReplays from './game-pages/tournement-replays';
 
 const Games = () => {
     return (
@@ -39,12 +38,6 @@ const Games = () => {
                         >
                             Replays
                         </NavLink>
-                        <NavLink
-                            to="tournament"
-                            className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
-                        >
-                            Tournament
-                        </NavLink>
                     </div>
                 </div>
 
@@ -54,7 +47,6 @@ const Games = () => {
                         <Route path="start" element={<StartGamePage />} />
                         <Route path="join" element={<JoinMatchPage />} />
                         <Route path="recent" element={<ShowMatches />} />
-                        <Route path="tournament" element={<TournementReplays />} />
                     </Routes>
                 </div>
             </div>

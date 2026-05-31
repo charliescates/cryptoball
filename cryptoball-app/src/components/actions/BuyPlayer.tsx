@@ -6,6 +6,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { academyContract } from "../../contracts/academyContract";
+import { activeChain } from "../../config/network";
 
 export type BuyPlayerProps = {
   playerId: bigint;
@@ -34,6 +35,7 @@ export function BuyPlayer({
       abi: academyContract.abi,
       functionName: "buyPlayer",
       args: [buyerAddress, playerId],
+      chainId: activeChain.id,
       value: price,
     });
   }

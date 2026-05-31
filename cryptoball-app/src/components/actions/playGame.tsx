@@ -1,14 +1,16 @@
 import { type FormEvent, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { parseEther } from "viem";
-import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
+import { activeChain } from "../../config/network";
 import { gameContract } from "../../contracts/gameContract";
 import MatchPreviewPanel from "./start-game/MatchPreviewPanel";
 import StartGameForm from "./start-game/StartGameForm";
 
 const StartGame = () => {
-  const { address } = useAccount();
+  const { address, chainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rematchHomeAddress = searchParams.get("home");
@@ -28,22 +30,32 @@ const StartGame = () => {
 
   const { data: hash, error, isPending, writeContract, reset } = useWriteContract();
 
-  const startGame = () => {
+  const startGame = async () => {
     reset();
+
+    if (chainId !== activeChain.id) {
+      await switchChainAsync({ chainId: activeChain.id });
+    }
 
     writeContract({
       address: gameContract.address,
       abi: gameContract.abi,
       functionName: "createGame",
       args: [parseEther(wager), homeAddress, awayAddress],
+      chainId: activeChain.id,
       gas: 1000000n,
     });
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setEditable(false);
-    startGame();
+    try {
+      await startGame();
+    } catch {
+      // Re-enable the form if wallet network switching is rejected.
+      setEditable(true);
+    }
   };
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({

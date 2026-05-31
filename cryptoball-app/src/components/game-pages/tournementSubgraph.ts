@@ -1,4 +1,5 @@
 import { request, gql } from 'graphql-request'
+import { matchResultsHeaders, matchResultsUrl } from './matchResultsQuery'
 
 // Update this URL with your actual deployed subgraph URL
 // Find it in your .env.local as VITE_TOURNAMENTS_SUBGRAPH_URL
@@ -9,7 +10,8 @@ export const TOURNAMENTS_SUBGRAPH_URL =
 
 export type SubgraphTournamentCreated = {
   id: string
-  tournementId: string
+  tournamentId: string
+  creator: string
   rounds: number
   entryFee: string
   minAttack?: number
@@ -23,9 +25,20 @@ export type SubgraphTournamentCreated = {
   transactionHash?: string
 }
 
+export type SubgraphTeamEntered = {
+  id: string
+  tournamentId: string
+  player: string
+  teamsEntered: number
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
 export type SubgraphTournamentMatchStarted = {
   id: string
-  tournementId: string
+  tournamentId: string
+  tournamentMatchId: string
   round: number
   homeAddress: string
   awayAddress: string
@@ -36,8 +49,84 @@ export type SubgraphTournamentMatchStarted = {
 
 export type SubgraphTournamentCompleted = {
   id: string
-  tournementId: string
+  tournamentId: string
   champion: string
+  championWinnings: string
+  executorFees: string
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export type SubgraphTournamentRoundAdvanced = {
+  id: string
+  tournamentId: string
+  completedRound: number
+  nextRound: number
+  teamsRemaining: number
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export type SubgraphTournamentReady = {
+  id: string
+  tournamentId: string
+  teamsCount: number
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export type SubgraphTournamentCancelled = {
+  id: string
+  tournamentId: string
+  cancelledBy: string
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export type SubgraphTournamentEntryRefunded = {
+  id: string
+  tournamentId: string
+  entrant: string
+  amount: string
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export type SubgraphTournamentRewardClaimed = {
+  id: string
+  tournamentId: string
+  champion: string
+  amount: string
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export type SubgraphTournamentExecutorCompensated = {
+  id: string
+  tournamentId: string
+  executor: string
+  executorFee: string
+  blockNumber: string
+  blockTimestamp: string
+  transactionHash: string
+}
+
+export type SubgraphTournamentMatchPlayed = {
+  id: string
+  tournamentId: string
+  tournamentMatchId: string
+  round: number
+  homeAddress: string
+  awayAddress: string
+  winner: string
+  homeScore: number
+  awayScore: number
   blockNumber: string
   blockTimestamp: string
   transactionHash: string
@@ -50,9 +139,10 @@ export function getGraphHeaders() {
 
 const QUERY_ALL_TOURNAMENTS = gql`
   query GetAllTournaments {
-    tournementCreateds(first: 1000, orderBy: tournementId, orderDirection: desc) {
+    tournementCreateds(first: 1000, orderBy: tournamentId, orderDirection: desc) {
       id
-      tournementId
+      tournamentId
+      creator
       rounds
       entryFee
       minAttack
@@ -65,9 +155,19 @@ const QUERY_ALL_TOURNAMENTS = gql`
       blockTimestamp
       transactionHash
     }
+    teamEntereds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      player
+      teamsEntered
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
     tournementMatchStarteds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
       id
-      tournementId
+      tournamentId
+      tournamentMatchId
       round
       homeAddress
       awayAddress
@@ -77,8 +177,82 @@ const QUERY_ALL_TOURNAMENTS = gql`
     }
     tournementCompleteds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
       id
-      tournementId
+      tournamentId
       champion
+      championWinnings
+      executorFees
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
+    tournementRoundAdvanceds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      completedRound
+      nextRound
+      teamsRemaining
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
+    tournementReadies(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      teamsCount
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
+    tournementCancelleds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      cancelledBy
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
+    tournementEntryRefundeds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      entrant
+      amount
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
+    tournementRewardClaimeds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      champion
+      amount
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
+    tournementExecutorCompensateds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      executor
+      executorFee
+      blockNumber
+      blockTimestamp
+      transactionHash
+    }
+  }
+`
+
+const QUERY_TOURNAMENT_MATCH_RESULTS = gql`
+  query GetTournamentMatchResults {
+    tournamentMatchPlayeds(first: 2000, orderBy: blockNumber, orderDirection: desc) {
+      id
+      tournamentId
+      tournamentMatchId
+      round
+      homeAddress
+      awayAddress
+      winner
+      homeScore
+      awayScore
       blockNumber
       blockTimestamp
       transactionHash
@@ -91,14 +265,33 @@ export async function fetchTournamentsFromSubgraph() {
     console.log('Fetching tournaments from subgraph:', TOURNAMENTS_SUBGRAPH_URL)
     const data = await request<{
       tournementCreateds: SubgraphTournamentCreated[]
+      teamEntereds: SubgraphTeamEntered[]
       tournementMatchStarteds: SubgraphTournamentMatchStarted[]
       tournementCompleteds: SubgraphTournamentCompleted[]
+      tournementRoundAdvanceds: SubgraphTournamentRoundAdvanced[]
+      tournementReadies: SubgraphTournamentReady[]
+      tournementCancelleds: SubgraphTournamentCancelled[]
+      tournementEntryRefundeds: SubgraphTournamentEntryRefunded[]
+      tournementRewardClaimeds: SubgraphTournamentRewardClaimed[]
+      tournementExecutorCompensateds: SubgraphTournamentExecutorCompensated[]
     }>(TOURNAMENTS_SUBGRAPH_URL, QUERY_ALL_TOURNAMENTS, {}, getGraphHeaders())
 
     console.log('Tournaments subgraph response:', data)
     return data
   } catch (error) {
     console.error('Error fetching tournaments from subgraph:', error)
+    throw error
+  }
+}
+
+export async function fetchTournamentMatchResultsFromSubgraph() {
+  try {
+    const data = await request<{
+      tournamentMatchPlayeds: SubgraphTournamentMatchPlayed[]
+    }>(matchResultsUrl, QUERY_TOURNAMENT_MATCH_RESULTS, {}, matchResultsHeaders)
+    return data
+  } catch (error) {
+    console.error('Error fetching tournament match results from subgraph:', error)
     throw error
   }
 }

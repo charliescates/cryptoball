@@ -23,9 +23,41 @@ import type {
   TypedContractMethod,
 } from "../common";
 
+export declare namespace Game {
+  export type TeamStruct = {
+    attackingPlayers: [BigNumberish, BigNumberish, BigNumberish];
+    midfieldPlayers: [BigNumberish, BigNumberish, BigNumberish];
+    defensivePlayers: [BigNumberish, BigNumberish, BigNumberish];
+  };
+
+  export type TeamStructOutput = [
+    attackingPlayers: [bigint, bigint, bigint],
+    midfieldPlayers: [bigint, bigint, bigint],
+    defensivePlayers: [bigint, bigint, bigint]
+  ] & {
+    attackingPlayers: [bigint, bigint, bigint];
+    midfieldPlayers: [bigint, bigint, bigint];
+    defensivePlayers: [bigint, bigint, bigint];
+  };
+}
+
 export declare namespace Tournement {
+  export type TeamPlayerDetailsStruct = {
+    playerId: BigNumberish;
+    attack: BigNumberish;
+    defense: BigNumberish;
+    playerType: BigNumberish;
+  };
+
+  export type TeamPlayerDetailsStructOutput = [
+    playerId: bigint,
+    attack: bigint,
+    defense: bigint,
+    playerType: bigint
+  ] & { playerId: bigint; attack: bigint; defense: bigint; playerType: bigint };
+
   export type TournementSummaryStruct = {
-    tournementId: BigNumberish;
+    tournamentId: BigNumberish;
     rounds: BigNumberish;
     entryFee: BigNumberish;
     minAttack: BigNumberish;
@@ -34,14 +66,18 @@ export declare namespace Tournement {
     maxDefence: BigNumberish;
     includeTypes: BigNumberish[];
     excludeTypes: BigNumberish[];
+    creator: AddressLike;
     teamsEntered: BigNumberish;
     maxTeams: BigNumberish;
     isOpen: boolean;
+    isReady: boolean;
+    cancelled: boolean;
+    currentRound: BigNumberish;
     champion: AddressLike;
   };
 
   export type TournementSummaryStructOutput = [
-    tournementId: bigint,
+    tournamentId: bigint,
     rounds: bigint,
     entryFee: bigint,
     minAttack: bigint,
@@ -50,12 +86,16 @@ export declare namespace Tournement {
     maxDefence: bigint,
     includeTypes: bigint[],
     excludeTypes: bigint[],
+    creator: string,
     teamsEntered: bigint,
     maxTeams: bigint,
     isOpen: boolean,
+    isReady: boolean,
+    cancelled: boolean,
+    currentRound: bigint,
     champion: string
   ] & {
-    tournementId: bigint;
+    tournamentId: bigint;
     rounds: bigint;
     entryFee: bigint;
     minAttack: bigint;
@@ -64,9 +104,13 @@ export declare namespace Tournement {
     maxDefence: bigint;
     includeTypes: bigint[];
     excludeTypes: bigint[];
+    creator: string;
     teamsEntered: bigint;
     maxTeams: bigint;
     isOpen: boolean;
+    isReady: boolean;
+    cancelled: boolean;
+    currentRound: bigint;
     champion: string;
   };
 }
@@ -74,23 +118,50 @@ export declare namespace Tournement {
 export interface TournementInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "MIN_ENTRY_FEE"
+      | "cancel"
+      | "claimCancelledEntry"
       | "claimReward"
       | "create"
       | "enter"
+      | "getCurrentRoundEntrants"
       | "getTournements"
       | "hasClaimedReward"
       | "hasEntered"
+      | "hasRefundedEntry"
       | "start"
+      | "tournementExecutorFees"
+      | "tournementMatchCounts"
       | "tournements"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "TeamEntered"
+      | "TournementCancelled"
       | "TournementCompleted"
+      | "TournementCompletedSummary"
       | "TournementCreated"
+      | "TournementEntryRefunded"
+      | "TournementExecutorCompensated"
       | "TournementMatchStarted"
+      | "TournementReady"
+      | "TournementRewardClaimed"
+      | "TournementRoundAdvanced"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "MIN_ENTRY_FEE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "cancel",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "claimCancelledEntry",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "claimReward",
     values: [BigNumberish]
@@ -118,6 +189,10 @@ export interface TournementInterface extends Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "getCurrentRoundEntrants",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getTournements",
     values?: undefined
   ): string;
@@ -129,18 +204,43 @@ export interface TournementInterface extends Interface {
     functionFragment: "hasEntered",
     values: [BigNumberish, AddressLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "hasRefundedEntry",
+    values: [BigNumberish, AddressLike]
+  ): string;
   encodeFunctionData(functionFragment: "start", values: [BigNumberish]): string;
+  encodeFunctionData(
+    functionFragment: "tournementExecutorFees",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "tournementMatchCounts",
+    values: [BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "tournements",
     values: [BigNumberish]
   ): string;
 
   decodeFunctionResult(
+    functionFragment: "MIN_ENTRY_FEE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "cancel", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "claimCancelledEntry",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "claimReward",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "create", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "enter", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getCurrentRoundEntrants",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getTournements",
     data: BytesLike
@@ -150,19 +250,109 @@ export interface TournementInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "hasEntered", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "hasRefundedEntry",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "start", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "tournementExecutorFees",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "tournementMatchCounts",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "tournements",
     data: BytesLike
   ): Result;
 }
 
-export namespace TournementCompletedEvent {
-  export type InputTuple = [tournementId: BigNumberish, champion: AddressLike];
-  export type OutputTuple = [tournementId: bigint, champion: string];
+export namespace TeamEnteredEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    player: AddressLike,
+    teamsEntered: BigNumberish
+  ];
+  export type OutputTuple = [
+    tournamentId: bigint,
+    player: string,
+    teamsEntered: bigint
+  ];
   export interface OutputObject {
-    tournementId: bigint;
+    tournamentId: bigint;
+    player: string;
+    teamsEntered: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementCancelledEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    cancelledBy: AddressLike
+  ];
+  export type OutputTuple = [tournamentId: bigint, cancelledBy: string];
+  export interface OutputObject {
+    tournamentId: bigint;
+    cancelledBy: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementCompletedEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    champion: AddressLike,
+    championWinnings: BigNumberish,
+    winningTeam: Game.TeamStruct,
+    winningTeamPlayers: Tournement.TeamPlayerDetailsStruct[]
+  ];
+  export type OutputTuple = [
+    tournamentId: bigint,
+    champion: string,
+    championWinnings: bigint,
+    winningTeam: Game.TeamStructOutput,
+    winningTeamPlayers: Tournement.TeamPlayerDetailsStructOutput[]
+  ];
+  export interface OutputObject {
+    tournamentId: bigint;
     champion: string;
+    championWinnings: bigint;
+    winningTeam: Game.TeamStructOutput;
+    winningTeamPlayers: Tournement.TeamPlayerDetailsStructOutput[];
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementCompletedSummaryEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    champion: AddressLike,
+    championWinnings: BigNumberish,
+    executorFees: BigNumberish
+  ];
+  export type OutputTuple = [
+    tournamentId: bigint,
+    champion: string,
+    championWinnings: bigint,
+    executorFees: bigint
+  ];
+  export interface OutputObject {
+    tournamentId: bigint;
+    champion: string;
+    championWinnings: bigint;
+    executorFees: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -172,7 +362,8 @@ export namespace TournementCompletedEvent {
 
 export namespace TournementCreatedEvent {
   export type InputTuple = [
-    tournementId: BigNumberish,
+    tournamentId: BigNumberish,
+    creator: AddressLike,
     rounds: BigNumberish,
     entryFee: BigNumberish,
     minAttack: BigNumberish,
@@ -183,7 +374,8 @@ export namespace TournementCreatedEvent {
     excludeTypes: BigNumberish[]
   ];
   export type OutputTuple = [
-    tournementId: bigint,
+    tournamentId: bigint,
+    creator: string,
     rounds: bigint,
     entryFee: bigint,
     minAttack: bigint,
@@ -194,7 +386,8 @@ export namespace TournementCreatedEvent {
     excludeTypes: bigint[]
   ];
   export interface OutputObject {
-    tournementId: bigint;
+    tournamentId: bigint;
+    creator: string;
     rounds: bigint;
     entryFee: bigint;
     minAttack: bigint;
@@ -210,24 +403,134 @@ export namespace TournementCreatedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace TournementEntryRefundedEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    entrant: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [
+    tournamentId: bigint,
+    entrant: string,
+    amount: bigint
+  ];
+  export interface OutputObject {
+    tournamentId: bigint;
+    entrant: string;
+    amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementExecutorCompensatedEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    executor: AddressLike,
+    executorFee: BigNumberish
+  ];
+  export type OutputTuple = [
+    tournamentId: bigint,
+    executor: string,
+    executorFee: bigint
+  ];
+  export interface OutputObject {
+    tournamentId: bigint;
+    executor: string;
+    executorFee: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace TournementMatchStartedEvent {
   export type InputTuple = [
-    tournementId: BigNumberish,
+    tournamentId: BigNumberish,
+    tournamentMatchId: BigNumberish,
     round: BigNumberish,
     homeAddress: AddressLike,
     awayAddress: AddressLike
   ];
   export type OutputTuple = [
-    tournementId: bigint,
+    tournamentId: bigint,
+    tournamentMatchId: bigint,
     round: bigint,
     homeAddress: string,
     awayAddress: string
   ];
   export interface OutputObject {
-    tournementId: bigint;
+    tournamentId: bigint;
+    tournamentMatchId: bigint;
     round: bigint;
     homeAddress: string;
     awayAddress: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementReadyEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    teamsCount: BigNumberish
+  ];
+  export type OutputTuple = [tournamentId: bigint, teamsCount: bigint];
+  export interface OutputObject {
+    tournamentId: bigint;
+    teamsCount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementRewardClaimedEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    champion: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [
+    tournamentId: bigint,
+    champion: string,
+    amount: bigint
+  ];
+  export interface OutputObject {
+    tournamentId: bigint;
+    champion: string;
+    amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementRoundAdvancedEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    completedRound: BigNumberish,
+    nextRound: BigNumberish,
+    teamsRemaining: BigNumberish
+  ];
+  export type OutputTuple = [
+    tournamentId: bigint,
+    completedRound: bigint,
+    nextRound: bigint,
+    teamsRemaining: bigint
+  ];
+  export interface OutputObject {
+    tournamentId: bigint;
+    completedRound: bigint;
+    nextRound: bigint;
+    teamsRemaining: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -278,8 +581,22 @@ export interface Tournement extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  MIN_ENTRY_FEE: TypedContractMethod<[], [bigint], "view">;
+
+  cancel: TypedContractMethod<
+    [tournamentId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
+  claimCancelledEntry: TypedContractMethod<
+    [tournamentId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   claimReward: TypedContractMethod<
-    [tournementId: BigNumberish],
+    [tournamentId: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -301,13 +618,19 @@ export interface Tournement extends BaseContract {
 
   enter: TypedContractMethod<
     [
-      tournementId: BigNumberish,
+      tournamentId: BigNumberish,
       attackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
       midfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
       defensivePlayers: [BigNumberish, BigNumberish, BigNumberish]
     ],
     [void],
     "payable"
+  >;
+
+  getCurrentRoundEntrants: TypedContractMethod<
+    [tournamentId: BigNumberish],
+    [string[]],
+    "view"
   >;
 
   getTournements: TypedContractMethod<
@@ -328,23 +651,56 @@ export interface Tournement extends BaseContract {
     "view"
   >;
 
+  hasRefundedEntry: TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+
   start: TypedContractMethod<
-    [tournementId: BigNumberish],
+    [tournamentId: BigNumberish],
     [void],
     "nonpayable"
+  >;
+
+  tournementExecutorFees: TypedContractMethod<
+    [arg0: BigNumberish],
+    [bigint],
+    "view"
+  >;
+
+  tournementMatchCounts: TypedContractMethod<
+    [arg0: BigNumberish],
+    [bigint],
+    "view"
   >;
 
   tournements: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, string] & {
+      [
+        bigint,
+        bigint,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        string
+      ] & {
         rounds: bigint;
         entryFee: bigint;
+        creator: string;
         minAttack: bigint;
         minDefence: bigint;
         maxAttack: bigint;
         maxDefence: bigint;
         teamsEntered: bigint;
+        currentRound: bigint;
+        cancelled: boolean;
         champion: string;
       }
     ],
@@ -356,8 +712,17 @@ export interface Tournement extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "MIN_ENTRY_FEE"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "cancel"
+  ): TypedContractMethod<[tournamentId: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "claimCancelledEntry"
+  ): TypedContractMethod<[tournamentId: BigNumberish], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "claimReward"
-  ): TypedContractMethod<[tournementId: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<[tournamentId: BigNumberish], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "create"
   ): TypedContractMethod<
@@ -378,7 +743,7 @@ export interface Tournement extends BaseContract {
     nameOrSignature: "enter"
   ): TypedContractMethod<
     [
-      tournementId: BigNumberish,
+      tournamentId: BigNumberish,
       attackingPlayers: [BigNumberish, BigNumberish, BigNumberish],
       midfieldPlayers: [BigNumberish, BigNumberish, BigNumberish],
       defensivePlayers: [BigNumberish, BigNumberish, BigNumberish]
@@ -386,6 +751,9 @@ export interface Tournement extends BaseContract {
     [void],
     "payable"
   >;
+  getFunction(
+    nameOrSignature: "getCurrentRoundEntrants"
+  ): TypedContractMethod<[tournamentId: BigNumberish], [string[]], "view">;
   getFunction(
     nameOrSignature: "getTournements"
   ): TypedContractMethod<
@@ -408,21 +776,49 @@ export interface Tournement extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "hasRefundedEntry"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: AddressLike],
+    [boolean],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "start"
-  ): TypedContractMethod<[tournementId: BigNumberish], [void], "nonpayable">;
+  ): TypedContractMethod<[tournamentId: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "tournementExecutorFees"
+  ): TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "tournementMatchCounts"
+  ): TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
   getFunction(
     nameOrSignature: "tournements"
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [bigint, bigint, bigint, bigint, bigint, bigint, bigint, string] & {
+      [
+        bigint,
+        bigint,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        boolean,
+        string
+      ] & {
         rounds: bigint;
         entryFee: bigint;
+        creator: string;
         minAttack: bigint;
         minDefence: bigint;
         maxAttack: bigint;
         maxDefence: bigint;
         teamsEntered: bigint;
+        currentRound: bigint;
+        cancelled: boolean;
         champion: string;
       }
     ],
@@ -430,11 +826,32 @@ export interface Tournement extends BaseContract {
   >;
 
   getEvent(
+    key: "TeamEntered"
+  ): TypedContractEvent<
+    TeamEnteredEvent.InputTuple,
+    TeamEnteredEvent.OutputTuple,
+    TeamEnteredEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournementCancelled"
+  ): TypedContractEvent<
+    TournementCancelledEvent.InputTuple,
+    TournementCancelledEvent.OutputTuple,
+    TournementCancelledEvent.OutputObject
+  >;
+  getEvent(
     key: "TournementCompleted"
   ): TypedContractEvent<
     TournementCompletedEvent.InputTuple,
     TournementCompletedEvent.OutputTuple,
     TournementCompletedEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournementCompletedSummary"
+  ): TypedContractEvent<
+    TournementCompletedSummaryEvent.InputTuple,
+    TournementCompletedSummaryEvent.OutputTuple,
+    TournementCompletedSummaryEvent.OutputObject
   >;
   getEvent(
     key: "TournementCreated"
@@ -444,15 +861,72 @@ export interface Tournement extends BaseContract {
     TournementCreatedEvent.OutputObject
   >;
   getEvent(
+    key: "TournementEntryRefunded"
+  ): TypedContractEvent<
+    TournementEntryRefundedEvent.InputTuple,
+    TournementEntryRefundedEvent.OutputTuple,
+    TournementEntryRefundedEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournementExecutorCompensated"
+  ): TypedContractEvent<
+    TournementExecutorCompensatedEvent.InputTuple,
+    TournementExecutorCompensatedEvent.OutputTuple,
+    TournementExecutorCompensatedEvent.OutputObject
+  >;
+  getEvent(
     key: "TournementMatchStarted"
   ): TypedContractEvent<
     TournementMatchStartedEvent.InputTuple,
     TournementMatchStartedEvent.OutputTuple,
     TournementMatchStartedEvent.OutputObject
   >;
+  getEvent(
+    key: "TournementReady"
+  ): TypedContractEvent<
+    TournementReadyEvent.InputTuple,
+    TournementReadyEvent.OutputTuple,
+    TournementReadyEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournementRewardClaimed"
+  ): TypedContractEvent<
+    TournementRewardClaimedEvent.InputTuple,
+    TournementRewardClaimedEvent.OutputTuple,
+    TournementRewardClaimedEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournementRoundAdvanced"
+  ): TypedContractEvent<
+    TournementRoundAdvancedEvent.InputTuple,
+    TournementRoundAdvancedEvent.OutputTuple,
+    TournementRoundAdvancedEvent.OutputObject
+  >;
 
   filters: {
-    "TournementCompleted(uint256,address)": TypedContractEvent<
+    "TeamEntered(uint256,address,uint8)": TypedContractEvent<
+      TeamEnteredEvent.InputTuple,
+      TeamEnteredEvent.OutputTuple,
+      TeamEnteredEvent.OutputObject
+    >;
+    TeamEntered: TypedContractEvent<
+      TeamEnteredEvent.InputTuple,
+      TeamEnteredEvent.OutputTuple,
+      TeamEnteredEvent.OutputObject
+    >;
+
+    "TournementCancelled(uint256,address)": TypedContractEvent<
+      TournementCancelledEvent.InputTuple,
+      TournementCancelledEvent.OutputTuple,
+      TournementCancelledEvent.OutputObject
+    >;
+    TournementCancelled: TypedContractEvent<
+      TournementCancelledEvent.InputTuple,
+      TournementCancelledEvent.OutputTuple,
+      TournementCancelledEvent.OutputObject
+    >;
+
+    "TournementCompleted(uint256,address,uint256,tuple,tuple[])": TypedContractEvent<
       TournementCompletedEvent.InputTuple,
       TournementCompletedEvent.OutputTuple,
       TournementCompletedEvent.OutputObject
@@ -463,7 +937,18 @@ export interface Tournement extends BaseContract {
       TournementCompletedEvent.OutputObject
     >;
 
-    "TournementCreated(uint256,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])": TypedContractEvent<
+    "TournementCompletedSummary(uint256,address,uint256,uint256)": TypedContractEvent<
+      TournementCompletedSummaryEvent.InputTuple,
+      TournementCompletedSummaryEvent.OutputTuple,
+      TournementCompletedSummaryEvent.OutputObject
+    >;
+    TournementCompletedSummary: TypedContractEvent<
+      TournementCompletedSummaryEvent.InputTuple,
+      TournementCompletedSummaryEvent.OutputTuple,
+      TournementCompletedSummaryEvent.OutputObject
+    >;
+
+    "TournementCreated(uint256,address,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])": TypedContractEvent<
       TournementCreatedEvent.InputTuple,
       TournementCreatedEvent.OutputTuple,
       TournementCreatedEvent.OutputObject
@@ -474,7 +959,29 @@ export interface Tournement extends BaseContract {
       TournementCreatedEvent.OutputObject
     >;
 
-    "TournementMatchStarted(uint256,uint8,address,address)": TypedContractEvent<
+    "TournementEntryRefunded(uint256,address,uint256)": TypedContractEvent<
+      TournementEntryRefundedEvent.InputTuple,
+      TournementEntryRefundedEvent.OutputTuple,
+      TournementEntryRefundedEvent.OutputObject
+    >;
+    TournementEntryRefunded: TypedContractEvent<
+      TournementEntryRefundedEvent.InputTuple,
+      TournementEntryRefundedEvent.OutputTuple,
+      TournementEntryRefundedEvent.OutputObject
+    >;
+
+    "TournementExecutorCompensated(uint256,address,uint256)": TypedContractEvent<
+      TournementExecutorCompensatedEvent.InputTuple,
+      TournementExecutorCompensatedEvent.OutputTuple,
+      TournementExecutorCompensatedEvent.OutputObject
+    >;
+    TournementExecutorCompensated: TypedContractEvent<
+      TournementExecutorCompensatedEvent.InputTuple,
+      TournementExecutorCompensatedEvent.OutputTuple,
+      TournementExecutorCompensatedEvent.OutputObject
+    >;
+
+    "TournementMatchStarted(uint256,uint256,uint8,address,address)": TypedContractEvent<
       TournementMatchStartedEvent.InputTuple,
       TournementMatchStartedEvent.OutputTuple,
       TournementMatchStartedEvent.OutputObject
@@ -483,6 +990,39 @@ export interface Tournement extends BaseContract {
       TournementMatchStartedEvent.InputTuple,
       TournementMatchStartedEvent.OutputTuple,
       TournementMatchStartedEvent.OutputObject
+    >;
+
+    "TournementReady(uint256,uint8)": TypedContractEvent<
+      TournementReadyEvent.InputTuple,
+      TournementReadyEvent.OutputTuple,
+      TournementReadyEvent.OutputObject
+    >;
+    TournementReady: TypedContractEvent<
+      TournementReadyEvent.InputTuple,
+      TournementReadyEvent.OutputTuple,
+      TournementReadyEvent.OutputObject
+    >;
+
+    "TournementRewardClaimed(uint256,address,uint256)": TypedContractEvent<
+      TournementRewardClaimedEvent.InputTuple,
+      TournementRewardClaimedEvent.OutputTuple,
+      TournementRewardClaimedEvent.OutputObject
+    >;
+    TournementRewardClaimed: TypedContractEvent<
+      TournementRewardClaimedEvent.InputTuple,
+      TournementRewardClaimedEvent.OutputTuple,
+      TournementRewardClaimedEvent.OutputObject
+    >;
+
+    "TournementRoundAdvanced(uint256,uint8,uint8,uint8)": TypedContractEvent<
+      TournementRoundAdvancedEvent.InputTuple,
+      TournementRoundAdvancedEvent.OutputTuple,
+      TournementRoundAdvancedEvent.OutputObject
+    >;
+    TournementRoundAdvanced: TypedContractEvent<
+      TournementRoundAdvancedEvent.InputTuple,
+      TournementRoundAdvancedEvent.OutputTuple,
+      TournementRoundAdvancedEvent.OutputObject
     >;
   };
 }
