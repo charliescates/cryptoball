@@ -8,6 +8,7 @@ import type {
   FunctionFragment,
   Result,
   Interface,
+  EventFragment,
   AddressLike,
   ContractRunner,
   ContractMethod,
@@ -17,6 +18,7 @@ import type {
   TypedContractEvent,
   TypedDeferredTopicFilter,
   TypedEventLog,
+  TypedLogDescription,
   TypedListener,
   TypedContractMethod,
 } from "../common";
@@ -52,20 +54,33 @@ export interface AcademyInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "EXTRACT_ADDRESS"
+      | "addDepositor"
       | "buyPlayer"
       | "calculateAcademyPrice"
       | "deposit"
+      | "depositors"
       | "extract"
       | "getAcademyPlayers"
       | "getBalance"
       | "getPlayerValue"
       | "onERC721Received"
+      | "owner"
       | "playerValue"
+      | "removeDepositor"
+      | "transferOwnership"
   ): FunctionFragment;
+
+  getEvent(
+    nameOrSignatureOrTopic: "DepositorAdded" | "DepositorRemoved"
+  ): EventFragment;
 
   encodeFunctionData(
     functionFragment: "EXTRACT_ADDRESS",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "addDepositor",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "buyPlayer",
@@ -76,6 +91,10 @@ export interface AcademyInterface extends Interface {
     values: [BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "deposit", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "depositors",
+    values: [AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "extract",
     values: [BigNumberish]
@@ -96,13 +115,26 @@ export interface AcademyInterface extends Interface {
     functionFragment: "onERC721Received",
     values: [AddressLike, AddressLike, BigNumberish, BytesLike]
   ): string;
+  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "playerValue",
     values: [BigNumberish]
   ): string;
+  encodeFunctionData(
+    functionFragment: "removeDepositor",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "transferOwnership",
+    values: [AddressLike]
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "EXTRACT_ADDRESS",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "addDepositor",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "buyPlayer", data: BytesLike): Result;
@@ -111,6 +143,7 @@ export interface AcademyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "depositors", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "extract", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getAcademyPlayers",
@@ -125,10 +158,43 @@ export interface AcademyInterface extends Interface {
     functionFragment: "onERC721Received",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "playerValue",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "removeDepositor",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "transferOwnership",
+    data: BytesLike
+  ): Result;
+}
+
+export namespace DepositorAddedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace DepositorRemovedEvent {
+  export type InputTuple = [account: AddressLike];
+  export type OutputTuple = [account: string];
+  export interface OutputObject {
+    account: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export interface Academy extends BaseContract {
@@ -176,6 +242,12 @@ export interface Academy extends BaseContract {
 
   EXTRACT_ADDRESS: TypedContractMethod<[], [string], "view">;
 
+  addDepositor: TypedContractMethod<
+    [account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   buyPlayer: TypedContractMethod<
     [toAccount: AddressLike, playerId: BigNumberish],
     [void],
@@ -189,6 +261,8 @@ export interface Academy extends BaseContract {
   >;
 
   deposit: TypedContractMethod<[], [void], "payable">;
+
+  depositors: TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
 
   extract: TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
 
@@ -208,7 +282,21 @@ export interface Academy extends BaseContract {
     "view"
   >;
 
+  owner: TypedContractMethod<[], [string], "view">;
+
   playerValue: TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
+
+  removeDepositor: TypedContractMethod<
+    [account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  transferOwnership: TypedContractMethod<
+    [newOwner: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -217,6 +305,9 @@ export interface Academy extends BaseContract {
   getFunction(
     nameOrSignature: "EXTRACT_ADDRESS"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "addDepositor"
+  ): TypedContractMethod<[account: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "buyPlayer"
   ): TypedContractMethod<
@@ -234,6 +325,9 @@ export interface Academy extends BaseContract {
   getFunction(
     nameOrSignature: "deposit"
   ): TypedContractMethod<[], [void], "payable">;
+  getFunction(
+    nameOrSignature: "depositors"
+  ): TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
   getFunction(
     nameOrSignature: "extract"
   ): TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
@@ -254,8 +348,54 @@ export interface Academy extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "playerValue"
   ): TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "removeDepositor"
+  ): TypedContractMethod<[account: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "transferOwnership"
+  ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
 
-  filters: {};
+  getEvent(
+    key: "DepositorAdded"
+  ): TypedContractEvent<
+    DepositorAddedEvent.InputTuple,
+    DepositorAddedEvent.OutputTuple,
+    DepositorAddedEvent.OutputObject
+  >;
+  getEvent(
+    key: "DepositorRemoved"
+  ): TypedContractEvent<
+    DepositorRemovedEvent.InputTuple,
+    DepositorRemovedEvent.OutputTuple,
+    DepositorRemovedEvent.OutputObject
+  >;
+
+  filters: {
+    "DepositorAdded(address)": TypedContractEvent<
+      DepositorAddedEvent.InputTuple,
+      DepositorAddedEvent.OutputTuple,
+      DepositorAddedEvent.OutputObject
+    >;
+    DepositorAdded: TypedContractEvent<
+      DepositorAddedEvent.InputTuple,
+      DepositorAddedEvent.OutputTuple,
+      DepositorAddedEvent.OutputObject
+    >;
+
+    "DepositorRemoved(address)": TypedContractEvent<
+      DepositorRemovedEvent.InputTuple,
+      DepositorRemovedEvent.OutputTuple,
+      DepositorRemovedEvent.OutputObject
+    >;
+    DepositorRemoved: TypedContractEvent<
+      DepositorRemovedEvent.InputTuple,
+      DepositorRemovedEvent.OutputTuple,
+      DepositorRemovedEvent.OutputObject
+    >;
+  };
 }

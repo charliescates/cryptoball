@@ -30,6 +30,10 @@ const env = {
     getArg(argv, "buyer-one-index", "buyeroneindex") ?? process.env.SEED_BUYER_ONE_INDEX,
   SEED_BUYER_TWO_INDEX:
     getArg(argv, "buyer-two-index", "buyertwoindex") ?? process.env.SEED_BUYER_TWO_INDEX,
+  SEED_BUYER_THREE_INDEX:
+    getArg(argv, "buyer-three-index", "buyerthreeindex") ?? process.env.SEED_BUYER_THREE_INDEX,
+  SEED_BUYER_FOUR_INDEX:
+    getArg(argv, "buyer-four-index", "buyerfourindex") ?? process.env.SEED_BUYER_FOUR_INDEX,
   SEED_DEPOSIT_ETH:
     getArg(argv, "deposit-eth", "depositeth") ?? process.env.SEED_DEPOSIT_ETH
 };

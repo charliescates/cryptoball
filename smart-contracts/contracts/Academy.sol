@@ -18,6 +18,22 @@ contract Academy is IERC721Receiver, ReentrancyGuard {
 
     mapping(uint256 => uint256) public playerValue;
 
+    address public owner;
+    mapping(address => bool) public depositors;
+
+    event DepositorAdded(address indexed account);
+    event DepositorRemoved(address indexed account);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the owner");
+        _;
+    }
+
+    modifier onlyDepositor() {
+        require(depositors[msg.sender], "Not an authorized depositor");
+        _;
+    }
+
     struct AcademyPlayer {
         uint256 id;
         uint attack;
@@ -29,9 +45,26 @@ contract Academy is IERC721Receiver, ReentrancyGuard {
 
     constructor(address playerTokenAddress) {
         playerToken = PlayerToken(playerTokenAddress);
+        owner = msg.sender;
     }
 
-    function deposit() external payable {
+    function addDepositor(address account) external onlyOwner {
+        require(account != address(0), "Invalid address");
+        depositors[account] = true;
+        emit DepositorAdded(account);
+    }
+
+    function removeDepositor(address account) external onlyOwner {
+        depositors[account] = false;
+        emit DepositorRemoved(account);
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "Invalid address");
+        owner = newOwner;
+    }
+
+    function deposit() external payable onlyDepositor {
         require(msg.value > 0, "You must send some ether to deposit");
 
         if (getBalance() > 0.004 ether) {
@@ -41,14 +74,10 @@ contract Academy is IERC721Receiver, ReentrancyGuard {
 
             (, , , , uint potential, , , ) = playerToken.getPlayerAttributes(id);
             playerValue[id] = calculateAcademyPrice(attack, defense, potential);
-            console.log("Player %d minted with value %d", id, playerValue[id]);
+
+            // Keep deposit execution lean; per-player logs here can exhaust gas in tournament finals.
             for (uint i = 1; i < id; i++) {
                 playerValue[i] = (playerValue[i] * 9) / 10;
-                console.log(
-                    "Player %d value updated to %d",
-                    i,
-                    playerValue[i]
-                );
             }
         }
     }
@@ -145,7 +174,7 @@ contract Academy is IERC721Receiver, ReentrancyGuard {
         return players;
     }
 
-    function extract(uint256 amount) external nonReentrant {
+    function extract(uint256 amount) external nonReentrant onlyOwner {
         require(amount > 0, "Amount must be greater than zero");
         require(address(this).balance >= amount, "Insufficient contract balance");
 

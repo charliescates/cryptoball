@@ -6,6 +6,8 @@ type ParsedArgs = {
   playersPerBuyer: number;
   buyerOneIndex: number;
   buyerTwoIndex: number;
+  buyerThreeIndex: number;
+  buyerFourIndex: number;
   depositEth: string;
 };
 
@@ -43,7 +45,7 @@ function parseArgs(argv: string[]): ParsedArgs {
     academyAddress: getArg("academy", "academy-address", "academyaddress") ?? process.env.ACADEMY_ADDRESS,
     newPlayers: parsePositiveInt(
       getArg("new-players", "newplayers") ?? process.env.SEED_NEW_PLAYERS,
-      100,
+      102,
       "newPlayers"
     ),
     playersPerBuyer: parsePositiveInt(
@@ -61,6 +63,16 @@ function parseArgs(argv: string[]): ParsedArgs {
       2,
       "buyerTwoIndex"
     ),
+    buyerThreeIndex: parsePositiveInt(
+      getArg("buyer-three-index", "buyerthreeindex") ?? process.env.SEED_BUYER_THREE_INDEX,
+      3,
+      "buyerThreeIndex"
+    ),
+    buyerFourIndex: parsePositiveInt(
+      getArg("buyer-four-index", "buyerfourindex") ?? process.env.SEED_BUYER_FOUR_INDEX,
+      4,
+      "buyerFourIndex"
+    ),
     depositEth: getArg("deposit-eth", "depositeth") ?? process.env.SEED_DEPOSIT_ETH ?? "0.005"
   };
 }
@@ -77,13 +89,28 @@ async function main() {
   }
 
   const signers = await ethers.getSigners();
-  if (args.buyerOneIndex >= signers.length || args.buyerTwoIndex >= signers.length) {
+  const buyerIndices = [
+    args.buyerOneIndex,
+    args.buyerTwoIndex,
+    args.buyerThreeIndex,
+    args.buyerFourIndex
+  ];
+
+  if (new Set(buyerIndices).size !== buyerIndices.length) {
+    throw new Error("Buyer signer indices must be unique");
+  }
+
+  if (buyerIndices.some((index) => index >= signers.length)) {
     throw new Error("Buyer signer index is out of range for available local signers");
   }
 
   const depositor = signers[0];
-  const buyerOne = signers[args.buyerOneIndex];
-  const buyerTwo = signers[args.buyerTwoIndex];
+  const buyers = [
+    { signer: signers[args.buyerOneIndex], label: "Buyer 1", index: args.buyerOneIndex },
+    { signer: signers[args.buyerTwoIndex], label: "Buyer 2", index: args.buyerTwoIndex },
+    { signer: signers[args.buyerThreeIndex], label: "Buyer 3", index: args.buyerThreeIndex },
+    { signer: signers[args.buyerFourIndex], label: "Buyer 4", index: args.buyerFourIndex }
+  ];
 
   const academy: any = await ethers.getContractAt("Academy", args.academyAddress);
   const depositAmount = ethers.parseEther(args.depositEth);
@@ -91,8 +118,9 @@ async function main() {
   console.log(`Network: ${network.name}`);
   console.log(`Academy: ${args.academyAddress}`);
   console.log(`Depositor: ${depositor.address}`);
-  console.log(`Buyer 1 (index ${args.buyerOneIndex}): ${buyerOne.address}`);
-  console.log(`Buyer 2 (index ${args.buyerTwoIndex}): ${buyerTwo.address}`);
+  for (const buyer of buyers) {
+    console.log(`${buyer.label} (index ${buyer.index}): ${buyer.signer.address}`);
+  }
   console.log(`Target new players: ${args.newPlayers}`);
   console.log(`Players per buyer: ${args.playersPerBuyer}`);
   console.log(`Deposit amount per mint tx: ${args.depositEth} ETH`);
@@ -107,7 +135,7 @@ async function main() {
   }
 
   const academyPlayers: Array<{ id: bigint; value: bigint }> = await academy.getAcademyPlayers();
-  const totalNeeded = args.playersPerBuyer * 2;
+  const totalNeeded = args.playersPerBuyer * buyers.length;
   if (academyPlayers.length < totalNeeded) {
     throw new Error(
       `Not enough academy players to buy. Need ${totalNeeded}, found ${academyPlayers.length}`
@@ -124,12 +152,13 @@ async function main() {
     return 0;
   });
 
-  const boughtByBuyerOne: bigint[] = [];
-  const boughtByBuyerTwo: bigint[] = [];
+  const purchasesByBuyer = buyers.map((buyer) => ({
+    ...buyer,
+    purchases: [] as bigint[],
+    spent: 0n
+  }));
 
   let cursor = 0;
-  let spentBuyerOne = 0n;
-  let spentBuyerTwo = 0n;
 
   const buyFor = async (
     buyer: { address: string },
@@ -154,14 +183,15 @@ async function main() {
     return spent;
   };
 
-  spentBuyerOne = await buyFor(buyerOne, boughtByBuyerOne, spentBuyerOne, "Buyer 1");
-  spentBuyerTwo = await buyFor(buyerTwo, boughtByBuyerTwo, spentBuyerTwo, "Buyer 2");
+  for (const buyer of purchasesByBuyer) {
+    buyer.spent = await buyFor(buyer.signer, buyer.purchases, buyer.spent, buyer.label);
+  }
 
   console.log("\nSeeding complete.");
-  console.log(`Buyer 1 IDs: ${boughtByBuyerOne.map((id) => id.toString()).join(", ")}`);
-  console.log(`Buyer 2 IDs: ${boughtByBuyerTwo.map((id) => id.toString()).join(", ")}`);
-  console.log(`Buyer 1 total spent: ${ethers.formatEther(spentBuyerOne)} ETH`);
-  console.log(`Buyer 2 total spent: ${ethers.formatEther(spentBuyerTwo)} ETH`);
+  for (const buyer of purchasesByBuyer) {
+    console.log(`${buyer.label} IDs: ${buyer.purchases.map((id) => id.toString()).join(", ")}`);
+    console.log(`${buyer.label} total spent: ${ethers.formatEther(buyer.spent)} ETH`);
+  }
 }
 
 main().catch((error) => {

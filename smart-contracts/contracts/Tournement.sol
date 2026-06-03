@@ -2,13 +2,17 @@
 pragma solidity 0.8.21;
 
 import './Game.sol';
+import './Academy.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import 'hardhat/console.sol';
 
 contract Tournement is ReentrancyGuard {
     uint256 public constant MIN_ENTRY_FEE = 3 ether;
+    uint256 public constant TOURNEMENT_ACADEMY_BPS = 600;
+    uint256 private constant BPS_DENOMINATOR = 10_000;
     uint256 private tournementCounter = 0;
     Game private game;
+    Academy private academy;
 
     mapping(uint256 => TournementInfo) public tournements;
     mapping(uint256 => mapping(address => bool)) public hasEntered;
@@ -16,6 +20,7 @@ contract Tournement is ReentrancyGuard {
     mapping(uint256 => mapping(address => bool)) public hasRefundedEntry;
     mapping(uint256 => uint256) public tournementMatchCounts;
     mapping(uint256 => uint256) public tournementExecutorFees;
+    mapping(uint256 => uint256) public tournementAcademyFees;
 
     struct TournementInfo {
         uint8 rounds;
@@ -96,9 +101,11 @@ contract Tournement is ReentrancyGuard {
     event TournementEntryRefunded(uint256 indexed tournamentId, address indexed entrant, uint256 amount);
     event TournementRewardClaimed(uint256 indexed tournamentId, address indexed champion, uint256 amount);
     event TournementExecutorCompensated(uint256 indexed tournamentId, address indexed executor, uint256 executorFee);
+    event TournementAcademyFunded(uint256 indexed tournamentId, uint256 academyShare);
 
-    constructor(address gameAddress) {
+    constructor(address gameAddress, address academyAddress) {
         game = Game(gameAddress);
+        academy = Academy(academyAddress);
     }
 
     function create(
@@ -378,7 +385,16 @@ contract Tournement is ReentrancyGuard {
 
         if (nextRound.length == 1) {
             tournement.champion = nextRound[0];
-            uint256 championWinnings = prizePot - tournementExecutorFees[tournamentId];
+            uint256 distributablePot = prizePot - tournementExecutorFees[tournamentId];
+            uint256 academyShare = (distributablePot * TOURNEMENT_ACADEMY_BPS) / BPS_DENOMINATOR;
+
+            if (academyShare > 0) {
+                tournementAcademyFees[tournamentId] = academyShare;
+                academy.deposit{value: academyShare}();
+                emit TournementAcademyFunded(tournamentId, academyShare);
+            }
+
+            uint256 championWinnings = distributablePot - academyShare;
             Game.Team memory winningTeam = tournement.teams[tournement.champion];
             TeamPlayerDetails[] memory winningTeamPlayers = _buildTeamPlayerDetails(winningTeam);
 
@@ -388,6 +404,7 @@ contract Tournement is ReentrancyGuard {
                 console.log("[Tournament] champion", tournement.champion);
                 console.log("[Tournament] championWinnings", championWinnings);
                 console.log("[Tournament] executorFees", tournementExecutorFees[tournamentId]);
+                console.log("[Tournament] academyShare", academyShare);
             }
 
             emit TournementCompleted(tournamentId, tournement.champion, championWinnings, winningTeam, winningTeamPlayers);
@@ -489,7 +506,10 @@ contract Tournement is ReentrancyGuard {
         }
 
         // Calculate reward: entry fee * number of entrants
-        uint256 reward = (info.entryFee * info.teamsEntered) - tournementExecutorFees[tournamentId];
+        uint256 reward =
+            (info.entryFee * info.teamsEntered) -
+            tournementExecutorFees[tournamentId] -
+            tournementAcademyFees[tournamentId];
         
         // Mark as claimed before transfer
         hasClaimedReward[tournamentId][msg.sender] = true;

@@ -119,6 +119,7 @@ export interface TournementInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "MIN_ENTRY_FEE"
+      | "TOURNEMENT_ACADEMY_BPS"
       | "cancel"
       | "claimCancelledEntry"
       | "claimReward"
@@ -130,6 +131,7 @@ export interface TournementInterface extends Interface {
       | "hasEntered"
       | "hasRefundedEntry"
       | "start"
+      | "tournementAcademyFees"
       | "tournementExecutorFees"
       | "tournementMatchCounts"
       | "tournements"
@@ -138,6 +140,7 @@ export interface TournementInterface extends Interface {
   getEvent(
     nameOrSignatureOrTopic:
       | "TeamEntered"
+      | "TournementAcademyFunded"
       | "TournementCancelled"
       | "TournementCompleted"
       | "TournementCompletedSummary"
@@ -152,6 +155,10 @@ export interface TournementInterface extends Interface {
 
   encodeFunctionData(
     functionFragment: "MIN_ENTRY_FEE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "TOURNEMENT_ACADEMY_BPS",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -210,6 +217,10 @@ export interface TournementInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "start", values: [BigNumberish]): string;
   encodeFunctionData(
+    functionFragment: "tournementAcademyFees",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "tournementExecutorFees",
     values: [BigNumberish]
   ): string;
@@ -224,6 +235,10 @@ export interface TournementInterface extends Interface {
 
   decodeFunctionResult(
     functionFragment: "MIN_ENTRY_FEE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "TOURNEMENT_ACADEMY_BPS",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "cancel", data: BytesLike): Result;
@@ -256,6 +271,10 @@ export interface TournementInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "start", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "tournementAcademyFees",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "tournementExecutorFees",
     data: BytesLike
   ): Result;
@@ -284,6 +303,22 @@ export namespace TeamEnteredEvent {
     tournamentId: bigint;
     player: string;
     teamsEntered: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace TournementAcademyFundedEvent {
+  export type InputTuple = [
+    tournamentId: BigNumberish,
+    academyShare: BigNumberish
+  ];
+  export type OutputTuple = [tournamentId: bigint, academyShare: bigint];
+  export interface OutputObject {
+    tournamentId: bigint;
+    academyShare: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -583,6 +618,8 @@ export interface Tournement extends BaseContract {
 
   MIN_ENTRY_FEE: TypedContractMethod<[], [bigint], "view">;
 
+  TOURNEMENT_ACADEMY_BPS: TypedContractMethod<[], [bigint], "view">;
+
   cancel: TypedContractMethod<
     [tournamentId: BigNumberish],
     [void],
@@ -663,6 +700,12 @@ export interface Tournement extends BaseContract {
     "nonpayable"
   >;
 
+  tournementAcademyFees: TypedContractMethod<
+    [arg0: BigNumberish],
+    [bigint],
+    "view"
+  >;
+
   tournementExecutorFees: TypedContractMethod<
     [arg0: BigNumberish],
     [bigint],
@@ -713,6 +756,9 @@ export interface Tournement extends BaseContract {
 
   getFunction(
     nameOrSignature: "MIN_ENTRY_FEE"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "TOURNEMENT_ACADEMY_BPS"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "cancel"
@@ -786,6 +832,9 @@ export interface Tournement extends BaseContract {
     nameOrSignature: "start"
   ): TypedContractMethod<[tournamentId: BigNumberish], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "tournementAcademyFees"
+  ): TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
+  getFunction(
     nameOrSignature: "tournementExecutorFees"
   ): TypedContractMethod<[arg0: BigNumberish], [bigint], "view">;
   getFunction(
@@ -831,6 +880,13 @@ export interface Tournement extends BaseContract {
     TeamEnteredEvent.InputTuple,
     TeamEnteredEvent.OutputTuple,
     TeamEnteredEvent.OutputObject
+  >;
+  getEvent(
+    key: "TournementAcademyFunded"
+  ): TypedContractEvent<
+    TournementAcademyFundedEvent.InputTuple,
+    TournementAcademyFundedEvent.OutputTuple,
+    TournementAcademyFundedEvent.OutputObject
   >;
   getEvent(
     key: "TournementCancelled"
@@ -913,6 +969,17 @@ export interface Tournement extends BaseContract {
       TeamEnteredEvent.InputTuple,
       TeamEnteredEvent.OutputTuple,
       TeamEnteredEvent.OutputObject
+    >;
+
+    "TournementAcademyFunded(uint256,uint256)": TypedContractEvent<
+      TournementAcademyFundedEvent.InputTuple,
+      TournementAcademyFundedEvent.OutputTuple,
+      TournementAcademyFundedEvent.OutputObject
+    >;
+    TournementAcademyFunded: TypedContractEvent<
+      TournementAcademyFundedEvent.InputTuple,
+      TournementAcademyFundedEvent.OutputTuple,
+      TournementAcademyFundedEvent.OutputObject
     >;
 
     "TournementCancelled(uint256,address)": TypedContractEvent<

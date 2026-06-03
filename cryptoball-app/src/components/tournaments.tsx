@@ -19,32 +19,39 @@ const Tournaments = () => {
           </div>
           <div className="tabs-header">
             <NavLink
-              to="start"
+              to="create"
               className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
             >
-              Start Tournament
+              Create Tournament
             </NavLink>
             <NavLink
               to="open"
               className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
             >
-              Open Tournaments
+              Join Open
             </NavLink>
             <NavLink
-              to="replays"
+              to="live"
               className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
             >
-              Replays
+              Live Brackets
+            </NavLink>
+            <NavLink
+              to="completed"
+              className={({ isActive }) => `tab-button ${isActive ? 'active' : ''}`}
+            >
+              Completed
             </NavLink>
           </div>
         </div>
 
         <div className="tabs-content">
           <Routes>
-            <Route index element={<Navigate to="start" replace />} />
-            <Route path="start" element={<TournementReplays section="start" />} />
+            <Route index element={<Navigate to="create" replace />} />
+            <Route path="create" element={<TournementReplays section="create" />} />
             <Route path="open" element={<TournementReplays section="open" />} />
-            <Route path="replays" element={<TournementReplays section="replay" />} />
+            <Route path="live" element={<TournementReplays section="live" />} />
+            <Route path="completed" element={<TournementReplays section="completed" />} />
           </Routes>
         </div>
       </div>

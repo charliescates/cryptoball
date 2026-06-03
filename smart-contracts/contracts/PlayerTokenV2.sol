@@ -55,18 +55,11 @@ contract PlayerTokenV2 is ERC721, AccessControl {
 
     event PlayerMinted(address indexed account, uint256 indexed playerId);
 
-    constructor(address admin, address minter, address game) ERC721("PlayerToken", "FPT") {
-        address adminAddress = admin == address(0) ? msg.sender : admin;
+    constructor() ERC721("PlayerToken", "FPT") {
+        address adminAddress = msg.sender;
         _grantRole(DEFAULT_ADMIN_ROLE, adminAddress);
+        _grantRole(MIGRATOR_ROLE, adminAddress);
 
-        if (minter != address(0)) {
-            _grantRole(MINTER_ROLE, minter);
-        }
-        if (game != address(0)) {
-            _grantRole(GAME_ROLE, game);
-        }
-
-        // Admin can grant MIGRATOR_ROLE to migration operator(s).
         _distribution = createDistribution();
     }
 
