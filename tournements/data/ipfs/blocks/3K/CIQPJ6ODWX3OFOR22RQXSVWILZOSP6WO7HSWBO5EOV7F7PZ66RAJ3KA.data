@@ -1,0 +1,40 @@
+
+·¯dataSources:
+  - kind: ethereum
+    mapping:
+      abis:
+        - file:
+            /: /ipfs/QmSXtga1rqKFtVRAxqGm4ECq53oDyKgTG3SGkc6QNFXY48
+          name: Market
+      apiVersion: 0.0.9
+      entities:
+        - BidPlaced
+        - BoughtNow
+        - Finalized
+        - Listed
+      eventHandlers:
+        - event: BidPlaced(uint256,address,uint256)
+          handler: handleBidPlaced
+        - event: BoughtNow(uint256,address,uint256)
+          handler: handleBoughtNow
+        - event: Finalized(uint256,address,uint256)
+          handler: handleFinalized
+        - event: Listed(uint256,address,uint256,uint256,uint256)
+          handler: handleListed
+      file:
+        /: /ipfs/QmY8yq9NQWrJq7FsrHzsmxYDDmWgqTykkgiccu1fLRL9Tx
+      kind: ethereum/events
+      language: wasm/assemblyscript
+    name: Market
+    network: mainnet
+    source:
+      abi: Market
+      address: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707'
+      startBlock: 0
+indexerHints:
+  prune: auto
+schema:
+  file:
+    /: /ipfs/QmXWaS2TCYQEkU9yHRKwZuHpC7mDZ3TpEPKs1hFxSAbdvS
+specVersion: 1.3.0
+¯

@@ -11,6 +11,14 @@ interface ImportMetaEnv {
 	readonly VITE_MARKET_CONTRACT_ADDRESS?: string;
 	readonly VITE_TOURNEMENT_CONTRACT_ADDRESS?: string;
 	readonly VITE_TOURNAMENT_CONTRACT_ADDRESS?: string;
+	readonly VITE_SUBGRAPH_SOURCE?: "local" | "prod";
+	readonly VITE_MATCH_RESULTS_SUBGRAPH_URL?: string;
+	readonly VITE_MARKET_SUBGRAPH_URL?: string;
+	readonly VITE_TOURNAMENTS_SUBGRAPH_URL?: string;
+	readonly VITE_LOCAL_MATCH_RESULTS_SUBGRAPH_URL?: string;
+	readonly VITE_LOCAL_MARKET_SUBGRAPH_URL?: string;
+	readonly VITE_LOCAL_TOURNAMENTS_SUBGRAPH_URL?: string;
+	readonly VITE_GRAPH_API_KEY?: string;
 }
 
 interface ImportMeta {

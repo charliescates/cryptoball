@@ -1,0 +1,55 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: tournement
+    network: mainnet
+    source:
+      # Default Hardhat localhost address from deterministic deployment order.
+      # Update if your local deployment outputs a different address.
+      address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+      abi: tournement
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - TournementCompleted
+        - TournementCreated
+        - TeamEntered
+        - TournementMatchStarted
+        - TournementRoundAdvanced
+        - TournementReady
+        - TournementCancelled
+        - TournementEntryRefunded
+        - TournementExecutorCompensated
+        - TournementRewardClaimed
+      abis:
+        - name: tournement
+          file: ./abis/tournement.json
+      eventHandlers:
+        - event: TournementCompletedSummary(indexed uint256,indexed address,uint256,uint256)
+          handler: handleTournementCompleted
+        - event: TournementCreated(indexed uint256,indexed address,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
+          handler: handleTournementCreated
+        - event: TeamEntered(indexed uint256,indexed address,uint8)
+          handler: handleTeamEntered
+        - event: TournementMatchStarted(indexed uint256,uint256,indexed uint8,address,address)
+          handler: handleTournementMatchStarted
+        - event: TournementRoundAdvanced(indexed uint256,uint8,uint8,uint8)
+          handler: handleTournementRoundAdvanced
+        - event: TournementReady(indexed uint256,uint8)
+          handler: handleTournementReady
+        - event: TournementCancelled(indexed uint256,indexed address)
+          handler: handleTournementCancelled
+        - event: TournementEntryRefunded(indexed uint256,indexed address,uint256)
+          handler: handleTournementEntryRefunded
+        - event: TournementExecutorCompensated(indexed uint256,indexed address,uint256)
+          handler: handleTournementExecutorCompensated
+        - event: TournementRewardClaimed(indexed uint256,indexed address,uint256)
+          handler: handleTournementRewardClaimed
+      file: ./src/tournement.ts

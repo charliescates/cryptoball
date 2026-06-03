@@ -1,12 +1,6 @@
 import { request, gql } from 'graphql-request'
 import { matchResultsHeaders, matchResultsUrl } from './matchResultsQuery'
-
-// Update this URL with your actual deployed subgraph URL
-// Find it in your .env.local as VITE_TOURNAMENTS_SUBGRAPH_URL
-// Or after deploying: graph deploy --node https://api.studio.thegraph.com/deploy/ tournements
-export const TOURNAMENTS_SUBGRAPH_URL =
-  import.meta.env.VITE_TOURNAMENTS_SUBGRAPH_URL ||
-  'https://api.studio.thegraph.com/query/1747934/tournements/version/latest'
+import { TOURNAMENTS_SUBGRAPH_URL } from '../../config/subgraphs'
 
 export type SubgraphTournamentCreated = {
   id: string

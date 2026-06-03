@@ -18,6 +18,13 @@ The app supports:
 
 - `VITE_APP_NETWORK`: `polygon` or `localhost`
 - `VITE_LOCAL_RPC_URL`: custom local RPC endpoint (default: `http://127.0.0.1:8545`)
+- `VITE_SUBGRAPH_SOURCE`: `local` or `prod`
+- `VITE_MATCH_RESULTS_SUBGRAPH_URL`: prod match-results endpoint
+- `VITE_MARKET_SUBGRAPH_URL`: prod market endpoint
+- `VITE_TOURNAMENTS_SUBGRAPH_URL`: prod tournaments endpoint
+- `VITE_LOCAL_MATCH_RESULTS_SUBGRAPH_URL`: local graph-node match-results endpoint
+- `VITE_LOCAL_MARKET_SUBGRAPH_URL`: local graph-node market endpoint
+- `VITE_LOCAL_TOURNAMENTS_SUBGRAPH_URL`: local graph-node tournaments endpoint
 - `VITE_PLAYER_CONTRACT_ADDRESS`
 - `VITE_ACADEMY_CONTRACT_ADDRESS`
 - `VITE_GAME_CONTRACT_ADDRESS`
@@ -25,6 +32,13 @@ The app supports:
 - `VITE_TOURNEMENT_CONTRACT_ADDRESS` (or `VITE_TOURNAMENT_CONTRACT_ADDRESS`)
 
 If address env vars are omitted, the app uses built-in defaults for the selected network.
+
+Subgraph behavior is now independently configurable from chain selection:
+
+- `VITE_SUBGRAPH_SOURCE=local` makes the app read local graph-node endpoints.
+- `VITE_SUBGRAPH_SOURCE=prod` makes the app read production endpoints.
+
+This allows localhost contract testing while still choosing either local or production subgraphs.
 
 ## Run Against Local Hardhat Node
 

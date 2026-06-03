@@ -1,0 +1,66 @@
+
+À¸dataSources:
+  - kind: ethereum
+    mapping:
+      abis:
+        - file:
+            /: /ipfs/QmPBiWA9QpVYKbxEuY5bJaA7sPELxdGG2LkUSfL2GPkb4s
+          name: tournement
+      apiVersion: 0.0.9
+      entities:
+        - TournementCompleted
+        - TournementCreated
+        - TeamEntered
+        - TournementMatchStarted
+        - TournementRoundAdvanced
+        - TournementReady
+        - TournementCancelled
+        - TournementEntryRefunded
+        - TournementExecutorCompensated
+        - TournementRewardClaimed
+      eventHandlers:
+        - event: >-
+            TournementCompletedSummary(indexed uint256,indexed
+            address,uint256,uint256)
+          handler: handleTournementCompleted
+        - event: >-
+            TournementCreated(indexed uint256,indexed
+            address,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
+          handler: handleTournementCreated
+        - event: TeamEntered(indexed uint256,indexed address,uint8)
+          handler: handleTeamEntered
+        - event: >-
+            TournementMatchStarted(indexed uint256,uint256,indexed
+            uint8,address,address)
+          handler: handleTournementMatchStarted
+        - event: TournementRoundAdvanced(indexed uint256,uint8,uint8,uint8)
+          handler: handleTournementRoundAdvanced
+        - event: TournementReady(indexed uint256,uint8)
+          handler: handleTournementReady
+        - event: TournementCancelled(indexed uint256,indexed address)
+          handler: handleTournementCancelled
+        - event: TournementEntryRefunded(indexed uint256,indexed address,uint256)
+          handler: handleTournementEntryRefunded
+        - event: >-
+            TournementExecutorCompensated(indexed uint256,indexed
+            address,uint256)
+          handler: handleTournementExecutorCompensated
+        - event: TournementRewardClaimed(indexed uint256,indexed address,uint256)
+          handler: handleTournementRewardClaimed
+      file:
+        /: /ipfs/QmWWSSKbXGTfGyQeg9id84p2qmds6EBpfLqtRdwHGfVYdm
+      kind: ethereum/events
+      language: wasm/assemblyscript
+    name: tournement
+    network: mainnet
+    source:
+      abi: tournement
+      address: '0x276C216D241856199A83bf27b2286659e5b877D3'
+      startBlock: 0
+indexerHints:
+  prune: auto
+schema:
+  file:
+    /: /ipfs/QmYtZUiMgB4jNwhjcsXZVsYceMJdEbbgSSjGQUZMqJMc5a
+specVersion: 1.3.0
+¸

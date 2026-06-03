@@ -3,11 +3,14 @@
   "license": "UNLICENSED",
   "scripts": {
     "codegen": "graph codegen",
+    "codegen-local": "graph codegen subgraph.local.yaml",
     "build": "graph build",
+    "build-local": "graph build subgraph.local.yaml",
     "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ match-results",
     "create-local": "graph create --node http://localhost:8020/ match-results",
     "remove-local": "graph remove --node http://localhost:8020/ match-results",
-    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 match-results",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 match-results subgraph.local.yaml",
+    "reindex-local": "npm run codegen-local && npm run build-local && npm run create-local && npm run deploy-local",
     "test": "graph test"
   },
   "dependencies": {

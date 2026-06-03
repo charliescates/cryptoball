@@ -1,3 +1,7 @@
+import { MARKET_SUBGRAPH_URL as RESOLVED_MARKET_SUBGRAPH_URL } from "../../config/subgraphs"
+
+export const MARKET_SUBGRAPH_URL = RESOLVED_MARKET_SUBGRAPH_URL
+
 export type Listing = {
   id: string
   listingId: bigint
@@ -21,9 +25,6 @@ export type SubgraphListing = {
   highestBidder: string
   active: boolean
 }
-
-export const MARKET_SUBGRAPH_URL =
-  'https://api.studio.thegraph.com/query/1747934/cryptoball-market/version/latest'
 
 export function getGraphHeaders() {
   const apiKey = import.meta.env.VITE_GRAPH_API_KEY as string | undefined

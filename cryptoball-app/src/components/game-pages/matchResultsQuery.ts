@@ -1,4 +1,5 @@
 import { gql } from "graphql-request";
+import { MATCH_RESULTS_SUBGRAPH_URL } from "../../config/subgraphs";
 
 export type PlayerScored = {
   playerId: string;
@@ -152,6 +153,6 @@ export const myMatchesQuery = gql`
   }
 `;
 
-export const matchResultsUrl = "https://api.studio.thegraph.com/query/1747934/match-results/version/latest";
+export const matchResultsUrl = MATCH_RESULTS_SUBGRAPH_URL;
 const graphApiKey = import.meta.env.VITE_GRAPH_API_KEY;
 export const matchResultsHeaders = graphApiKey ? { Authorization: `Bearer ${graphApiKey}` } : undefined;

@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "sync:subgraphs:local": "node scripts/sync-local-subgraph-addresses.mjs",
+    "reindex:all:local": "npm run sync:subgraphs:local && npm --prefix match-results run reindex-local && npm --prefix cryptoball-market run reindex-local && npm --prefix tournements run reindex-local",
+    "refresh:all:local": "npm --prefix smart-contracts run deploy:local && npm run reindex:all:local"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.2",
     "jest": "^29.7.0"
