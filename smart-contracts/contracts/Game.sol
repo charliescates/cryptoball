@@ -474,23 +474,24 @@ contract Game is ReentrancyGuard {
         }
 
         if (homeGoals == awayGoals) {
+            uint8 originalGoals = homeGoals;
             // Extra-time period for drawn matches.
             for (uint i = 0; i < 5; i++) {
                 homeGoals += tryAndScore(homeAttack, awayDefense);
                 awayGoals += tryAndScore(awayAttack, homeDefense);
             }
 
-            emit ExtraTimePlayed(matchId, tournamentId, homeGoals, awayGoals);
+            emit ExtraTimePlayed(matchId, tournamentId, homeGoals - originalGoals, awayGoals - originalGoals);
 
             // If still level after extra-time, resolve with a weighted tiebreaker.
             if (homeGoals == awayGoals) {
                 if (resolveTiebreaker(homeAttack + homeDefense, awayAttack + awayDefense)) {
                     homeGoals += 1;
+                    emit GoldenGoalPlayed(matchId, tournamentId, 1, 0);
                 } else {
                     awayGoals += 1;
+                    emit GoldenGoalPlayed(matchId, tournamentId, 0, 1);
                 }
-
-                emit GoldenGoalPlayed(matchId, tournamentId, homeGoals, awayGoals);
             }
         }
 

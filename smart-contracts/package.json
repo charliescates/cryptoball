@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "patch-package",
+    "deploy:local": "hardhat run scripts/deploy_localhost.ts --network localhost",
     "seed:local:players": "node scripts/run_seed_local_players.js",
     "deploy:player:v2": "hardhat run scripts/deploy_player_token_v2.ts",
     "migrate:players:v2": "hardhat run scripts/migrate_player_token_v2.ts",

@@ -1,4 +1,6 @@
 import { ethers } from "hardhat";
+import fs from "fs";
+import path from "path";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -42,6 +44,24 @@ async function main() {
   // const market = await Market.deploy('0x05B665d3Ba0a83f5259C114fA3F2d2ECD8A00B29', '0x9d3616fCC1b1f4FD0C24327Fc658Ee4969856582');
   await market.waitForDeployment();
   console.log("Market deployed to:", await market.getAddress());
+
+  const addresses = {
+    chainId: 31337,
+    deployer: deployer.address,
+    playerToken: await playerToken.getAddress(),
+    academy: await academy.getAddress(),
+    game: await game.getAddress(),
+    tournement: await tournement.getAddress(),
+    market: await market.getAddress(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const outDir = path.resolve(__dirname, "..", "deployments");
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const outFile = path.join(outDir, "localhost-addresses.json");
+  fs.writeFileSync(outFile, `${JSON.stringify(addresses, null, 2)}\n`, "utf8");
+  console.log("Wrote local deployment addresses:", outFile);
 }
 
 main().catch((err) => {
