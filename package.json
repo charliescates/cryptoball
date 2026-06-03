@@ -1,5 +1,8 @@
 {
   "scripts": {
+    "build": "npm --prefix cryptoball-app run build",
+    "build:local": "npm --prefix cryptoball-app run build:local",
+    "build:prod": "npm --prefix cryptoball-app run build:prod",
     "sync:subgraphs:local": "node scripts/sync-local-subgraph-addresses.mjs",
     "reindex:all:local": "npm run sync:subgraphs:local && npm --prefix match-results run reindex-local && npm --prefix cryptoball-market run reindex-local && npm --prefix tournements run reindex-local",
     "refresh:all:local": "npm --prefix smart-contracts run deploy:local && npm run reindex:all:local"
