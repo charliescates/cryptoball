@@ -1,6 +1,6 @@
 import { Contract } from "./types";
 import { getContractAddress } from "../config/network";
-import marketArtifact from "../../../smart-contracts/artifacts/contracts/Market.sol/Market.json";
+import marketArtifact from "./abi/Market.json";
 
 export const marketContract: Contract = {
   address: getContractAddress("market"),
