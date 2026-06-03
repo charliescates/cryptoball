@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import BonusBreakdown from "./formation-grid-parts/BonusBreakdown";
 import FormationRow from "./formation-grid-parts/FormationRow";
 import TeamStatsSummary from "./formation-grid-parts/TeamStatsSummary";
-import { type Formation, getFormationGroups } from "./formation-grid-parts/formationRows";
+import { formatFormationLabel, type Formation, getFormationGroups } from "./formation-grid-parts/formationRows";
 import type { Player } from "./player";
 import { calculateTeamStats } from "./utils/chemistryCalculator";
 
@@ -36,7 +36,7 @@ const FormationGrid = ({
   return (
     <div className="formation-grid-wrapper">
       <h2 style={{ color: teamColour }}>{teamName}</h2>
-      <div className="formation-name-display">{selectedFormation.name}</div>
+      <div className="formation-name-display">{formatFormationLabel(selectedFormation)}</div>
 
       <FormationRow
         label="ATTACK"

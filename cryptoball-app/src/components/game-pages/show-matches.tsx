@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { request } from "graphql-request";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { nativeTokenSymbol } from "../../config/network";
@@ -14,12 +14,22 @@ import {
   type PlayedMatch,
   type PlayerMatchInfo,
   type TeamStatsCalculated,
+  type TournamentMatchReplayResponse,
   type WinningsDistributed,
   matchResultsHeaders,
   matchResultsUrl,
   myMatchesQuery,
+  playedMatchByMatchIdAndTournamentIdQuery,
   recentMatchesQuery,
+  tournamentReplayScoreQuery,
 } from "./matchResultsQuery";
+
+type ShowMatchesProps = {
+  embeddedMatchId?: string;
+  embeddedTournamentId?: string;
+  hideHeader?: boolean;
+  onReplayComplete?: () => void;
+};
 
 function formatMatchTime(blockTimestamp: string) {
   const value = Number(blockTimestamp);
@@ -185,20 +195,57 @@ function buildTimedGoalTimeline(match: PlayedMatch): GoalEvent[] {
   const baseTimeline = getGoalTimeline(match);
   const includeExtraTime = hasExtraTime(match);
   const includeGolden = hasGoldenGoal(match);
-  const totalMinutes = includeExtraTime ? 25 : 20;
-
-  // Shuffle goals deterministically based on match ID
   const rng = seededRandom(match.id);
-  const shuffledGoals = [...baseTimeline].sort(() => rng() - 0.5);
+  type ReplayGoalSeed = Omit<GoalEvent, "minute" | "isGoldenGoal">;
 
-  const timedGoals = shuffledGoals.map((goal, index) => {
-    const minute = Math.max(0, Math.ceil(((index + 1) * totalMinutes) / Math.max(1, shuffledGoals.length)) - 1);
-    return {
-      ...goal,
-      minute,
-      isGoldenGoal: false,
-    };
-  });
+  const placeGoalsWithinWindow = (goals: ReplayGoalSeed[], startMinute: number, endMinute: number) => {
+    if (goals.length === 0) return [] as GoalEvent[];
+    const slots = endMinute - startMinute + 1;
+
+    return goals.map((goal, index) => {
+      // Spread events deterministically across the available minute window.
+      const slot = Math.floor(((index + 1) * slots) / (goals.length + 1));
+      const minute = Math.min(endMinute, Math.max(startMinute, startMinute + slot));
+      return {
+        ...goal,
+        minute,
+        isGoldenGoal: false,
+      };
+    });
+  };
+
+  const shuffleGoals = <T,>(goals: T[]) => [...goals].sort(() => rng() - 0.5);
+
+  let timedGoals: GoalEvent[] = [];
+
+  if (!includeExtraTime) {
+    const shuffledGoals = shuffleGoals(baseTimeline);
+    timedGoals = placeGoalsWithinWindow(shuffledGoals, 0, 19);
+  } else {
+    const homeGoals = shuffleGoals(baseTimeline.filter((goal) => goal.teamLabel === "Home"));
+    const awayGoals = shuffleGoals(baseTimeline.filter((goal) => goal.teamLabel === "Away"));
+    const unknownGoals = shuffleGoals(baseTimeline.filter((goal) => goal.teamLabel === "Unknown"));
+
+    const goalsPerSideInRegularTime = Math.min(homeGoals.length, awayGoals.length);
+    const regularGoals: ReplayGoalSeed[] = [];
+
+    for (let index = 0; index < goalsPerSideInRegularTime; index += 1) {
+      const pair = [homeGoals[index], awayGoals[index]].filter((goal): goal is ReplayGoalSeed => !!goal);
+      if (pair.length === 2 && rng() > 0.5) {
+        pair.reverse();
+      }
+      regularGoals.push(...pair);
+    }
+
+    const remainingHomeGoals = homeGoals.slice(goalsPerSideInRegularTime);
+    const remainingAwayGoals = awayGoals.slice(goalsPerSideInRegularTime);
+    const extraTimeGoals = shuffleGoals([...remainingHomeGoals, ...remainingAwayGoals, ...unknownGoals]);
+
+    timedGoals = [
+      ...placeGoalsWithinWindow(regularGoals, 0, 19),
+      ...placeGoalsWithinWindow(extraTimeGoals, 21, 25),
+    ];
+  }
 
   if (!includeGolden) {
     return timedGoals;
@@ -883,7 +930,12 @@ function RematchPanel({ currentAddress, match }: { currentAddress?: string; matc
   );
 }
 
-export default function ShowMatches() {
+export default function ShowMatches({
+  embeddedMatchId,
+  embeddedTournamentId,
+  hideHeader = false,
+  onReplayComplete,
+}: ShowMatchesProps = {}) {
   const [searchParams] = useSearchParams();
   const { address } = useAccount();
   const [revealPhases, setRevealPhases] = useState<Record<string, RevealPhase>>({});
@@ -893,12 +945,59 @@ export default function ShowMatches() {
   const [clockNowMs, setClockNowMs] = useState(() => Date.now());
   const [fullScreenMatchId, setFullScreenMatchId] = useState<string | null>(null);
   const [myGamesOnly, setMyGamesOnly] = useState(false);
-  const autoplayMatchId = searchParams.get("matchId");
-  const shouldAutoplay = searchParams.get("autoplay") === "1";
+  const notifiedReplayCompletionIdsRef = useRef<Set<string>>(new Set());
+  const autoplayMatchId = embeddedMatchId ?? searchParams.get("matchId");
+  const tournamentReplayId = embeddedTournamentId ?? searchParams.get("tournamentId");
+  const shouldAutoplay = embeddedMatchId !== undefined ? true : searchParams.get("autoplay") === "1";
+  const isPinnedTournamentReplay = !!autoplayMatchId && !!tournamentReplayId;
+  const pinnedTournamentReplayEntityId =
+    autoplayMatchId && tournamentReplayId ? `${autoplayMatchId}-${tournamentReplayId}` : undefined;
+
+  const isRequestedReplayMatch = useCallback(
+    (match: PlayedMatch) => {
+      const resolvedTournamentId = match.tournamentId ?? "0";
+      return match.matchId === autoplayMatchId && (tournamentReplayId ? resolvedTournamentId === tournamentReplayId : resolvedTournamentId === "0");
+    },
+    [autoplayMatchId, tournamentReplayId],
+  );
 
   const { data, status, error } = useQuery<MatchesResponse>({
-    queryKey: myGamesOnly && address ? ["my-matches", address] : ["recent-matches"],
+    queryKey: isPinnedTournamentReplay
+      ? ["tournament-match", autoplayMatchId, tournamentReplayId]
+      : myGamesOnly && address
+        ? ["my-matches", address]
+        : ["recent-matches"],
     async queryFn() {
+      if (isPinnedTournamentReplay && autoplayMatchId && tournamentReplayId) {
+        const [playedMatchResponse, tournamentReplayResponse] = await Promise.all([
+          request<MatchesResponse>(
+            matchResultsUrl,
+            playedMatchByMatchIdAndTournamentIdQuery,
+            { id: pinnedTournamentReplayEntityId },
+            matchResultsHeaders,
+          ),
+          request<TournamentMatchReplayResponse>(
+            matchResultsUrl,
+            tournamentReplayScoreQuery,
+            { tournamentId: tournamentReplayId, tournamentMatchId: autoplayMatchId },
+            matchResultsHeaders,
+          ),
+        ]);
+
+        const replayScore = tournamentReplayResponse.tournamentMatchPlayeds?.[0];
+        if (!replayScore || !playedMatchResponse.playedMatches?.length) {
+          return playedMatchResponse;
+        }
+
+        return {
+          playedMatches: playedMatchResponse.playedMatches.map((match) => ({
+            ...match,
+            homeScore: replayScore.homeScore,
+            awayScore: replayScore.awayScore,
+          })),
+        } satisfies MatchesResponse;
+      }
+
       if (myGamesOnly && address) {
         return await request(matchResultsUrl, myMatchesQuery, { address: address.toLowerCase() }, matchResultsHeaders);
       }
@@ -921,10 +1020,10 @@ export default function ShowMatches() {
 
   const orderedMatches = useMemo(() => {
     if (!autoplayMatchId) return matches;
-    const prioritized = matches.find((match) => match.matchId === autoplayMatchId);
+    const prioritized = matches.find(isRequestedReplayMatch);
     if (!prioritized) return matches;
     return [prioritized, ...matches.filter((match) => match.id !== prioritized.id)];
-  }, [autoplayMatchId, matches]);
+  }, [autoplayMatchId, isRequestedReplayMatch, matches]);
 
   useEffect(() => {
     const animating = Object.entries(revealPhases).filter(([, phase]) => phase === "animating");
@@ -1106,38 +1205,75 @@ export default function ShowMatches() {
 
   useEffect(() => {
     if (!shouldAutoplay || !autoplayMatchId) return;
-    const targetMatch = matches.find((match) => match.matchId === autoplayMatchId);
+    const targetMatch = matches.find(isRequestedReplayMatch);
     if (!targetMatch) return;
     if ((revealPhases[targetMatch.id] ?? "hidden") !== "hidden") return;
     startReveal(targetMatch.id);
-  }, [autoplayMatchId, matches, revealPhases, shouldAutoplay, startReveal]);
+  }, [autoplayMatchId, isRequestedReplayMatch, matches, revealPhases, shouldAutoplay, startReveal]);
+
+  useEffect(() => {
+    if (!onReplayComplete) {
+      return;
+    }
+
+    const targetMatch = matches.find(isRequestedReplayMatch);
+    if (!targetMatch) {
+      return;
+    }
+
+    const phase = revealPhases[targetMatch.id] ?? "hidden";
+    if (phase !== "complete") {
+      return;
+    }
+
+    if (notifiedReplayCompletionIdsRef.current.has(targetMatch.id)) {
+      return;
+    }
+
+    notifiedReplayCompletionIdsRef.current.add(targetMatch.id);
+    onReplayComplete();
+  }, [isRequestedReplayMatch, matches, onReplayComplete, revealPhases]);
 
   const errorCode = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
 
   return (
     <main className="matches-history-panel">
-      <div className="matches-history-header">
-        <span className="section-kicker">Replays</span>
-        <h2>{autoplayMatchId ? `Match #${autoplayMatchId} Replay` : "Match Replays"}</h2>
-        <p>
-          {autoplayMatchId
-            ? "The selected match is pinned here and will reveal automatically when ready."
-            : myGamesOnly
-              ? "Showing only matches you played."
-              : "Recent completed fixtures with replay reveals and goal events."}
-        </p>
-        {!autoplayMatchId && address && (
-          <button
-            type="button"
-            className={`matches-filter-toggle ${myGamesOnly ? "matches-filter-toggle--active" : ""}`}
-            onClick={() => setMyGamesOnly((prev) => !prev)}
-          >
-            {myGamesOnly ? "All Replays" : "My Games"}
-          </button>
-        )}
-      </div>
+      {!hideHeader && (
+        <div className="matches-history-header">
+          <span className="section-kicker">Replays</span>
+          <h2>
+            {isPinnedTournamentReplay
+              ? `Tournament Match #${autoplayMatchId} Replay`
+              : autoplayMatchId
+                ? `Match #${autoplayMatchId} Replay`
+                : "Match Replays"}
+          </h2>
+          <p>
+            {isPinnedTournamentReplay
+              ? "The selected tournament match is pinned here and will reveal automatically when indexed."
+              : autoplayMatchId
+                ? "The selected match is pinned here and will reveal automatically when ready."
+                : myGamesOnly
+                  ? "Showing only matches you played."
+                  : "Recent completed fixtures with replay reveals and goal events."}
+          </p>
+          {!autoplayMatchId && address && (
+            <button
+              type="button"
+              className={`matches-filter-toggle ${myGamesOnly ? "matches-filter-toggle--active" : ""}`}
+              onClick={() => setMyGamesOnly((prev) => !prev)}
+            >
+              {myGamesOnly ? "All Replays" : "My Games"}
+            </button>
+          )}
+        </div>
+      )}
 
-      {status === "pending" ? <div className="matches-history-state">Loading recent matches...</div> : null}
+      {status === "pending" ? (
+        <div className="matches-history-state">
+          {isPinnedTournamentReplay ? "Loading tournament match replay..." : "Loading recent matches..."}
+        </div>
+      ) : null}
       {status === "error" && errorCode ? (
         <div className="matches-history-state">Error ocurred querying the Subgraph</div>
       ) : status === "error" ? (
@@ -1146,15 +1282,23 @@ export default function ShowMatches() {
 
       {status === "success" && matches.length === 0 ? (
         <div className="matches-history-state">
-          {myGamesOnly ? "No completed matches found for your address." : "No completed matches found yet."}
+          {isPinnedTournamentReplay
+            ? "No tournament match replay found yet."
+            : myGamesOnly
+              ? "No completed matches found for your address."
+              : "No completed matches found yet."}
         </div>
       ) : null}
 
       {status === "success" &&
       shouldAutoplay &&
       autoplayMatchId &&
-      !matches.some((match) => match.matchId === autoplayMatchId) ? (
-        <div className="matches-history-state">Waiting for the completed match replay to index...</div>
+      !matches.some(isRequestedReplayMatch) ? (
+        <div className="matches-history-state">
+          {isPinnedTournamentReplay
+            ? "Waiting for the completed tournament match replay to index..."
+            : "Waiting for the completed match replay to index..."}
+        </div>
       ) : null}
 
       {status === "success" && orderedMatches.length > 0 ? (

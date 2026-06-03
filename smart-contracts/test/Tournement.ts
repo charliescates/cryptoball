@@ -57,7 +57,7 @@ describe("Tournement", () => {
     const game: any = await ethers.deployContract("Game", [await playerToken.getAddress(), await academy.getAddress()]);
     await game.waitForDeployment();
 
-    const tournement: any = await ethers.deployContract("Tournement", [await game.getAddress()]);
+    const tournement: any = await ethers.deployContract("Tournement", [await game.getAddress(), await academy.getAddress()]);
     await tournement.waitForDeployment();
 
     await game.setTournamentContract(await tournement.getAddress());
@@ -82,7 +82,7 @@ describe("Tournement", () => {
   it("runs a 4-team bracket and emits tournament-specific events", async () => {
     const { tournement, game, entrants, entrantTeams } = await deploySuite();
 
-    await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+    await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
 
     for (let i = 0; i < entrants.length; i++) {
       await tournement
@@ -163,7 +163,7 @@ describe("Tournement", () => {
   it("prevents starting when not enough teams entered", async () => {
     const { tournement, entrants, entrantTeams } = await deploySuite();
 
-    await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+    await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
     await tournement
       .connect(entrants[0])
       .enter(0n, entrantTeams[0][0], entrantTeams[0][1], entrantTeams[0][2], { value: entryFee });
@@ -171,10 +171,24 @@ describe("Tournement", () => {
     await expect(tournement.start(0n)).to.be.revertedWith("Not enough teams entered");
   });
 
+  it("allows only the creator to progress rounds", async () => {
+    const { tournement, entrants, entrantTeams } = await deploySuite();
+
+    await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
+    for (let i = 0; i < entrants.length; i++) {
+      await tournement
+        .connect(entrants[i])
+        .enter(0n, entrantTeams[i][0], entrantTeams[i][1], entrantTeams[i][2], { value: entryFee });
+    }
+
+    await expect(tournement.connect(entrants[1]).start(0n)).to.be.revertedWith("Only creator can progress");
+    await expect(tournement.connect(entrants[0]).start(0n)).to.not.be.reverted;
+  });
+
   it("prevents starting the same tournament twice", async () => {
     const { tournement, entrants, entrantTeams } = await deploySuite();
 
-    await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+    await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
     for (let i = 0; i < entrants.length; i++) {
       await tournement
         .connect(entrants[i])
@@ -190,8 +204,8 @@ describe("Tournement", () => {
   it("returns tournament requirements and availability via getTournements", async () => {
     const { tournement, entrants, entrantTeams } = await deploySuite();
 
-    await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
-    await tournement.create(1, ethers.parseEther("4"), 20, 25, 90, 90, [1, 2], [3]);
+    await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
+    await tournement.create("Pro Cup", 1, ethers.parseEther("4"), 20, 25, 90, 90, [1, 2], [3]);
 
     for (let i = 0; i < entrants.length; i++) {
       await tournement
@@ -203,6 +217,7 @@ describe("Tournement", () => {
     expect(summaries).to.have.lengthOf(2);
 
     expect(BigInt(summaries[0].tournamentId)).to.equal(0n);
+    expect(summaries[0].name).to.equal("Test Tournament");
     expect(Number(summaries[0].rounds)).to.equal(2);
     expect(BigInt(summaries[0].entryFee)).to.equal(entryFee);
     expect(Number(summaries[0].minAttack)).to.equal(0);
@@ -214,6 +229,7 @@ describe("Tournement", () => {
     expect(summaries[0].isOpen).to.equal(false);
 
     expect(BigInt(summaries[1].tournamentId)).to.equal(1n);
+    expect(summaries[1].name).to.equal("Pro Cup");
     expect(Number(summaries[1].rounds)).to.equal(1);
     expect(BigInt(summaries[1].entryFee)).to.equal(ethers.parseEther("4"));
     expect(Number(summaries[1].minAttack)).to.equal(20);
@@ -230,7 +246,7 @@ describe("Tournement", () => {
   it("updates isOpen from true to false when a tournament completes", async () => {
     const { tournement, entrants, entrantTeams } = await deploySuite();
 
-    await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+    await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
 
     let summaries = await tournement.getTournements();
     expect(summaries).to.have.lengthOf(1);
@@ -256,7 +272,7 @@ describe("Tournement", () => {
     it("allows champion to claim tournament reward once", async () => {
       const { tournement, entrants, entrantTeams } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
 
       for (let i = 0; i < entrants.length; i++) {
         await tournement
@@ -289,7 +305,7 @@ describe("Tournement", () => {
     it("prevents non-champion from claiming reward", async () => {
       const { tournement, entrants, entrantTeams } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
       for (let i = 0; i < entrants.length; i++) {
         await tournement
           .connect(entrants[i])
@@ -307,7 +323,7 @@ describe("Tournement", () => {
     it("prevents claiming reward before tournament completion", async () => {
       const { tournement, entrants, entrantTeams } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
       await tournement
         .connect(entrants[0])
         .enter(0n, entrantTeams[0][0], entrantTeams[0][1], entrantTeams[0][2], { value: entryFee });
@@ -321,7 +337,7 @@ describe("Tournement", () => {
       const { tournement } = await deploySuite();
 
       await expect(
-        tournement.create(2, entryFee, 0, 0, 0, 0, [1], [1])
+        tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [1], [1])
       ).to.be.revertedWith("Type cannot be both included and excluded");
     });
 
@@ -349,7 +365,7 @@ describe("Tournement", () => {
 
       const team = buildTeam(ids);
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [allowedType], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [allowedType], []);
       await expect(
         tournement.connect(entrants[0]).enter(0n, team[0], team[1], team[2], { value: entryFee })
       ).to.be.revertedWith("Player type not included in this tournament");
@@ -363,7 +379,7 @@ describe("Tournement", () => {
       const ids = players.slice(0, 5).map((p: any) => BigInt(p.id));
       const team = buildTeam(ids);
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], [bannedType]);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], [bannedType]);
       await expect(
         tournement.connect(entrants[0]).enter(0n, team[0], team[1], team[2], { value: entryFee })
       ).to.be.revertedWith("Player type not allowed in this tournament");
@@ -380,7 +396,7 @@ describe("Tournement", () => {
       const maxAttackInTeam = players.slice(0, 5).reduce((acc: number, p: any) => Math.max(acc, Number(p.attack)), 0);
       const minAttack = maxAttackInTeam + 1;
 
-      await tournement.create(2, entryFee, minAttack, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, minAttack, 0, 0, 0, [], []);
       await expect(
         tournement.connect(entrants[0]).enter(0n, team[0], team[1], team[2], { value: entryFee })
       ).to.be.revertedWith("One or more players do not meet stat requirements");
@@ -395,7 +411,7 @@ describe("Tournement", () => {
       const minDefenceInTeam = players.slice(0, 5).reduce((acc: number, p: any) => Math.min(acc, Number(p.defense)), Number(players[0].defense));
       const maxDefence = minDefenceInTeam - 1;
 
-      await tournement.create(2, entryFee, 0, 0, 0, maxDefence, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, maxDefence, [], []);
       await expect(
         tournement.connect(entrants[0]).enter(0n, team[0], team[1], team[2], { value: entryFee })
       ).to.be.revertedWith("One or more players do not meet stat requirements");
@@ -403,18 +419,30 @@ describe("Tournement", () => {
   });
 
   describe("Tournament Config Validation", () => {
+    it("rejects empty or overly long tournament names", async () => {
+      const { tournement } = await deploySuite();
+
+      await expect(
+        tournement.create("", 2, entryFee, 0, 0, 0, 0, [], [])
+      ).to.be.revertedWith("Name must be 1-64 characters");
+
+      await expect(
+        tournement.create("x".repeat(65), 2, entryFee, 0, 0, 0, 0, [], [])
+      ).to.be.revertedWith("Name must be 1-64 characters");
+    });
+
     it("rejects invalid round bounds", async () => {
       const { tournement } = await deploySuite();
 
-      await expect(tournement.create(0, entryFee, 0, 0, 0, 0, [], [])).to.be.revertedWith("Rounds must be between 1 and 7");
-      await expect(tournement.create(8, entryFee, 0, 0, 0, 0, [], [])).to.be.revertedWith("Rounds must be between 1 and 7");
+      await expect(tournement.create("Test Tournament", 0, entryFee, 0, 0, 0, 0, [], [])).to.be.revertedWith("Rounds must be between 1 and 7");
+      await expect(tournement.create("Test Tournament", 8, entryFee, 0, 0, 0, 0, [], [])).to.be.revertedWith("Rounds must be between 1 and 7");
     });
 
     it("rejects entry fee below the minimum", async () => {
       const { tournement } = await deploySuite();
 
       await expect(
-        tournement.create(2, ethers.parseEther("2.99"), 0, 0, 0, 0, [], [])
+        tournement.create("Test Tournament", 2, ethers.parseEther("2.99"), 0, 0, 0, 0, [], [])
       ).to.be.revertedWith("Minimum entry fee is 3 POL");
     });
 
@@ -422,11 +450,11 @@ describe("Tournement", () => {
       const { tournement } = await deploySuite();
 
       await expect(
-        tournement.create(2, entryFee, 70, 0, 60, 0, [], [])
+        tournement.create("Test Tournament", 2, entryFee, 70, 0, 60, 0, [], [])
       ).to.be.revertedWith("Invalid attack range");
 
       await expect(
-        tournement.create(2, entryFee, 0, 70, 0, 60, [], [])
+        tournement.create("Test Tournament", 2, entryFee, 0, 70, 0, 60, [], [])
       ).to.be.revertedWith("Invalid defence range");
     });
 
@@ -434,11 +462,11 @@ describe("Tournement", () => {
       const { tournement } = await deploySuite();
 
       await expect(
-        tournement.create(2, entryFee, 0, 0, 0, 0, [4], [])
+        tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [4], [])
       ).to.be.revertedWith("Invalid player type");
 
       await expect(
-        tournement.create(2, entryFee, 0, 0, 0, 0, [], [9])
+        tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], [9])
       ).to.be.revertedWith("Invalid player type");
     });
   });
@@ -447,7 +475,7 @@ describe("Tournement", () => {
     it("emits TournementReady when final team enters", async () => {
       const { tournement, entrants, entrantTeams } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
 
       for (let i = 0; i < entrants.length - 1; i++) {
         await tournement
@@ -469,7 +497,7 @@ describe("Tournement", () => {
     it("allows creator to cancel an unstarted tournament and entrants to claim refunds", async () => {
       const { tournement, entrants, entrantTeams } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
       await tournement
         .connect(entrants[0])
         .enter(0n, entrantTeams[0][0], entrantTeams[0][1], entrantTeams[0][2], { value: entryFee });
@@ -489,7 +517,7 @@ describe("Tournement", () => {
     it("blocks non-creator cancel attempts", async () => {
       const { tournement, entrants } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
       await expect(tournement.connect(entrants[1]).cancel(0n)).to.be.revertedWith("Only creator can cancel");
     });
 
@@ -504,7 +532,7 @@ describe("Tournement", () => {
     it("rejects incorrect entry fee", async () => {
       const { tournement, entrants, entrantTeams } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
       await expect(
         tournement.connect(entrants[0]).enter(0n, entrantTeams[0][0], entrantTeams[0][1], entrantTeams[0][2], {
           value: ethers.parseEther("1"),
@@ -515,7 +543,7 @@ describe("Tournement", () => {
     it("prevents duplicate entries by the same address", async () => {
       const { tournement, entrants, entrantTeams } = await deploySuite();
 
-      await tournement.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournement.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
       await tournement
         .connect(entrants[0])
         .enter(0n, entrantTeams[0][0], entrantTeams[0][1], entrantTeams[0][2], { value: entryFee });

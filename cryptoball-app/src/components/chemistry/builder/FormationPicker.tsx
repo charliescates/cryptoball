@@ -1,4 +1,5 @@
 import { builderFormations } from "../data";
+import { formatFormationLabel } from "../../formation-grid-parts/formationRows";
 
 interface FormationPickerProps {
   onSelect: (formationName: string) => void;
@@ -14,7 +15,7 @@ const FormationPicker = ({ onSelect, selectedFormationName }: FormationPickerPro
         type="button"
         onClick={() => onSelect(formation.name)}
       >
-        <strong>{formation.name}</strong>
+        <strong>{formatFormationLabel(formation)}</strong>
         <span>{formation.summary}</span>
         <small>{formation.intent}</small>
       </button>

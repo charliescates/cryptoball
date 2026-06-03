@@ -6,6 +6,7 @@ export type SubgraphTournamentCreated = {
   id: string
   tournamentId: string
   creator: string
+  name: string
   rounds: number
   entryFee: string
   minAttack?: number
@@ -137,6 +138,7 @@ const QUERY_ALL_TOURNAMENTS = gql`
       id
       tournamentId
       creator
+      name
       rounds
       entryFee
       minAttack

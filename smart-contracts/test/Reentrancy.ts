@@ -101,7 +101,7 @@ describe("Reentrancy Protection", () => {
       const entryFee = ethers.parseEther("3");
 
       // Create and complete tournament
-      await tournament.create(2, entryFee, 0, 0, 0, 0, [], []);
+      await tournament.create("Test Tournament", 2, entryFee, 0, 0, 0, 0, [], []);
 
       // Note: We can't directly complete a tournament and test claim without
       // more setup. This test demonstrates the protection exists.

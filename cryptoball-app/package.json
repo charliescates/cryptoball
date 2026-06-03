@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --mode prod",
     "dev:local": "vite --mode localhost",
     "dev:prod": "vite --mode prod",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build --mode prod",
     "build:local": "tsc && vite build --mode localhost",
     "build:prod": "tsc && vite build --mode prod",
     "lint": "biome check .",

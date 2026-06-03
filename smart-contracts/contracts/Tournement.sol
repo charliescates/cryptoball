@@ -23,6 +23,7 @@ contract Tournement is ReentrancyGuard {
     mapping(uint256 => uint256) public tournementAcademyFees;
 
     struct TournementInfo {
+        string name;
         uint8 rounds;
         uint256 entryFee;
         address creator;
@@ -43,6 +44,7 @@ contract Tournement is ReentrancyGuard {
 
     struct TournementSummary {
         uint256 tournamentId;
+        string name;
         uint8 rounds;
         uint256 entryFee;
         uint8 minAttack;
@@ -71,6 +73,7 @@ contract Tournement is ReentrancyGuard {
     event TournementCreated(
         uint256 indexed tournamentId,
         address indexed creator,
+        string name,
         uint8 rounds,
         uint256 entryFee,
         uint8 minAttack,
@@ -109,6 +112,7 @@ contract Tournement is ReentrancyGuard {
     }
 
     function create(
+        string memory name,
         uint8 rounds,
         uint256 entryFee,
         uint8 minAttack,
@@ -118,6 +122,10 @@ contract Tournement is ReentrancyGuard {
         uint8[] memory includeTypes,
         uint8[] memory excludeTypes
     ) external {
+        if (bytes(name).length == 0 || bytes(name).length > 64) {
+            revert("Name must be 1-64 characters");
+        }
+
         if (rounds == 0 || rounds > 7) {
             revert("Rounds must be between 1 and 7");
         }
@@ -138,6 +146,7 @@ contract Tournement is ReentrancyGuard {
         _validateTypeArray(excludeTypes);
 
         TournementInfo storage info = tournements[tournementCounter];
+        info.name = name;
         info.rounds = rounds;
         info.entryFee = entryFee;
         info.creator = msg.sender;
@@ -160,6 +169,7 @@ contract Tournement is ReentrancyGuard {
             console.log("[Tournament] Created");
             console.log("[Tournament] tournamentId", tournementCounter);
             console.log("[Tournament] creator", msg.sender);
+            console.log("[Tournament] name", name);
             console.log("[Tournament] rounds", rounds);
             console.log("[Tournament] entryFee", entryFee);
             console.log("[Tournament] minAttack", minAttack);
@@ -170,7 +180,7 @@ contract Tournement is ReentrancyGuard {
             console.log("[Tournament] excludeTypesLength", excludeTypes.length);
         }
 
-        emit TournementCreated(tournementCounter, msg.sender, rounds, entryFee, minAttack, minDefence, maxAttack, maxDefence, includeTypes, excludeTypes);
+        emit TournementCreated(tournementCounter, msg.sender, name, rounds, entryFee, minAttack, minDefence, maxAttack, maxDefence, includeTypes, excludeTypes);
 
         tournementCounter++;
     }
@@ -201,6 +211,7 @@ contract Tournement is ReentrancyGuard {
 
             summaries[summaryIndex] = TournementSummary({
                 tournamentId: i,
+                name: info.name,
                 rounds: info.rounds,
                 entryFee: info.entryFee,
                 minAttack: info.minAttack,
@@ -289,6 +300,10 @@ contract Tournement is ReentrancyGuard {
         }
 
         TournementInfo storage tournement = tournements[tournamentId];
+        if (msg.sender != tournement.creator) {
+            revert("Only creator can progress");
+        }
+
         if (tournement.champion != address(0)) {
             revert("Tournament already completed");
         }

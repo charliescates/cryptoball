@@ -13,6 +13,7 @@ type TournementCreated @entity(immutable: true) {
   id: Bytes!
   tournamentId: BigInt! # uint256
   creator: Bytes! # address
+  name: String!
   rounds: Int! # uint8
   entryFee: BigInt! # uint256
   minAttack: Int! # uint8

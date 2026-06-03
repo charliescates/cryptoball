@@ -8,6 +8,8 @@ import { gameContract } from "../../contracts/gameContract";
 import MatchPreviewPanel from "./start-game/MatchPreviewPanel";
 import StartGameForm from "./start-game/StartGameForm";
 
+const MIN_WAGER = 3;
+
 const StartGame = () => {
   const { address, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
@@ -49,6 +51,9 @@ const StartGame = () => {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (Number(wager) < MIN_WAGER) {
+      return;
+    }
     setEditable(false);
     try {
       await startGame();
@@ -69,7 +74,7 @@ const StartGame = () => {
   }, [isConfirmed, navigate, shouldOpenJoinAfterCreate]);
 
   const statusLabel = isConfirmed ? "Confirmed" : isConfirming ? "Confirming" : isPending ? "Submitting" : "Ready";
-  const hasReadyFixture = Boolean(homeAddress && awayAddress && wager);
+  const hasReadyFixture = Boolean(homeAddress && awayAddress && wager && Number(wager) >= MIN_WAGER);
 
   return (
     <div className="start-game-console">

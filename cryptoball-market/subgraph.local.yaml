@@ -10,7 +10,7 @@ dataSources:
     source:
       # Default Hardhat localhost address from deterministic deployment order.
       # Update if your local deployment outputs a different address.
-      address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+      address: "0x3aAde2dCD2Df6a8cAc689EE797591b2913658659"
       abi: Market
       startBlock: 0
     mapping:

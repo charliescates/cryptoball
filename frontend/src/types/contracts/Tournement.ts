@@ -58,6 +58,7 @@ export declare namespace Tournement {
 
   export type TournementSummaryStruct = {
     tournamentId: BigNumberish;
+    name: string;
     rounds: BigNumberish;
     entryFee: BigNumberish;
     minAttack: BigNumberish;
@@ -78,6 +79,7 @@ export declare namespace Tournement {
 
   export type TournementSummaryStructOutput = [
     tournamentId: bigint,
+    name: string,
     rounds: bigint,
     entryFee: bigint,
     minAttack: bigint,
@@ -96,6 +98,7 @@ export declare namespace Tournement {
     champion: string
   ] & {
     tournamentId: bigint;
+    name: string;
     rounds: bigint;
     entryFee: bigint;
     minAttack: bigint;
@@ -176,6 +179,7 @@ export interface TournementInterface extends Interface {
   encodeFunctionData(
     functionFragment: "create",
     values: [
+      string,
       BigNumberish,
       BigNumberish,
       BigNumberish,
@@ -399,6 +403,7 @@ export namespace TournementCreatedEvent {
   export type InputTuple = [
     tournamentId: BigNumberish,
     creator: AddressLike,
+    name: string,
     rounds: BigNumberish,
     entryFee: BigNumberish,
     minAttack: BigNumberish,
@@ -411,6 +416,7 @@ export namespace TournementCreatedEvent {
   export type OutputTuple = [
     tournamentId: bigint,
     creator: string,
+    name: string,
     rounds: bigint,
     entryFee: bigint,
     minAttack: bigint,
@@ -423,6 +429,7 @@ export namespace TournementCreatedEvent {
   export interface OutputObject {
     tournamentId: bigint;
     creator: string;
+    name: string;
     rounds: bigint;
     entryFee: bigint;
     minAttack: bigint;
@@ -640,6 +647,7 @@ export interface Tournement extends BaseContract {
 
   create: TypedContractMethod<
     [
+      name: string,
       rounds: BigNumberish,
       entryFee: BigNumberish,
       minAttack: BigNumberish,
@@ -722,6 +730,7 @@ export interface Tournement extends BaseContract {
     [arg0: BigNumberish],
     [
       [
+        string,
         bigint,
         bigint,
         string,
@@ -734,6 +743,7 @@ export interface Tournement extends BaseContract {
         boolean,
         string
       ] & {
+        name: string;
         rounds: bigint;
         entryFee: bigint;
         creator: string;
@@ -773,6 +783,7 @@ export interface Tournement extends BaseContract {
     nameOrSignature: "create"
   ): TypedContractMethod<
     [
+      name: string,
       rounds: BigNumberish,
       entryFee: BigNumberish,
       minAttack: BigNumberish,
@@ -846,6 +857,7 @@ export interface Tournement extends BaseContract {
     [arg0: BigNumberish],
     [
       [
+        string,
         bigint,
         bigint,
         string,
@@ -858,6 +870,7 @@ export interface Tournement extends BaseContract {
         boolean,
         string
       ] & {
+        name: string;
         rounds: bigint;
         entryFee: bigint;
         creator: string;
@@ -1015,7 +1028,7 @@ export interface Tournement extends BaseContract {
       TournementCompletedSummaryEvent.OutputObject
     >;
 
-    "TournementCreated(uint256,address,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])": TypedContractEvent<
+    "TournementCreated(uint256,address,string,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])": TypedContractEvent<
       TournementCreatedEvent.InputTuple,
       TournementCreatedEvent.OutputTuple,
       TournementCreatedEvent.OutputObject

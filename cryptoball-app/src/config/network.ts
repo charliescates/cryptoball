@@ -1,5 +1,6 @@
-import { fallback, http, type Chain, type Transport } from "wagmi";
+import { fallback, http, type Transport } from "wagmi";
 import { hardhat, polygon } from "wagmi/chains";
+import type { Chain } from "viem";
 
 type SupportedNetwork = "polygon" | "localhost";
 type ContractKey = "player" | "academy" | "game" | "market" | "tournement";
@@ -28,7 +29,7 @@ export const activeChain: Chain =
       }
     : polygon;
 
-export const nativeTokenSymbol = appNetwork === "localhost" ? "ETH" : "POL";
+export const nativeTokenSymbol = "POL";
 
 export const getActiveTransport = (): Transport => {
   if (appNetwork === "localhost") {
@@ -45,19 +46,19 @@ const configuredTournamentAddress =
 
 const CONTRACT_ADDRESSES: Record<SupportedNetwork, Record<ContractKey, `0x${string}`>> = {
   polygon: {
-    player: "0x818cAFC9e8AE9fa9b4503772AeF90b00adE9E027",
-    academy: "0x9d3616fCC1b1f4FD0C24327Fc658Ee4969856582",
-    game: "0x666FC08efB36D6BA99AD13Ef9df2aA3B2B566b53",
-    market: "0x6baCaEFAc11828c3d5e80fCEaBf857530389e81a",
-    tournement: "0x6284c72097953821C9B6b2467EDD84D211f3B562",
+    player: "0xDe2101ACc9e55c413579F97e8c81432F8cF490cE",
+    academy: "0xb63FDBc4ab7751Ca9b9BED6bb2DDbB190cA0f001",
+    game: "0xE6F5Bb7793eA55cf4F39b339D946745015Ab195B",
+    market: "0x90Ddbe623970294089Ee58374d429702cF123A00",
+    tournement: "0x306B81C762abB13cE1FB5eD9025a846c2C4a7381",
   },
   localhost: {
     // Hardhat default deterministic deployment addresses when deployed from account[0].
-    player: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    academy: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    game: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-    market: "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-    tournement: "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+    player: "0xD0141E899a65C95a556fE2B27e5982A6DE7fDD7A",
+    academy: "0x07882Ae1ecB7429a84f1D53048d35c4bB2056877",
+    game: "0xfaAddC93baf78e89DCf37bA67943E1bE8F37Bb8c",
+    market: "0x3aAde2dCD2Df6a8cAc689EE797591b2913658659",
+    tournement: "0x3155755b79aA083bd953911C92705B7aA82a18F9",
   },
 };
 

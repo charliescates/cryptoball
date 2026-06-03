@@ -14,7 +14,7 @@ const WelcomeSection = ({ teamName }: WelcomeSectionProps) => (
   <div className="welcome-section">
     <div className="welcome-card">
       <div className="welcome-header">
-        <h1>Welcome to CryptoBalls</h1>
+        <h1>Welcome to Futures FC</h1>
         <p className="welcome-subtitle">{teamName ? `${teamName} is ready to rise` : "Start Building Your Legend"}</p>
       </div>
 

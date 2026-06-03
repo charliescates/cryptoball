@@ -7,7 +7,7 @@ const AcademyHeader = ({ playerCount }: AcademyHeaderProps) => (
     <div>
       <p className="academy-section-kicker">Recruitment</p>
       <h1 id="academy-title">Academy</h1>
-      <p className="academy-section-copy">Scout fresh talent and sign the next CryptoBalls starter.</p>
+      <p className="academy-section-copy">Scout fresh talent and sign the next Futures FC starter.</p>
     </div>
     <div className="academy-section-count">
       <strong>{playerCount}</strong>

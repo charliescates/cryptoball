@@ -12,7 +12,7 @@ describe("WelcomeSection", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: /welcome to cryptoballs/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /welcome to futures fc/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /no squad yet/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /visit academy/i })).toHaveAttribute("href", "/academy");
     expect(screen.getByText(/scout players/i)).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -187,8 +187,10 @@ describe("ShowMatches", () => {
 
     renderShowMatches("/games/recent?matchId=17&autoplay=1");
 
-    expect(screen.queryByText(/replay hidden until reveal/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/match replay/i)).toBeInTheDocument();
+    return waitFor(() => {
+      expect(screen.queryByText(/replay hidden until reveal/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/match replay/i)).toBeInTheDocument();
+    });
   });
 
   it("shows a My Games toggle button when a wallet is connected", () => {
@@ -244,5 +246,41 @@ describe("ShowMatches", () => {
       { address: HOME_ADDRESS.toLowerCase() },
       matchResultsHeaders,
     );
+  });
+
+  it("uses the tournament replay query when tournament replay params are present", async () => {
+    vi.mocked(useQuery).mockImplementation((opts) => {
+      const fn = opts.queryFn;
+      if (typeof fn === "function") void (fn as () => Promise<unknown>)();
+      return { status: "success", data: { playedMatches: [] } } as never;
+    });
+    vi.mocked(request).mockResolvedValue({ playedMatches: [] });
+
+    const {
+      matchResultsUrl,
+      matchResultsHeaders,
+      playedMatchByMatchIdAndTournamentIdQuery,
+      tournamentReplayScoreQuery,
+    } = await import("./matchResultsQuery");
+
+    renderShowMatches("/games/recent?matchId=17&tournamentId=4&autoplay=1");
+
+    expect(screen.getByRole("heading", { name: /tournament match #17 replay/i })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(vi.mocked(request)).toHaveBeenCalledWith(
+        matchResultsUrl,
+        playedMatchByMatchIdAndTournamentIdQuery,
+        { id: "17-4" },
+        matchResultsHeaders,
+      );
+
+      expect(vi.mocked(request)).toHaveBeenCalledWith(
+        matchResultsUrl,
+        tournamentReplayScoreQuery,
+        { tournamentId: "4", tournamentMatchId: "17" },
+        matchResultsHeaders,
+      );
+    });
   });
 });

@@ -38,7 +38,7 @@ describe("Header", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("CryptoBalls")).toBeInTheDocument();
+    expect(screen.getByText("Futures FC")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /toggle menu/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /disconnect/i })).toBeInTheDocument();
 

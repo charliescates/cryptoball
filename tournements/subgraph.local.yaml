@@ -10,7 +10,7 @@ dataSources:
     source:
       # Default Hardhat localhost address from deterministic deployment order.
       # Update if your local deployment outputs a different address.
-      address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+      address: "0x3155755b79aA083bd953911C92705B7aA82a18F9"
       abi: tournement
       startBlock: 0
     mapping:
@@ -34,7 +34,7 @@ dataSources:
       eventHandlers:
         - event: TournementCompletedSummary(indexed uint256,indexed address,uint256,uint256)
           handler: handleTournementCompleted
-        - event: TournementCreated(indexed uint256,indexed address,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
+        - event: TournementCreated(indexed uint256,indexed address,string,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
           handler: handleTournementCreated
         - event: TeamEntered(indexed uint256,indexed address,uint8)
           handler: handleTeamEntered

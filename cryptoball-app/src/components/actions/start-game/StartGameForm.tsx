@@ -3,6 +3,8 @@ import type { FormEvent, ReactNode } from "react";
 import type { BaseError } from "viem";
 import { nativeTokenSymbol } from "../../../config/network";
 
+const MIN_WAGER = 3;
+
 interface StartGameFormProps {
   awayAddress: string;
   editable: boolean;
@@ -39,6 +41,8 @@ const StartGameForm = ({
   wager,
 }: StartGameFormProps) => {
   const errorMessage = getErrorMessage(error);
+  const wagerAmount = Number(wager);
+  const isWagerValid = wager.trim() !== "" && Number.isFinite(wagerAmount) && wagerAmount >= MIN_WAGER;
 
   return (
     <form className="start-game-form" onSubmit={onSubmit}>
@@ -79,13 +83,15 @@ const StartGameForm = ({
               id="match-wager"
               type="text"
               inputMode="decimal"
-              placeholder="0.05"
+              min={MIN_WAGER}
+              placeholder="3"
               value={wager}
               onChange={(event) => onWagerChange(event.target.value)}
               disabled={!editable}
             />
             <span>{nativeTokenSymbol}</span>
           </div>
+          <small className="form-field-hint">Minimum wager: {MIN_WAGER} {nativeTokenSymbol}</small>
         </div>
       </StartGameSection>
 
@@ -94,7 +100,7 @@ const StartGameForm = ({
           <span className="section-kicker">Launch state</span>
           <strong>{hasReadyFixture ? "Fixture complete" : "Awaiting details"}</strong>
         </div>
-        <button className="start-game-button" disabled={isPending || isConfirming || !editable} type="submit">
+        <button className="start-game-button" disabled={isPending || isConfirming || !editable || !isWagerValid} type="submit">
           {isPending ? "Starting match..." : "Start Game"}
         </button>
       </div>
@@ -108,6 +114,9 @@ const StartGameForm = ({
         )}
         {isConfirming && <div className="transaction-status pending">Waiting for wallet confirmation...</div>}
         {isConfirmed && <div className="transaction-status success">Match creation confirmed.</div>}
+        {!isWagerValid && wager.trim() !== "" && (
+          <div className="transaction-status error">Shared wager must be at least {MIN_WAGER} {nativeTokenSymbol}.</div>
+        )}
         {errorMessage && <div className="transaction-status error">Error: {errorMessage}</div>}
       </div>
     </form>

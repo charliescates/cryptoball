@@ -1,3 +1,4 @@
 tournements/data/*
+match-results/data/*
 node_modules/
 */**/node_modules/

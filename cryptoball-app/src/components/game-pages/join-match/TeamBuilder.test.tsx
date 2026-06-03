@@ -72,7 +72,7 @@ describe("TeamBuilder", () => {
     expect(screen.getByText("Build Your Match Five")).toBeInTheDocument();
     expect(screen.getByTestId("formation-grid")).toHaveTextContent("Your Team");
     expect(screen.getByTestId("player-roster")).toHaveTextContent("5");
-    expect(screen.getByText(/choose players for your 3-1-1 formation/i)).toBeInTheDocument();
+    expect(screen.getByText(/choose players for your 1-1-3 formation/i)).toBeInTheDocument();
     expect(screen.getByText(/restored 5 players/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /use squad from match #4/i }));
@@ -115,6 +115,6 @@ describe("TeamBuilder", () => {
     );
 
     expect(screen.getByRole("button", { name: "Reset Team" })).toBeDisabled();
-    expect(screen.queryByText(/choose players for your 3-1-1 formation/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/choose players for your 1-1-3 formation/i)).not.toBeInTheDocument();
   });
 });

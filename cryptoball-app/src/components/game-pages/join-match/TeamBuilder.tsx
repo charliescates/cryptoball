@@ -1,4 +1,5 @@
 import FormationGrid from "../../formation-grid";
+import { formatFormationLabel } from "../../formation-grid-parts/formationRows";
 import type { Player } from "../../player";
 import PlayerRoster from "./PlayerRoster";
 import { FORMATIONS, type Formation } from "./formations";
@@ -77,7 +78,7 @@ const TeamBuilder = ({
       </div>
       <div>
         <span>Shape</span>
-        <strong>{selectedFormation.name}</strong>
+        <strong>{formatFormationLabel(selectedFormation)}</strong>
       </div>
       <div>
         <span>Risk</span>
@@ -108,7 +109,7 @@ const TeamBuilder = ({
           type="button"
           onClick={() => onFormationChange(formationOption.name)}
         >
-          <span className="formation-card-name">{formationOption.name}</span>
+          <span className="formation-card-name">{formatFormationLabel(formationOption)}</span>
           <span className="formation-card-summary">{formationOption.summary}</span>
           <span className="formation-card-intent">{formationOption.intent}</span>
           <span className="formation-card-split">
@@ -143,7 +144,7 @@ const TeamBuilder = ({
           <p className="formation-hint">
             {activePositionMeta
               ? `Choose a player for ${activePositionMeta.label}, or tap another pitch slot to change role.`
-              : `Choose players for your ${selectedFormation.name} formation. You need 5 players total.`}
+              : `Choose players for your ${formatFormationLabel(selectedFormation)} formation. You need 5 players total.`}
           </p>
         )}
       </div>

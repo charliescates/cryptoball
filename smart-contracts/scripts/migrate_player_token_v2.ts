@@ -1,11 +1,11 @@
 import { ethers, network } from "hardhat";
 
 type ParsedArgs = {
-  oldToken: string;
-  newToken: string;
-  startId: number;
-  endId?: number;
-  dryRun: boolean;
+  oldtoken: string;
+  newtoken: string;
+  startid: number;
+  endid?: number;
+  dryrun: boolean;
 };
 
 type SnapshotPlayer = {
@@ -57,8 +57,8 @@ function parseArgs(argv: string[]): ParsedArgs {
     return undefined;
   };
 
-  const oldToken = getArg("old") ?? process.env.OLD_PLAYER_TOKEN_ADDRESS;
-  const newToken = getArg("new") ?? process.env.NEW_PLAYER_TOKEN_ADDRESS;
+  const oldToken = getArg("oldtoken") ?? process.env.OLD_PLAYER_TOKEN_ADDRESS;
+  const newToken = getArg("newtoken") ?? process.env.NEW_PLAYER_TOKEN_ADDRESS;
 
   if (!oldToken) {
     throw new Error("Missing old token address. Use --old <address> or OLD_PLAYER_TOKEN_ADDRESS.");
@@ -67,12 +67,12 @@ function parseArgs(argv: string[]): ParsedArgs {
     throw new Error("Missing new token address. Use --new <address> or NEW_PLAYER_TOKEN_ADDRESS.");
   }
 
-  const startRaw = getArg("startId") ?? process.env.MIGRATION_START_ID ?? "1";
-  const endRaw = getArg("endId") ?? process.env.MIGRATION_END_ID;
+  const startRaw = getArg("startid") ?? process.env.MIGRATION_START_ID ?? "1";
+  const endRaw = getArg("endid") ?? process.env.MIGRATION_END_ID;
 
   const startId = Number(startRaw);
   if (!Number.isInteger(startId) || startId <= 0) {
-    throw new Error("startId must be a positive integer");
+    throw new Error("startid must be a positive integer");
   }
 
   let endId: number | undefined;
@@ -88,15 +88,15 @@ function parseArgs(argv: string[]): ParsedArgs {
     throw new Error("endId cannot be smaller than startId");
   }
 
-  const dryRunArg = getArg("dryRun") ?? process.env.MIGRATION_DRY_RUN ?? "false";
+  const dryRunArg = getArg("dryrun") ?? process.env.MIGRATION_DRY_RUN ?? "false";
   const dryRun = dryRunArg.toLowerCase() === "true";
 
   return {
-    oldToken,
-    newToken,
-    startId,
-    endId,
-    dryRun
+    oldtoken: oldToken,
+    newtoken: newToken,
+    startid: startId,
+    endid: endId,
+    dryrun: dryRun
   };
 }
 
@@ -114,26 +114,38 @@ function toMigrationStruct(player: SnapshotPlayer) {
   };
 }
 
+function formatError(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.length > 0) {
+    return error;
+  }
+
+  return "Unknown error";
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   console.log(`Network: ${network.name}`);
-  console.log(`Old token: ${args.oldToken}`);
-  console.log(`New token: ${args.newToken}`);
-  console.log(`Range start: ${args.startId}`);
-  console.log(`Range end: ${args.endId ?? "max"}`);
-  console.log(`Dry run: ${args.dryRun}`);
+  console.log(`Old token: ${args.oldtoken}`);
+  console.log(`New token: ${args.newtoken}`);
+  console.log(`Range start: ${args.startid}`);
+  console.log(`Range end: ${args.endid ?? "max"}`);
+  console.log(`Dry run: ${args.dryrun}`);
 
-  const oldToken = (await ethers.getContractAt("PlayerToken", args.oldToken)) as unknown as OldToken;
-  const newToken = (await ethers.getContractAt("PlayerTokenV2", args.newToken)) as unknown as NewToken;
+  const oldToken = (await ethers.getContractAt("PlayerToken", args.oldtoken)) as unknown as OldToken;
+  const newToken = (await ethers.getContractAt("PlayerTokenV2", args.newtoken)) as unknown as NewToken;
 
   const allPlayers = await oldToken.getAllPlayers();
   const selected = allPlayers.filter((player) => {
     const id = Number(player.id);
-    if (id < args.startId) {
+    if (id < args.startid) {
       return false;
     }
-    if (args.endId !== undefined && id > args.endId) {
+    if (args.endid !== undefined && id > args.endid) {
       return false;
     }
     return true;
@@ -142,27 +154,34 @@ async function main() {
   console.log(`Players found in range: ${selected.length}`);
 
   let migrated = 0;
+  let failed = 0;
   for (const player of selected) {
-    const owner = await oldToken.ownerOf(player.id);
+    try {
+      const owner = await oldToken.ownerOf(player.id);
 
-    if (args.dryRun) {
-      console.log(
-        `[dry-run] id=${player.id.toString()} owner=${owner} atk=${player.attack.toString()} def=${player.defense.toString()} pot=${player.potential.toString()}`
-      );
+      if (args.dryrun) {
+        console.log(
+          `[dry-run] id=${player.id.toString()} owner=${owner} atk=${player.attack.toString()} def=${player.defense.toString()} pot=${player.potential.toString()}`
+        );
+        migrated += 1;
+        continue;
+      }
+
+      const tx = await newToken.mintPlayerFromMigration(owner, toMigrationStruct(player));
+      await tx.wait();
       migrated += 1;
-      continue;
-    }
 
-    const tx = await newToken.mintPlayerFromMigration(owner, toMigrationStruct(player));
-    await tx.wait();
-    migrated += 1;
-
-    if (migrated % 25 === 0 || migrated === selected.length) {
-      console.log(`Migration progress: ${migrated}/${selected.length}`);
+      if ((migrated + failed) % 25 === 0 || migrated + failed === selected.length) {
+        console.log(`Migration progress: ${migrated + failed}/${selected.length}`);
+      }
+    } catch (error) {
+      failed += 1;
+      const msg = formatError(error);
+      console.log(`[skip] id=${player.id.toString()} reason=${msg.replace(/\s+/g, " ").trim()}`);
     }
   }
 
-  console.log(`Migration complete. Players processed: ${migrated}`);
+  console.log(`Migration complete. Succeeded: ${migrated}, skipped: ${failed}, total: ${selected.length}`);
 }
 
 main().catch((error) => {

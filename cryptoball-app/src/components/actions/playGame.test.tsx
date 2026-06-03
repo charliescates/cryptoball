@@ -4,12 +4,18 @@ import { parseEther } from "viem";
 import { describe, expect, it, vi } from "vitest";
 
 import StartGame from "./playGame";
+import { activeChain } from "../../config/network";
 
 const writeContractSpy = vi.fn();
 const resetSpy = vi.fn();
 
 vi.mock("wagmi", () => ({
-  useAccount: vi.fn(() => ({ address: "0x1234567890abcdef1234567890abcdef12345678" })),
+  useAccount: vi.fn(() => ({ address: "0x1234567890abcdef1234567890abcdef12345678", chainId: activeChain.id })),
+  useSwitchChain: vi.fn(() => ({
+    error: undefined,
+    isPending: false,
+    switchChainAsync: vi.fn().mockResolvedValue(undefined),
+  })),
   useWaitForTransactionReceipt: vi.fn(() => ({ isLoading: false, isSuccess: false })),
   useWriteContract: vi.fn(() => ({
     data: undefined,
@@ -31,7 +37,7 @@ describe("StartGame", () => {
     fireEvent.change(screen.getByLabelText("Away wallet"), {
       target: { value: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" },
     });
-    fireEvent.change(screen.getByLabelText("Shared wager"), { target: { value: "1.25" } });
+    fireEvent.change(screen.getByLabelText("Shared wager"), { target: { value: "3.25" } });
     fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
 
     expect(resetSpy).toHaveBeenCalled();
@@ -39,7 +45,7 @@ describe("StartGame", () => {
       expect.objectContaining({
         functionName: "createGame",
         args: [
-          parseEther("1.25"),
+          parseEther("3.25"),
           "0x1234567890abcdef1234567890abcdef12345678",
           "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
         ],
@@ -49,13 +55,13 @@ describe("StartGame", () => {
 
   it("prefills a rematch from the query string", () => {
     render(
-      <MemoryRouter initialEntries={["/games/start?home=0xhome&away=0xaway&wager=0.25&rematch=1"]}>
+      <MemoryRouter initialEntries={["/games/start?home=0xhome&away=0xaway&wager=3.25&rematch=1"]}>
         <StartGame />
       </MemoryRouter>,
     );
 
     expect(screen.getByLabelText("Home wallet")).toHaveValue("0xhome");
     expect(screen.getByLabelText("Away wallet")).toHaveValue("0xaway");
-    expect(screen.getByLabelText("Shared wager")).toHaveValue("0.25");
+    expect(screen.getByLabelText("Shared wager")).toHaveValue("3.25");
   });
 });

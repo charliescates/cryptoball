@@ -32,7 +32,7 @@ dataSources:
       eventHandlers:
         - event: TournementCompletedSummary(indexed uint256,indexed address,uint256,uint256)
           handler: handleTournementCompleted
-        - event: TournementCreated(indexed uint256,indexed address,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
+        - event: TournementCreated(indexed uint256,indexed address,string,uint8,uint256,uint8,uint8,uint8,uint8,uint8[],uint8[])
           handler: handleTournementCreated
         - event: TeamEntered(indexed uint256,indexed address,uint8)
           handler: handleTeamEntered

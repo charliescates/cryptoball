@@ -10,7 +10,7 @@ dataSources:
     source:
       # Default Hardhat localhost address from deterministic deployment order.
       # Update if your local deployment outputs a different address.
-      address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+      address: "0xfaAddC93baf78e89DCf37bA67943E1bE8F37Bb8c"
       abi: Game
       startBlock: 0
     mapping:

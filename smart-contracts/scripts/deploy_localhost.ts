@@ -8,6 +8,7 @@ async function main() {
 
   // PlayerToken
   const PlayerToken = await ethers.getContractFactory("PlayerTokenV2");
+  // const PlayerToken = await ethers.getContractFactory("PlayerToken");
   const playerToken = await PlayerToken.deploy();
   await playerToken.waitForDeployment();
   console.log("PlayerTokenV2 deployed to:", await playerToken.getAddress());

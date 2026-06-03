@@ -24,7 +24,7 @@ function Header() {
       <div className="header-top">
         <div className="header-brand">
           <div className="header-brand-main">
-            <div className="logo">CryptoBalls</div>
+            <div className="logo">Futures FC</div>
             <span className="header-brand-badge">Live Club</span>
           </div>
         </div>

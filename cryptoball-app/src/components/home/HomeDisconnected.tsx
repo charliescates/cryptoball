@@ -1,7 +1,7 @@
 const HomeDisconnected = () => (
   <div className="hero-section">
     <div className="hero-content">
-      <h1 className="hero-title">CryptoBalls</h1>
+      <h1 className="hero-title">Futures FC</h1>
       <p className="hero-subtitle">Build Your Dream Team & Compete</p>
       <p className="hero-description">
         Connect your wallet to start building your squad, purchasing elite players, and competing in matches.

@@ -71,6 +71,18 @@ export type MatchesResponse = {
   playedMatches: PlayedMatch[];
 };
 
+export type TournamentMatchPlayedScore = {
+  id: string;
+  tournamentId: string;
+  tournamentMatchId: string;
+  homeScore: number;
+  awayScore: number;
+};
+
+export type TournamentMatchReplayResponse = {
+  tournamentMatchPlayeds: TournamentMatchPlayedScore[];
+};
+
 const playedMatchFields = `
   id
   matchId
@@ -136,6 +148,31 @@ export const playedMatchByMatchIdQuery = gql`
   query PlayedMatchByMatchId($matchId: String!) {
     playedMatches(first: 1, where: { matchId: $matchId, tournamentId: "0" }) {
       ${playedMatchFields}
+    }
+  }
+`;
+
+export const playedMatchByMatchIdAndTournamentIdQuery = gql`
+  query PlayedMatchByMatchIdAndTournamentId($id: String!) {
+    playedMatches(first: 1, where: { id: $id }) {
+      ${playedMatchFields}
+    }
+  }
+`;
+
+export const tournamentReplayScoreQuery = gql`
+  query TournamentReplayScore($tournamentId: String!, $tournamentMatchId: String!) {
+    tournamentMatchPlayeds(
+      first: 1
+      orderBy: blockTimestamp
+      orderDirection: desc
+      where: { tournamentId: $tournamentId, tournamentMatchId: $tournamentMatchId }
+    ) {
+      id
+      tournamentId
+      tournamentMatchId
+      homeScore
+      awayScore
     }
   }
 `;

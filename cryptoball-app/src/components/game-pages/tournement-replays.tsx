@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ContractFunctionZeroDataError, formatEther, parseAbiItem } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
@@ -13,7 +13,9 @@ import TeamBuilder from "./join-match/TeamBuilder";
 import { getFormationPositionMeta, useFormationBuilder } from "./join-match/useFormationBuilder";
 import { nativeTokenSymbol } from "../../config/network";
 import type { Player } from "../player";
+import { getPlayerTypeName } from "../utils/playerType";
 import type { Formation } from "./join-match/formations";
+import ShowMatches from "./show-matches";
 
 type TournamentMatch = {
   id: string;
@@ -41,6 +43,7 @@ type TournamentActivity = {
 
 type TournamentView = {
   id: string;
+  name: string;
   creator?: string;
   rounds: number;
   entryFee: bigint;
@@ -48,6 +51,8 @@ type TournamentView = {
   minDefence: number;
   maxAttack: number;
   maxDefence: number;
+  includeTypes: number[];
+  excludeTypes: number[];
   maxTeams: number;
   matches: TournamentMatch[];
   champion?: string;
@@ -65,6 +70,7 @@ type TournamentSection = "create" | "open" | "live" | "completed";
 
 type TournementSummary = {
   tournamentId: bigint;
+  name: string;
   rounds: bigint;
   entryFee: bigint;
   minAttack: bigint;
@@ -93,6 +99,10 @@ const tournementCompletedSummaryEvent = parseAbiItem(
   "event TournementCompletedSummary(uint256 indexed tournamentId, address indexed champion, uint256 championWinnings, uint256 executorFees)",
 );
 
+const tournementCreatedEvent = parseAbiItem(
+  "event TournementCreated(uint256 indexed tournamentId, address indexed creator, string name, uint8 rounds, uint256 entryFee, uint8 minAttack, uint8 minDefence, uint8 maxAttack, uint8 maxDefence, uint8[] includeTypes, uint8[] excludeTypes)",
+);
+
 function formatPol(wei: bigint) {
   const full = formatEther(wei);
   const [intPart, decimal = ""] = full.split(".");
@@ -102,6 +112,10 @@ function formatPol(wei: bigint) {
 
 function makeMatchId(tournementId: string, round: number, index: number) {
   return `${tournementId}-${round}-${index}`;
+}
+
+function getReplayResultKey(match: Pick<TournamentMatch, "tournamentId" | "tournamentMatchId">) {
+  return `${match.tournamentId}-${match.tournamentMatchId}`;
 }
 
 function isOpenTournament(tournament: TournamentView) {
@@ -167,34 +181,54 @@ function padPlayersTo3(players: Player[]): [bigint, bigint, bigint] {
   return [players[0]?.id ?? 0n, players[1]?.id ?? 0n, players[2]?.id ?? 0n];
 }
 
-function buildReplayGoals(match: TournamentMatch) {
-  const home = match.homeScore ?? 0;
-  const away = match.awayScore ?? 0;
-  const goals: { minute: number; side: "home" | "away" }[] = [];
-
-  const totalGoals = home + away;
-  if (totalGoals === 0) return goals;
-
-  let homeLeft = home;
-  let awayLeft = away;
-  for (let i = 0; i < totalGoals; i++) {
-    const minute = Math.min(90, 8 + i * Math.ceil(80 / totalGoals));
-    const pickHome = homeLeft > 0 && (awayLeft === 0 || i % 2 === 0);
-    if (pickHome) {
-      goals.push({ minute, side: "home" });
-      homeLeft -= 1;
-    } else {
-      goals.push({ minute, side: "away" });
-      awayLeft -= 1;
-    }
-  }
-  return goals;
-}
-
 function getQuickRoleScore(player: Player, role: "attack" | "midfield" | "defense"): number {
   if (role === "attack") return Number(player.attack) * 1.2 + Number(player.potential) * 0.25;
   if (role === "defense") return Number(player.defense) * 1.2 + Number(player.potential) * 0.25;
   return (Number(player.attack) + Number(player.defense) + Number(player.potential)) / 3;
+}
+
+function formatPlayerTypeList(types: number[]): string {
+  if (types.length === 0) {
+    return "None";
+  }
+
+  return [...new Set(types)].map((type) => getPlayerTypeName(type)).join(", ");
+}
+
+function getTournamentPlayerRestrictionReason(player: Player, tournament: TournamentView): string | null {
+  const attack = Number(player.attack);
+  const defense = Number(player.defense);
+  const playerType = Number(player.playerType);
+
+  if (tournament.minAttack > 0 && attack < tournament.minAttack) {
+    return `attack below minimum (${attack} < ${tournament.minAttack})`;
+  }
+
+  if (tournament.minDefence > 0 && defense < tournament.minDefence) {
+    return `defense below minimum (${defense} < ${tournament.minDefence})`;
+  }
+
+  if (tournament.maxAttack > 0 && attack > tournament.maxAttack) {
+    return `attack above maximum (${attack} > ${tournament.maxAttack})`;
+  }
+
+  if (tournament.maxDefence > 0 && defense > tournament.maxDefence) {
+    return `defense above maximum (${defense} > ${tournament.maxDefence})`;
+  }
+
+  if (tournament.excludeTypes.length > 0 && tournament.excludeTypes.includes(playerType)) {
+    return `${getPlayerTypeName(playerType)} is excluded`;
+  }
+
+  if (tournament.includeTypes.length > 0 && !tournament.includeTypes.includes(playerType)) {
+    return `${getPlayerTypeName(playerType)} is not in allowed include types`;
+  }
+
+  return null;
+}
+
+function isPlayerEligibleForTournament(player: Player, tournament: TournamentView): boolean {
+  return getTournamentPlayerRestrictionReason(player, tournament) === null;
 }
 
 function buildQuickEntryFormation(players: Player[], formation: Formation) {
@@ -241,6 +275,9 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   const [selectedCompletedMatchId, setSelectedCompletedMatchId] = useState<string | null>(null);
   const [entryValidationError, setEntryValidationError] = useState<string | null>(null);
   const [showAdvancedEntry, setShowAdvancedEntry] = useState(false);
+  const [revealedLiveReplayKeys, setRevealedLiveReplayKeys] = useState<Set<string>>(new Set());
+  const [revealedCompletedReplayKeys, setRevealedCompletedReplayKeys] = useState<Set<string>>(new Set());
+  const [playedOutCompletedReplayKeys, setPlayedOutCompletedReplayKeys] = useState<Set<string>>(new Set());
 
   const { data: enterHash, writeContract: writeEnterContract, isPending: isEnterPending, error: enterError } = useWriteContract();
   const { isLoading: isEnterConfirming, isSuccess: isEnterConfirmed } = useWaitForTransactionReceipt({
@@ -343,6 +380,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
         tournamentMap.set(id, {
           id,
+          name: summary.name || `Tournament #${id}`,
           creator: summary.creator,
           rounds,
           entryFee: summary.entryFee,
@@ -350,6 +388,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           minDefence: Number(summary.minDefence),
           maxAttack: Number(summary.maxAttack),
           maxDefence: Number(summary.maxDefence),
+          includeTypes: summary.includeTypes.map((value) => Number(value)),
+          excludeTypes: summary.excludeTypes.map((value) => Number(value)),
           maxTeams,
           matches: [],
           champion,
@@ -360,6 +400,79 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           currentRound,
           activity,
         });
+      }
+
+      type TournamentCreateMeta = {
+        name: string;
+        creator: string;
+        rounds: number;
+        entryFee: bigint;
+        minAttack: number;
+        minDefence: number;
+        maxAttack: number;
+        maxDefence: number;
+        includeTypes: number[];
+        excludeTypes: number[];
+      };
+
+      const createdTournamentMeta = new Map<string, TournamentCreateMeta>();
+
+      let createdLogs: Awaited<ReturnType<typeof publicClient.getLogs>> = [];
+      try {
+        createdLogs = await publicClient.getLogs({
+          address: tournementContract.address,
+          event: tournementCreatedEvent,
+          fromBlock: 0n,
+          toBlock: "latest",
+        });
+      } catch (logError) {
+        console.error("Error fetching tournament create logs:", logError);
+      }
+
+      for (const log of createdLogs) {
+        if (!("args" in log) || log.args == null) {
+          continue;
+        }
+
+        const args = log.args as {
+          tournamentId?: bigint;
+          creator?: string;
+          name?: string;
+          rounds?: number;
+          entryFee?: bigint;
+          minAttack?: number;
+          minDefence?: number;
+          maxAttack?: number;
+          maxDefence?: number;
+          includeTypes?: readonly number[];
+          excludeTypes?: readonly number[];
+        };
+
+        if (args.tournamentId == null || args.name == null) {
+          continue;
+        }
+
+        createdTournamentMeta.set(args.tournamentId.toString(), {
+          name: args.name,
+          creator: args.creator ?? ZERO_ADDRESS,
+          rounds: Number(args.rounds ?? 0),
+          entryFee: args.entryFee ?? 0n,
+          minAttack: Number(args.minAttack ?? 0),
+          minDefence: Number(args.minDefence ?? 0),
+          maxAttack: Number(args.maxAttack ?? 0),
+          maxDefence: Number(args.maxDefence ?? 0),
+          includeTypes: (args.includeTypes ?? []).map((value) => Number(value)),
+          excludeTypes: (args.excludeTypes ?? []).map((value) => Number(value)),
+        });
+      }
+
+      for (const tournament of tournamentMap.values()) {
+        const meta = createdTournamentMeta.get(tournament.id);
+        if (!meta) {
+          continue;
+        }
+
+        tournament.name = meta.name;
       }
 
       let completedSummaryLogs: Awaited<ReturnType<typeof publicClient.getLogs>> = [];
@@ -410,15 +523,21 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           continue;
         }
 
+        const createdMeta = createdTournamentMeta.get(tournamentId);
+
         tournamentMap.set(tournamentId, {
           id: tournamentId,
-          rounds: 0,
-          entryFee: 0n,
-          minAttack: 0,
-          minDefence: 0,
-          maxAttack: 0,
-          maxDefence: 0,
-          maxTeams: 0,
+          name: createdMeta?.name ?? `Tournament #${tournamentId}`,
+          creator: createdMeta?.creator,
+          rounds: createdMeta?.rounds ?? 0,
+          entryFee: createdMeta?.entryFee ?? 0n,
+          minAttack: createdMeta?.minAttack ?? 0,
+          minDefence: createdMeta?.minDefence ?? 0,
+          maxAttack: createdMeta?.maxAttack ?? 0,
+          maxDefence: createdMeta?.maxDefence ?? 0,
+          includeTypes: createdMeta?.includeTypes ?? [],
+          excludeTypes: createdMeta?.excludeTypes ?? [],
+          maxTeams: createdMeta && createdMeta.rounds > 0 ? 2 ** createdMeta.rounds : 0,
           matches: [],
           champion: champion !== ZERO_ADDRESS ? champion : undefined,
           championWinnings,
@@ -517,8 +636,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           id: `match-played-${log.transactionHash ?? "0x"}-${String(log.logIndex ?? 0)}`,
           blockNumber: log.blockNumber ?? 0n,
           label: `Round ${round} result`,
-          detail: `${homeScore}-${awayScore}, winner ${generateName(winner)}`,
-          tone: "success",
+          detail: "Replay available. Watch game to reveal score and winner.",
+          tone: "info",
         });
       }
 
@@ -574,11 +693,74 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   );
 
   const selectedMatch = useMemo(
-    () => selectedTournament?.matches.find((m) => m.id === selectedMatchId) ?? selectedTournament?.matches[0],
+    () => selectedTournament?.matches.find((m) => m.id === selectedMatchId),
     [selectedTournament, selectedMatchId],
   );
 
-  const replayGoals = useMemo(() => (selectedMatch ? buildReplayGoals(selectedMatch) : []), [selectedMatch]);
+  const eligibleOwnedPlayers = useMemo(() => {
+    if (!selectedTournament) {
+      return uniqueOwnedPlayers;
+    }
+
+    return uniqueOwnedPlayers.filter((player) => isPlayerEligibleForTournament(player, selectedTournament));
+  }, [selectedTournament, uniqueOwnedPlayers]);
+
+  const customTeamRestrictionError = useMemo(() => {
+    if (!selectedTournament) {
+      return null;
+    }
+
+    const selectedPlayers = formationBuilder.formation.filter((player): player is Player => player !== null);
+    for (const player of selectedPlayers) {
+      const reason = getTournamentPlayerRestrictionReason(player, selectedTournament);
+      if (reason) {
+        return `Selected team has ineligible players (${reason}).`;
+      }
+    }
+
+    return null;
+  }, [formationBuilder.formation, selectedTournament]);
+
+  useEffect(() => {
+    if (!selectedTournament || !showAdvancedEntry) {
+      return;
+    }
+
+    let hasChanges = false;
+    const normalizedFormation = formationBuilder.formation.map((player) => {
+      if (!player) {
+        return null;
+      }
+
+      if (isPlayerEligibleForTournament(player, selectedTournament)) {
+        return player;
+      }
+
+      hasChanges = true;
+      return null;
+    });
+
+    if (!hasChanges) {
+      return;
+    }
+
+    formationBuilder.applyFormation(normalizedFormation, formationBuilder.selectedFormation);
+    setEntryValidationError("Removed players that do not meet this tournament's stat/type rules.");
+  }, [formationBuilder, selectedTournament, showAdvancedEntry]);
+
+  function handleWatchLiveMatch(match: TournamentMatch) {
+    setSelectedMatchId(match.id);
+    const replayKey = getReplayResultKey(match);
+    setRevealedLiveReplayKeys((previous) => {
+      if (previous.has(replayKey)) {
+        return previous;
+      }
+
+      const next = new Set(previous);
+      next.add(replayKey);
+      return next;
+    });
+  }
 
   function handleStartTournament(tournementId: string) {
     writeStartContract({
@@ -632,6 +814,11 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       return;
     }
 
+    if (customTeamRestrictionError) {
+      setEntryValidationError(customTeamRestrictionError);
+      return;
+    }
+
     try {
       const selectedOwners = await Promise.all(
         selectedIds.map(async (id) => {
@@ -682,12 +869,12 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       return;
     }
 
-    if (uniqueOwnedPlayers.length < 5) {
-      setEntryValidationError("Need at least 5 unique players to quick-enter.");
+    if (eligibleOwnedPlayers.length < 5) {
+      setEntryValidationError("Need at least 5 eligible players to quick-enter this tournament.");
       return;
     }
 
-    const quickFormation = buildQuickEntryFormation(uniqueOwnedPlayers, formationBuilder.selectedFormation);
+    const quickFormation = buildQuickEntryFormation(eligibleOwnedPlayers, formationBuilder.selectedFormation);
 
     if (!quickFormation.isComplete) {
       setEntryValidationError("Not enough eligible players with games left for quick entry.");
@@ -739,6 +926,9 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   const requiredTeams = selectedTournament?.maxTeams ?? 0;
   const canStartOrAdvance =
     !!selectedTournament &&
+    !!address &&
+    !!selectedTournament.creator &&
+    selectedTournament.creator.toLowerCase() === address.toLowerCase() &&
     selectedTournament.teamsEntered === requiredTeams &&
     requiredTeams > 0 &&
     !selectedTournament.cancelled &&
@@ -779,45 +969,91 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   const completedRoundsTotal = selectedTournament?.rounds && selectedTournament.rounds > 0 ? selectedTournament.rounds : undefined;
   const maxObservedRound = roundResults.length > 0 ? roundResults[roundResults.length - 1].round : undefined;
 
-  const selectedCompletedRoundResult = useMemo(() => {
+  const visibleCompletedRoundResults = useMemo(() => {
     if (!isCompletedSection || roundResults.length === 0) {
+      return roundResults;
+    }
+
+    return roundResults.filter((_, index) => {
+      if (index === 0) {
+        return true;
+      }
+
+      const previousRound = roundResults[index - 1];
+      const firstPreviousRoundMatch = previousRound.matches[0];
+      if (!firstPreviousRoundMatch) {
+        return false;
+      }
+
+      return playedOutCompletedReplayKeys.has(getReplayResultKey(firstPreviousRoundMatch));
+    });
+  }, [isCompletedSection, playedOutCompletedReplayKeys, roundResults]);
+
+  const selectedCompletedRoundResult = useMemo(() => {
+    if (!isCompletedSection || visibleCompletedRoundResults.length === 0) {
       return undefined;
     }
 
-    return roundResults.find((round) => round.round === selectedCompletedRound) ?? roundResults[0];
-  }, [isCompletedSection, roundResults, selectedCompletedRound]);
+    return visibleCompletedRoundResults.find((round) => round.round === selectedCompletedRound) ?? visibleCompletedRoundResults[0];
+  }, [isCompletedSection, selectedCompletedRound, visibleCompletedRoundResults]);
+
+  useEffect(() => {
+    if (!isCompletedSection) {
+      return;
+    }
+
+    if (visibleCompletedRoundResults.length === 0) {
+      if (selectedCompletedRound !== null) {
+        setSelectedCompletedRound(null);
+      }
+      return;
+    }
+
+    const hasSelectedRound =
+      selectedCompletedRound !== null && visibleCompletedRoundResults.some((round) => round.round === selectedCompletedRound);
+
+    if (!hasSelectedRound) {
+      setSelectedCompletedRound(visibleCompletedRoundResults[0].round);
+    }
+  }, [isCompletedSection, selectedCompletedRound, visibleCompletedRoundResults]);
 
   const selectedCompletedRoundIndex = selectedCompletedRoundResult
-    ? roundResults.findIndex((round) => round.round === selectedCompletedRoundResult.round)
+    ? visibleCompletedRoundResults.findIndex((round) => round.round === selectedCompletedRoundResult.round)
     : -1;
 
   const selectedCompletedMatch = useMemo(() => {
-    if (!selectedCompletedRoundResult || selectedCompletedRoundResult.matches.length === 0) {
+    if (!selectedCompletedMatchId) {
       return undefined;
     }
 
-    return (
-      selectedCompletedRoundResult.matches.find((match) => match.id === selectedCompletedMatchId) ??
-      selectedCompletedRoundResult.matches[0]
-    );
-  }, [selectedCompletedMatchId, selectedCompletedRoundResult]);
+    for (const round of roundResults) {
+      const match = round.matches.find((entry) => entry.id === selectedCompletedMatchId);
+      if (match) {
+        return match;
+      }
+    }
 
-  const selectedCompletedMatchIndex = selectedCompletedRoundResult && selectedCompletedMatch
-    ? selectedCompletedRoundResult.matches.findIndex((match) => match.id === selectedCompletedMatch.id)
-    : -1;
+    return undefined;
+  }, [roundResults, selectedCompletedMatchId]);
 
-  const completedReplayGoals = useMemo(
-    () => (selectedCompletedMatch ? buildReplayGoals(selectedCompletedMatch) : []),
-    [selectedCompletedMatch],
-  );
+  function handleWatchCompletedMatch(match: TournamentMatch) {
+    setSelectedCompletedRound(match.round);
+    setSelectedCompletedMatchId(match.id);
+    const replayKey = getReplayResultKey(match);
+    setRevealedCompletedReplayKeys((previous) => {
+      if (previous.has(replayKey)) {
+        return previous;
+      }
+
+      const next = new Set(previous);
+      next.add(replayKey);
+      return next;
+    });
+  }
 
   const canGoToPreviousRound = selectedCompletedRoundIndex > 0;
-  const canGoToNextRound = selectedCompletedRoundIndex >= 0 && selectedCompletedRoundIndex < roundResults.length - 1;
-  const canGoToPreviousMatch = selectedCompletedMatchIndex > 0;
-  const canGoToNextMatch =
-    !!selectedCompletedRoundResult &&
-    selectedCompletedMatchIndex >= 0 &&
-    selectedCompletedMatchIndex < selectedCompletedRoundResult.matches.length - 1;
+  const canGoToNextRound =
+    selectedCompletedRoundIndex >= 0 && selectedCompletedRoundIndex < visibleCompletedRoundResults.length - 1;
 
   function handlePlayRound(round: number) {
     setSelectedCompletedRound(round);
@@ -825,41 +1061,56 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   }
 
   function handlePreviousRound() {
-    if (!canGoToPreviousRound) {
+    if (visibleCompletedRoundResults.length === 0) {
       return;
     }
 
-    const previous = roundResults[selectedCompletedRoundIndex - 1];
-    setSelectedCompletedRound(previous.round);
+    setSelectedCompletedRound((currentRound) => {
+      const activeRound = currentRound ?? visibleCompletedRoundResults[0].round;
+      const activeIndex = visibleCompletedRoundResults.findIndex((round) => round.round === activeRound);
+      if (activeIndex <= 0) {
+        return activeRound;
+      }
+
+      return visibleCompletedRoundResults[activeIndex - 1].round;
+    });
     setSelectedCompletedMatchId(null);
   }
 
   function handleNextRound() {
-    if (!canGoToNextRound) {
+    if (visibleCompletedRoundResults.length === 0) {
       return;
     }
 
-    const next = roundResults[selectedCompletedRoundIndex + 1];
-    setSelectedCompletedRound(next.round);
+    setSelectedCompletedRound((currentRound) => {
+      const activeRound = currentRound ?? visibleCompletedRoundResults[0].round;
+      const activeIndex = visibleCompletedRoundResults.findIndex((round) => round.round === activeRound);
+      if (activeIndex < 0 || activeIndex >= visibleCompletedRoundResults.length - 1) {
+        return activeRound;
+      }
+
+      return visibleCompletedRoundResults[activeIndex + 1].round;
+    });
     setSelectedCompletedMatchId(null);
   }
 
-  function handlePreviousMatch() {
-    if (!selectedCompletedRoundResult || !canGoToPreviousMatch) {
-      return;
+  const finalRoundResult = roundResults.length > 0 ? roundResults[roundResults.length - 1] : undefined;
+  const finalRoundMatch = finalRoundResult?.matches[0];
+  const isSelectedChampionRevealed =
+    !!finalRoundMatch && revealedCompletedReplayKeys.has(getReplayResultKey(finalRoundMatch));
+
+  function isTournamentChampionRevealed(tournament: TournamentView) {
+    if (!tournament.champion || tournament.matches.length === 0) {
+      return false;
     }
 
-    const previous = selectedCompletedRoundResult.matches[selectedCompletedMatchIndex - 1];
-    setSelectedCompletedMatchId(previous.id);
-  }
-
-  function handleNextMatch() {
-    if (!selectedCompletedRoundResult || !canGoToNextMatch) {
-      return;
+    const maxRound = Math.max(...tournament.matches.map((match) => match.round));
+    const finalMatch = tournament.matches.find((match) => match.round === maxRound);
+    if (!finalMatch) {
+      return false;
     }
 
-    const next = selectedCompletedRoundResult.matches[selectedCompletedMatchIndex + 1];
-    setSelectedCompletedMatchId(next.id);
+    return revealedCompletedReplayKeys.has(getReplayResultKey(finalMatch));
   }
 
   const sectionMeta = isCreateSection
@@ -953,15 +1204,20 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       onClick={() => {
                         setSelectedTournamentId(tournament.id);
                         setSelectedMatchId(null);
+                        setSelectedCompletedRound(null);
+                        setSelectedCompletedMatchId(null);
                       }}
                       type="button"
                     >
-                      <strong>Tournament #{tournament.id}</strong>
+                      <strong>{tournament.name}</strong>
+                      <span>ID #{tournament.id}</span>
                       <span className={`tournament-status-badge tournament-status-badge--${status.tone}`}>{status.label}</span>
                       {isCompletedSection ? (
                         <>
                           <span>{tournament.matches.length} matches played</span>
-                          <span>Champion: {tournament.champion ? generateName(tournament.champion) : "Pending"}</span>
+                          <span>
+                            Champion: {tournament.champion && isTournamentChampionRevealed(tournament) ? generateName(tournament.champion) : "Hidden until final replay"}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -982,8 +1238,16 @@ export default function TournementReplays({ section }: { section?: TournamentSec
               {isCompletedSection ? (
                 <>
                   <article>
+                    <span>Name</span>
+                    <strong>{selectedTournament.name}</strong>
+                  </article>
+                  <article>
                     <span>Champion</span>
-                    <strong>{selectedTournament.champion ? generateName(selectedTournament.champion) : "Pending"}</strong>
+                    <strong>
+                      {selectedTournament.champion && isSelectedChampionRevealed
+                        ? generateName(selectedTournament.champion)
+                        : "Hidden until final replay"}
+                    </strong>
                   </article>
                   <article>
                     <span>Champion Prize</span>
@@ -1009,6 +1273,10 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       </article>
                     );
                   })()}
+                  <article>
+                    <span>Name</span>
+                    <strong>{selectedTournament.name}</strong>
+                  </article>
                   <article>
                     <span>Rounds</span>
                     <strong>{selectedTournament.rounds || "-"}</strong>
@@ -1111,18 +1379,25 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                               </div>
                               <p>
                                 {isComplete
-                                  ? `${match.homeScore}-${match.awayScore} • Winner: ${generateName(match.winner || ZERO_ADDRESS)}`
+                                  ? revealedLiveReplayKeys.has(getReplayResultKey(match))
+                                    ? `${match.homeScore}-${match.awayScore} • Winner: ${generateName(match.winner || ZERO_ADDRESS)}`
+                                    : "Result hidden. Watch replay to reveal score and winner."
                                   : "Awaiting result event"}
                               </p>
                             </div>
-                            <button
-                              className="matches-history-reveal-button"
-                              onClick={() => setSelectedMatchId(match.id)}
-                              type="button"
-                              disabled={!isComplete}
-                            >
-                              {isComplete ? "Watch Game" : "Pending"}
-                            </button>
+                            {isComplete ? (
+                              <button
+                                className="matches-history-reveal-button"
+                                onClick={() => handleWatchLiveMatch(match)}
+                                type="button"
+                              >
+                                {revealedLiveReplayKeys.has(getReplayResultKey(match)) ? "Replay Opened" : "Watch Replay"}
+                              </button>
+                            ) : (
+                              <span className="matches-history-reveal-button" aria-disabled="true">
+                                Pending
+                              </span>
+                            )}
                           </li>
                         );
                       })}
@@ -1138,23 +1413,17 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                     <p>
                       Final score: {selectedMatch.homeScore} - {selectedMatch.awayScore} | Winner: {generateName(selectedMatch.winner || ZERO_ADDRESS)}
                     </p>
-                    <ol className="tournament-goal-timeline">
-                      {replayGoals.length === 0 ? (
-                        <li>No goals scored in this game.</li>
-                      ) : (
-                        replayGoals.map((goal, index) => (
-                          <li key={`${goal.minute}-${goal.side}-${index}`}>
-                            {goal.minute}' - {goal.side === "home" ? generateName(selectedMatch.homeAddress) : generateName(selectedMatch.awayAddress)}
-                          </li>
-                        ))
-                      )}
-                    </ol>
+                    <ShowMatches
+                      embeddedMatchId={selectedMatch.tournamentMatchId}
+                      embeddedTournamentId={selectedMatch.tournamentId}
+                      hideHeader
+                    />
                   </section>
                 ) : null}
               </>
             )}
 
-            {(isCreateSection || isLiveSection) && (
+            {isCreateSection && (
               <section className="tournament-teams" aria-label="Teams entered in tournament">
                 <h3>Teams Entered ({selectedTournament.teamsEntered}/{requiredTeams || "?"})</h3>
                 {selectedTournament.entrants.length === 0 ? (
@@ -1166,36 +1435,6 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                     ))}
                   </ol>
                 )}
-                {isLiveSection && (
-                  <>
-                    <button
-                      className="play-match-button"
-                      type="button"
-                      onClick={() => void handleStartTournament(selectedTournament.id)}
-                      disabled={!canStartOrAdvance || isStartPending || isStartConfirming}
-                      title={
-                        selectedTournament.teamsEntered === 0
-                          ? "No teams have entered"
-                          : selectedTournament.teamsEntered !== requiredTeams
-                            ? `Need ${requiredTeams} teams to start`
-                            : selectedTournament.cancelled
-                              ? "Tournament is cancelled"
-                              : selectedTournament.champion
-                                ? "Tournament already completed"
-                            : undefined
-                      }
-                    >
-                      {isStartPending || isStartConfirming
-                        ? "Submitting..."
-                        : selectedTournament.currentRound > 0
-                          ? "Run Next Round"
-                          : "Start Tournament"}
-                    </button>
-                    {isStartConfirmed && <p className="market-step-label">Tournament round execution confirmed.</p>}
-                    {startError && <p className="market-step-label">Tournament start failed: {startError.message}</p>}
-                  </>
-                )}
-
                 {isCreateSection && (
                   <>
                     <button
@@ -1225,14 +1464,57 @@ export default function TournementReplays({ section }: { section?: TournamentSec
               </section>
             )}
 
+            {isLiveSection && (
+              <section className="tournament-teams" aria-label="Tournament round controls">
+                <button
+                  className="play-match-button"
+                  type="button"
+                  onClick={() => void handleStartTournament(selectedTournament.id)}
+                  disabled={!canStartOrAdvance || isStartPending || isStartConfirming}
+                  title={
+                    selectedTournament.teamsEntered === 0
+                      ? "No teams have entered"
+                      : !selectedTournament.creator || !address
+                        ? "Connect wallet to progress tournament"
+                        : selectedTournament.creator.toLowerCase() !== address.toLowerCase()
+                          ? "Only tournament creator can run rounds"
+                      : selectedTournament.teamsEntered !== requiredTeams
+                        ? `Need ${requiredTeams} teams to start`
+                        : selectedTournament.cancelled
+                          ? "Tournament is cancelled"
+                          : selectedTournament.champion
+                            ? "Tournament already completed"
+                            : undefined
+                  }
+                >
+                  {isStartPending || isStartConfirming
+                    ? "Submitting..."
+                    : selectedTournament.currentRound > 0
+                      ? "Run Next Round"
+                      : "Start Tournament"}
+                </button>
+                  {!!address && !!selectedTournament.creator && selectedTournament.creator.toLowerCase() !== address.toLowerCase() && (
+                    <p className="market-step-label">Only {generateName(selectedTournament.creator)} can progress this tournament.</p>
+                  )}
+                {isStartConfirmed && <p className="market-step-label">Tournament round execution confirmed.</p>}
+                {startError && <p className="market-step-label">Tournament start failed: {startError.message}</p>}
+              </section>
+            )}
+
             {isOpenSection && (
               <section className="tournament-claim" aria-label="Tournament entry">
                 <h3>Tournament Entry</h3>
                 <p>
                   Quick enter will auto-pick your best available 5-player lineup and submit immediately.
                   <br />
-                  You currently have {uniqueOwnedPlayers.length} unique players.
+                  You currently have {uniqueOwnedPlayers.length} unique players, with {eligibleOwnedPlayers.length} eligible for this tournament.
                 </p>
+
+                {(selectedTournament.includeTypes.length > 0 || selectedTournament.excludeTypes.length > 0) && (
+                  <p className="market-step-label">
+                    Type rules: include {formatPlayerTypeList(selectedTournament.includeTypes)}; exclude {formatPlayerTypeList(selectedTournament.excludeTypes)}.
+                  </p>
+                )}
 
                 <button
                   className="play-match-button"
@@ -1242,7 +1524,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                     !address ||
                     selectedTournament.cancelled ||
                     !!selectedTournament.champion ||
-                    uniqueOwnedPlayers.length < 5 ||
+                    eligibleOwnedPlayers.length < 5 ||
                     isEnterPending ||
                     isEnterConfirming
                   }
@@ -1251,8 +1533,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       ? "Connect wallet to enter"
                       : selectedTournament.cancelled
                         ? "Tournament cancelled"
-                        : uniqueOwnedPlayers.length < 5
-                          ? "Need at least 5 unique players to enter"
+                        : eligibleOwnedPlayers.length < 5
+                          ? "Need at least 5 eligible players to enter"
                           : undefined
                   }
                 >
@@ -1274,12 +1556,12 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       activePositionMeta={formationBuilder.activePositionMeta}
                       formation={formationBuilder.formation}
                       isFormationEmpty={formationBuilder.isFormationEmpty}
-                      ownedPlayers={uniqueOwnedPlayers}
+                      ownedPlayers={eligibleOwnedPlayers}
                       selectedCount={formationBuilder.selectedCount}
                       selectedFormation={formationBuilder.selectedFormation}
                       selectedPlayerIds={formationBuilder.selectedPlayerIds}
                       teamAddress={address}
-                      onAutoPick={() => formationBuilder.autoPickFormation(uniqueOwnedPlayers)}
+                      onAutoPick={() => formationBuilder.autoPickFormation(eligibleOwnedPlayers)}
                       onClearFormation={formationBuilder.clearFormation}
                       onFormationChange={formationBuilder.handleFormationChange}
                       onPlayerClick={formationBuilder.handlePlayerClick}
@@ -1293,7 +1575,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                         !address ||
                         selectedTournament.cancelled ||
                         !!selectedTournament.champion ||
-                        uniqueOwnedPlayers.length < 5 ||
+                        eligibleOwnedPlayers.length < 5 ||
+                        !!customTeamRestrictionError ||
                         !formationBuilder.isFormationComplete ||
                         isEnterPending ||
                         isEnterConfirming
@@ -1303,8 +1586,10 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                           ? "Connect wallet to enter"
                           : selectedTournament.cancelled
                             ? "Tournament cancelled"
-                          : uniqueOwnedPlayers.length < 5
-                            ? "Need at least 5 unique players to enter"
+                          : eligibleOwnedPlayers.length < 5
+                            ? "Need at least 5 eligible players to enter"
+                            : customTeamRestrictionError
+                              ? customTeamRestrictionError
                             : !formationBuilder.isFormationComplete
                               ? "Complete your formation to enter"
                               : undefined
@@ -1318,13 +1603,14 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                 <button
                   className="matches-filter-toggle"
                   type="button"
-                  onClick={() => formationBuilder.autoPickFormation(uniqueOwnedPlayers)}
-                  disabled={uniqueOwnedPlayers.length < 5}
+                  onClick={() => formationBuilder.autoPickFormation(eligibleOwnedPlayers)}
+                  disabled={eligibleOwnedPlayers.length < 5}
                 >
                   Refresh Suggested Team
                 </button>
 
                 {isEnterConfirmed && <p className="market-step-label">Tournament entry confirmed.</p>}
+                {customTeamRestrictionError && <p className="market-step-label">{customTeamRestrictionError}</p>}
                 {entryValidationError && <p className="market-step-label">{entryValidationError}</p>}
                 {enterError && <p className="market-step-label">Tournament entry failed: {enterError.message}</p>}
               </section>
@@ -1338,7 +1624,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                     <p className="matches-history-state">No round results were indexed for this tournament.</p>
                   ) : (
                     <ol className="tournament-activity-list">
-                      {roundResults.map((roundResult) => (
+                      {visibleCompletedRoundResults.map((roundResult, index) => (
                         <li key={`round-${roundResult.round}`} className="tournament-activity-item tournament-activity-item--info">
                           <div>
                             <strong>{getKnockoutRoundLabel(roundResult.round, completedRoundsTotal, maxObservedRound)}</strong>
@@ -1346,7 +1632,9 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                             <ol className="tournament-teams-list">
                               {roundResult.matches.map((match) => (
                                 <li key={match.id}>
-                                  {generateName(match.homeAddress)} {match.homeScore ?? 0} - {match.awayScore ?? 0} {generateName(match.awayAddress)}
+                                  {revealedCompletedReplayKeys.has(getReplayResultKey(match))
+                                    ? `${generateName(match.homeAddress)} ${match.homeScore ?? 0} - ${match.awayScore ?? 0} ${generateName(match.awayAddress)} • Winner: ${generateName(match.winner || ZERO_ADDRESS)}`
+                                    : `${generateName(match.homeAddress)} vs ${generateName(match.awayAddress)} • Result hidden until replay`}
                                 </li>
                               ))}
                             </ol>
@@ -1358,6 +1646,9 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                           >
                             Play Round
                           </button>
+                          {index === visibleCompletedRoundResults.length - 1 && index < roundResults.length - 1 ? (
+                            <span>Next round unlocks after this round's first replay finishes.</span>
+                          ) : null}
                         </li>
                       ))}
                     </ol>
@@ -1401,15 +1692,17 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                                 </strong>
                               </div>
                               <p>
-                                {match.homeScore ?? 0}-{match.awayScore ?? 0} • Winner: {generateName(match.winner || ZERO_ADDRESS)}
+                                {revealedCompletedReplayKeys.has(getReplayResultKey(match))
+                                  ? `${match.homeScore ?? 0}-${match.awayScore ?? 0} • Winner: ${generateName(match.winner || ZERO_ADDRESS)}`
+                                  : "Result hidden. Watch replay to reveal score and winner."}
                               </p>
                             </div>
                             <button
                               className="matches-history-reveal-button"
+                              onClick={() => handleWatchCompletedMatch(match)}
                               type="button"
-                              onClick={() => setSelectedCompletedMatchId(match.id)}
                             >
-                              Watch Match
+                              {revealedCompletedReplayKeys.has(getReplayResultKey(match)) ? "Replay Opened" : "Watch Match"}
                             </button>
                           </li>
                         );
@@ -1418,7 +1711,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                   </section>
                 )}
 
-                {selectedCompletedMatch && (
+                {selectedCompletedMatch ? (
                   <section className="tournament-replay" aria-label="Selected completed tournament replay">
                     <h3>
                       Replay: {generateName(selectedCompletedMatch.homeAddress)} vs {generateName(selectedCompletedMatch.awayAddress)}
@@ -1426,37 +1719,25 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                     <p>
                       {getKnockoutRoundLabel(selectedCompletedMatch.round, completedRoundsTotal, maxObservedRound)} • Final score: {selectedCompletedMatch.homeScore ?? 0} - {selectedCompletedMatch.awayScore ?? 0}
                     </p>
-                    <div className="tournament-playback-controls">
-                      <button
-                        className="matches-history-reveal-button"
-                        type="button"
-                        onClick={handlePreviousMatch}
-                        disabled={!canGoToPreviousMatch}
-                      >
-                        Previous Match
-                      </button>
-                      <button
-                        className="matches-history-reveal-button"
-                        type="button"
-                        onClick={handleNextMatch}
-                        disabled={!canGoToNextMatch}
-                      >
-                        Next Match
-                      </button>
-                    </div>
-                    <ol className="tournament-goal-timeline">
-                      {completedReplayGoals.length === 0 ? (
-                        <li>No goals scored in this match.</li>
-                      ) : (
-                        completedReplayGoals.map((goal, index) => (
-                          <li key={`${goal.minute}-${goal.side}-${index}`}>
-                            {goal.minute}' - {goal.side === "home" ? generateName(selectedCompletedMatch.homeAddress) : generateName(selectedCompletedMatch.awayAddress)}
-                          </li>
-                        ))
-                      )}
-                    </ol>
+                    <ShowMatches
+                      embeddedMatchId={selectedCompletedMatch.tournamentMatchId}
+                      embeddedTournamentId={selectedCompletedMatch.tournamentId}
+                      hideHeader
+                      onReplayComplete={() => {
+                        const replayKey = getReplayResultKey(selectedCompletedMatch);
+                        setPlayedOutCompletedReplayKeys((previous) => {
+                          if (previous.has(replayKey)) {
+                            return previous;
+                          }
+
+                          const next = new Set(previous);
+                          next.add(replayKey);
+                          return next;
+                        });
+                      }}
+                    />
                   </section>
-                )}
+                ) : null}
               </>
             )}
           </section>

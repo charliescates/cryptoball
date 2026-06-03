@@ -13,6 +13,9 @@ export interface FormationGroups {
   defensePlayers: (Player | null)[];
 }
 
+export const formatFormationLabel = (formation: Pick<Formation, "attack" | "midfield" | "defense">): string =>
+  `${formation.defense}-${formation.midfield}-${formation.attack}`;
+
 export const getFormationGroups = (formation: (Player | null)[], selectedFormation: Formation): FormationGroups => {
   const attackEnd = selectedFormation.attack;
   const midfieldEnd = attackEnd + selectedFormation.midfield;
