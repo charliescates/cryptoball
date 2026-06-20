@@ -1,9 +1,54 @@
+import { useEffect } from 'react';
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
+import { formatEther, zeroAddress } from 'viem';
+import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
+
+import { activeChain, nativeTokenSymbol } from '../config/network';
+import { gameContract } from '../contracts/gameContract';
 import JoinMatchPage from './game-pages/join-match-page';
 import ShowMatches from './game-pages/show-matches';
 import StartGamePage from './game-pages/start-game-page';
 
 const Games = () => {
+    const { address } = useAccount();
+
+    const { data: pending, refetch: refetchPending } = useReadContract({
+        address: gameContract.address,
+        abi: gameContract.abi,
+        functionName: 'pendingWithdrawals',
+        args: [address ?? zeroAddress],
+        query: { enabled: !!address },
+    });
+
+    const pendingAmount = (pending as bigint | undefined) ?? 0n;
+
+    const {
+        data: withdrawHash,
+        isPending: isWithdrawPending,
+        writeContract: writeWithdrawContract,
+        reset: resetWithdraw,
+        error: withdrawError,
+    } = useWriteContract();
+
+    const { isLoading: isWithdrawConfirming, isSuccess: isWithdrawConfirmed } = useWaitForTransactionReceipt({
+        hash: withdrawHash,
+    });
+
+    useEffect(() => {
+        if (!isWithdrawConfirmed) return;
+        void refetchPending();
+    }, [isWithdrawConfirmed, refetchPending]);
+
+    function handleWithdrawGameFunds() {
+        resetWithdraw();
+        writeWithdrawContract({
+            address: gameContract.address,
+            abi: gameContract.abi,
+            functionName: 'withdraw',
+            chainId: activeChain.id,
+        });
+    }
+
     return (
         <div className="games-container">
             <div className="tabs-container">
@@ -38,6 +83,23 @@ const Games = () => {
                         >
                             Replays
                         </NavLink>
+                    </div>
+                    <div className="market-activity-layout" aria-label="Game funds">
+                        <div className="market-withdraw-amount">
+                            <span>Available game funds</span>
+                            <strong>{formatEther(pendingAmount)} {nativeTokenSymbol}</strong>
+                        </div>
+                        <button
+                            className="market-btn market-btn--primary"
+                            type="button"
+                            onClick={handleWithdrawGameFunds}
+                            disabled={!address || pendingAmount === 0n || isWithdrawPending || isWithdrawConfirming}
+                            title={!address ? 'Connect wallet to withdraw game funds' : undefined}
+                        >
+                            {isWithdrawPending || isWithdrawConfirming ? 'Withdrawing...' : 'Withdraw Game Funds'}
+                        </button>
+                        {isWithdrawConfirmed && <p className="market-step-label">Game funds withdrawn.</p>}
+                        {withdrawError && <p className="market-step-label">Withdraw failed: {withdrawError.message}</p>}
                     </div>
                 </div>
 

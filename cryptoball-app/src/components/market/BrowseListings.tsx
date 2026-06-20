@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
 import { parseEther } from 'viem'
 import { useReadContracts } from 'wagmi'
 import { playerContract } from '../../contracts/playerContract'
 import { nativeTokenSymbol } from '../../config/network'
 import { isVisiblePlayerId } from '../utils/playerVisibility'
 import ListingCard from './ListingCard'
-import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type SubgraphListing } from './marketSubgraph'
+import { mapListing, requestMarketSubgraph, type SubgraphListing } from './marketSubgraph'
 import type { RawPlayer } from './ListingPlayerInfo'
 
 const ACTIVE_LISTINGS_QUERY = gql`
@@ -35,16 +35,12 @@ export default function BrowseListings() {
     maxBid: '',
     maxBuyNow: '',
   })
-  const headers = getGraphHeaders()
-
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['market-listings'],
     queryFn: () =>
-      request<{ listings: SubgraphListing[] }>(
-        MARKET_SUBGRAPH_URL,
+      requestMarketSubgraph<{ listings: SubgraphListing[] }>(
         ACTIVE_LISTINGS_QUERY,
         {},
-        headers,
       ),
     refetchInterval: 30_000,
   })

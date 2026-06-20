@@ -8,7 +8,7 @@ dataSources:
     name: Game
     network: matic
     source:
-      address: "0x666FC08efB36D6BA99AD13Ef9df2aA3B2B566b53"
+      address: "0xE6F5Bb7793eA55cf4F39b339D946745015Ab195B"
       abi: Game
       startBlock: 85397813
     mapping:

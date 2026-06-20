@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
 import { formatEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
@@ -8,7 +8,7 @@ import { activeChain } from '../../config/network'
 import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
 import ListingCard from './ListingCard'
-import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type SubgraphListing } from './marketSubgraph'
+import { mapListing, requestMarketSubgraph, type SubgraphListing } from './marketSubgraph'
 
 const SELLING_QUERY = gql`
   query SellingListings($seller: Bytes!) {
@@ -62,18 +62,15 @@ type SellingQueryResponse = {
 
 export default function SellingTab() {
   const { address } = useAccount()
-  const headers = getGraphHeaders()
   const [withdrawSuccessMessage, setWithdrawSuccessMessage] = useState<string | null>(null)
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['market-selling', address?.toLowerCase()],
     enabled: !!address,
     queryFn: () =>
-      request<SellingQueryResponse>(
-        MARKET_SUBGRAPH_URL,
+      requestMarketSubgraph<SellingQueryResponse>(
         SELLING_QUERY,
         { seller: address?.toLowerCase() },
-        headers,
       ),
     refetchInterval: 30_000,
   })

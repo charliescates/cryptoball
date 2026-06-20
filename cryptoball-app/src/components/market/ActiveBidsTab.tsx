@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
 import { formatEther } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
 import { activeChain } from '../../config/network'
 import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
-import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type Listing, type SubgraphListing } from './marketSubgraph'
+import { mapListing, requestMarketSubgraph, type Listing, type SubgraphListing } from './marketSubgraph'
 import ListingPlayerInfo from './ListingPlayerInfo'
 
 const ACTIVE_BIDS_QUERY = gql`
@@ -128,18 +128,15 @@ function ActiveBidCard({
 
 export default function ActiveBidsTab() {
   const { address } = useAccount()
-  const headers = getGraphHeaders()
   const [withdrawSuccessMessage, setWithdrawSuccessMessage] = useState<string | null>(null)
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['market-active-bids', address?.toLowerCase()],
     enabled: !!address,
     queryFn: () =>
-      request<ActiveBidsQueryResponse>(
-        MARKET_SUBGRAPH_URL,
+      requestMarketSubgraph<ActiveBidsQueryResponse>(
         ACTIVE_BIDS_QUERY,
         { bidder: address?.toLowerCase() },
-        headers,
       ),
     refetchInterval: 30_000,
   })

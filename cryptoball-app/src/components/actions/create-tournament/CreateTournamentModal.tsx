@@ -7,18 +7,25 @@ import { activeChain } from "../../../config/network";
 import { nativeTokenSymbol } from "../../../config/network";
 import "./CreateTournamentModal.css";
 
-const MIN_ENTRY_FEE = 3;
+const MIN_ENTRY_FEE = 5;
 
 interface CreateTournamentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   onSuccess?: () => void;
+  displayMode?: "modal" | "inline";
 }
 
-export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: CreateTournamentModalProps) {
+export default function CreateTournamentModal({
+  isOpen = false,
+  onClose,
+  onSuccess,
+  displayMode = "modal",
+}: CreateTournamentModalProps) {
+  const isInline = displayMode === "inline";
   const [name, setName] = useState("");
   const [rounds, setRounds] = useState("2");
-  const [entryFee, setEntryFee] = useState("3");
+  const [entryFee, setEntryFee] = useState("5");
   const [minAttack, setMinAttack] = useState("0");
   const [minDefence, setMinDefence] = useState("0");
   const [maxAttack, setMaxAttack] = useState("99");
@@ -34,6 +41,19 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
   const trimmedName = name.trim();
   const isNameValid = trimmedName.length > 0 && trimmedName.length <= 64;
   const isEntryFeeValid = entryFee.trim() !== "" && Number.isFinite(entryFeeAmount) && entryFeeAmount >= MIN_ENTRY_FEE;
+
+  const resetForm = () => {
+    reset();
+    setName("");
+    setRounds("2");
+    setEntryFee("5");
+    setMaxAttack("99");
+    setMaxDefence("99");
+    setMinAttack("0");
+    setMinDefence("0");
+    setIncludeTypesInput("");
+    setExcludeTypesInput("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,35 +95,28 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
   useEffect(() => {
     if (isConfirmed) {
       onSuccess?.();
-      handleClose();
+      if (!isInline) {
+        handleClose();
+      }
     }
-  }, [isConfirmed, onSuccess]);
+  }, [isConfirmed, isInline, onSuccess]);
 
   const handleClose = () => {
-    reset();
-    setName("");
-    setRounds("2");
-    setEntryFee("3");
-    setMaxAttack("99");
-    setMaxDefence("99");
-    setMinAttack("0");
-    setMinDefence("0");
-    setIncludeTypesInput("");
-    setExcludeTypesInput("");
-    onClose();
+    resetForm();
+    onClose?.();
   };
 
-  if (!isOpen) return null;
+  if (!isInline && !isOpen) return null;
 
   const errorMessage = error ? (error as BaseError).shortMessage || error.message : null;
   const isLoading = isPending || isConfirming;
   const statusLabel = isConfirmed ? "Confirmed" : isConfirming ? "Confirming" : isPending ? "Submitting" : "Ready";
 
-  return (
-    <div className="tournament-modal-overlay" onClick={handleClose}>
-      <div className="tournament-modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="tournament-modal-header">
-          <h2>Create New Tournament</h2>
+  const formContent = (
+    <div className={`tournament-modal-content${isInline ? " tournament-modal-content--inline" : ""}`} onClick={(e) => e.stopPropagation()}>
+      <div className="tournament-modal-header">
+        <h2>Create New Tournament</h2>
+        {!isInline && (
           <button
             className="tournament-modal-close"
             onClick={handleClose}
@@ -112,23 +125,24 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
           >
             ✕
           </button>
-        </div>
+        )}
+      </div>
 
-        <form onSubmit={handleSubmit} className="tournament-form">
-          <div className="tournament-form-grid">
-            <div className="form-field full-width">
-              <label htmlFor="tournament-name">Tournament Name</label>
-              <input
-                id="tournament-name"
-                type="text"
-                maxLength={64}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLoading}
-                placeholder="e.g. Summer Showdown"
-              />
-              <small className="form-field-hint">1-64 characters</small>
-            </div>
+      <form onSubmit={handleSubmit} className="tournament-form">
+        <div className="tournament-form-grid">
+          <div className="form-field full-width">
+            <label htmlFor="tournament-name">Tournament Name</label>
+            <input
+              id="tournament-name"
+              type="text"
+              maxLength={64}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isLoading}
+              placeholder="e.g. Summer Showdown"
+            />
+            <small className="form-field-hint">1-64 characters</small>
+          </div>
 
             <div className="form-field">
               <label htmlFor="rounds">Tournament Rounds</label>
@@ -158,7 +172,7 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
                 value={entryFee}
                 onChange={(e) => setEntryFee(e.target.value)}
                 disabled={isLoading}
-                placeholder="3"
+                placeholder="5"
               />
               <small className="form-field-hint">Minimum entry fee: {MIN_ENTRY_FEE} {nativeTokenSymbol}</small>
             </div>
@@ -248,55 +262,64 @@ export default function CreateTournamentModal({ isOpen, onClose, onSuccess }: Cr
             </div>
           </div>
 
-          <div className="tournament-form-footer">
-            <div className="tournament-form-status">
-              <span>Status</span>
-              <strong>{statusLabel}</strong>
-            </div>
-            <button
-              type="submit"
-              className="tournament-create-button"
-              disabled={isLoading || !isEntryFeeValid || !isNameValid}
-            >
-              {isLoading ? "Creating..." : "Create Tournament"}
-            </button>
+        <div className="tournament-form-footer">
+          <div className="tournament-form-status">
+            <span>Status</span>
+            <strong>{statusLabel}</strong>
           </div>
+          <button
+            type="submit"
+            className="tournament-create-button"
+            disabled={isLoading || !isEntryFeeValid || !isNameValid}
+          >
+            {isLoading ? "Creating..." : "Create Tournament"}
+          </button>
+        </div>
 
-          <div className="tournament-transaction-status" aria-live="polite">
-            {hash && (
-              <div className="transaction-status">
-                <span>Transaction hash</span>
-                <strong>{hash}</strong>
-              </div>
-            )}
-            {isConfirming && (
-              <div className="transaction-status pending">
-                Waiting for wallet confirmation...
-              </div>
-            )}
-            {isConfirmed && (
-              <div className="transaction-status success">
-                Tournament created successfully!
-              </div>
-            )}
-            {!isEntryFeeValid && entryFee.trim() !== "" && (
-              <div className="transaction-status error">
-                Entry fee must be at least {MIN_ENTRY_FEE} {nativeTokenSymbol}.
-              </div>
-            )}
-            {!isNameValid && name.length > 0 && (
-              <div className="transaction-status error">
-                Tournament name must be between 1 and 64 characters.
-              </div>
-            )}
-            {errorMessage && (
-              <div className="transaction-status error">
-                Error: {errorMessage}
-              </div>
-            )}
-          </div>
-        </form>
-      </div>
+        <div className="tournament-transaction-status" aria-live="polite">
+          {hash && (
+            <div className="transaction-status">
+              <span>Transaction hash</span>
+              <strong>{hash}</strong>
+            </div>
+          )}
+          {isConfirming && (
+            <div className="transaction-status pending">
+              Waiting for wallet confirmation...
+            </div>
+          )}
+          {isConfirmed && (
+            <div className="transaction-status success">
+              Tournament created successfully!
+            </div>
+          )}
+          {!isEntryFeeValid && entryFee.trim() !== "" && (
+            <div className="transaction-status error">
+              Entry fee must be at least {MIN_ENTRY_FEE} {nativeTokenSymbol}.
+            </div>
+          )}
+          {!isNameValid && name.length > 0 && (
+            <div className="transaction-status error">
+              Tournament name must be between 1 and 64 characters.
+            </div>
+          )}
+          {errorMessage && (
+            <div className="transaction-status error">
+              Error: {errorMessage}
+            </div>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+
+  if (isInline) {
+    return formContent;
+  }
+
+  return (
+    <div className="tournament-modal-overlay" onClick={handleClose}>
+      {formContent}
     </div>
   );
 }

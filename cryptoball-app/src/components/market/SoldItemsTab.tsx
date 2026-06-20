@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
 import { formatEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
@@ -8,7 +8,7 @@ import { activeChain } from '../../config/network'
 import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
 import { isVisiblePlayerId } from '../utils/playerVisibility'
-import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type Listing, type SubgraphListing } from './marketSubgraph'
+import { mapListing, requestMarketSubgraph, type Listing, type SubgraphListing } from './marketSubgraph'
 import ListingPlayerInfo from './ListingPlayerInfo'
 
 const MY_INACTIVE_LISTINGS_QUERY = gql`
@@ -68,17 +68,14 @@ function SoldItemCard({ listing }: { listing: Listing }) {
 
 export default function SoldItemsTab() {
   const { address } = useAccount()
-  const headers = getGraphHeaders()
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['market-my-sold-items', address?.toLowerCase()],
     enabled: !!address,
     queryFn: () =>
-      request<{ listings: SubgraphListing[] }>(
-        MARKET_SUBGRAPH_URL,
+      requestMarketSubgraph<{ listings: SubgraphListing[] }>(
         MY_INACTIVE_LISTINGS_QUERY,
         { seller: address?.toLowerCase() },
-        headers,
       ),
     refetchInterval: 30_000,
   })

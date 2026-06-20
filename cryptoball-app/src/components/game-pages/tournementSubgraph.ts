@@ -239,7 +239,7 @@ const QUERY_ALL_TOURNAMENTS = gql`
 
 const QUERY_TOURNAMENT_MATCH_RESULTS = gql`
   query GetTournamentMatchResults {
-    tournamentMatchPlayeds(first: 2000, orderBy: blockNumber, orderDirection: desc) {
+    tournamentMatchPlayeds(first: 1000, orderBy: blockNumber, orderDirection: desc) {
       id
       tournamentId
       tournamentMatchId

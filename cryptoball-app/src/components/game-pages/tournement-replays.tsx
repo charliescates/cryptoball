@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ContractFunctionZeroDataError, formatEther, parseAbiItem } from "viem";
+import { ContractFunctionZeroDataError, formatEther } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
 import { tournementContract } from "../../contracts/tournementContract";
-import { gameContract } from "../../contracts/gameContract";
 import { playerContract } from "../../contracts/playerContract";
 import { activeChain } from "../../config/network";
 import generateName from "../utils/teamName";
-import CreateTournamentButton from "../actions/create-tournament/CreateTournamentButton";
+import CreateTournamentModal from "../actions/create-tournament/CreateTournamentModal";
 import TeamBuilder from "./join-match/TeamBuilder";
 import { getFormationPositionMeta, useFormationBuilder } from "./join-match/useFormationBuilder";
 import { nativeTokenSymbol } from "../../config/network";
@@ -16,6 +15,7 @@ import type { Player } from "../player";
 import { getPlayerTypeName } from "../utils/playerType";
 import type { Formation } from "./join-match/formations";
 import ShowMatches from "./show-matches";
+import { fetchTournamentMatchResultsFromSubgraph } from "./tournementSubgraph";
 
 type TournamentMatch = {
   id: string;
@@ -91,17 +91,7 @@ type TournementSummary = {
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-const tournamentMatchPlayedEvent = parseAbiItem(
-  "event TournamentMatchPlayed(uint256 indexed tournamentId, uint256 tournamentMatchId, uint8 indexed round, address homeAddress, address awayAddress, address winner, uint8 homeScore, uint8 awayScore)",
-);
-
-const tournementCompletedSummaryEvent = parseAbiItem(
-  "event TournementCompletedSummary(uint256 indexed tournamentId, address indexed champion, uint256 championWinnings, uint256 executorFees)",
-);
-
-const tournementCreatedEvent = parseAbiItem(
-  "event TournementCreated(uint256 indexed tournamentId, address indexed creator, string name, uint8 rounds, uint256 entryFee, uint8 minAttack, uint8 minDefence, uint8 maxAttack, uint8 maxDefence, uint8[] includeTypes, uint8[] excludeTypes)",
-);
+const MAX_TOURNEMENT_SCAN = 128;
 
 function formatPol(wei: bigint) {
   const full = formatEther(wei);
@@ -295,6 +285,15 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   const { isLoading: isRefundConfirming, isSuccess: isRefundConfirmed } = useWaitForTransactionReceipt({
     hash: refundHash,
   });
+  const {
+    data: claimRewardHash,
+    writeContract: writeClaimRewardContract,
+    isPending: isClaimRewardPending,
+    error: claimRewardError,
+  } = useWriteContract();
+  const { isLoading: isClaimRewardConfirming, isSuccess: isClaimRewardConfirmed } = useWaitForTransactionReceipt({
+    hash: claimRewardHash,
+  });
 
   const { data: myPlayers } = useReadContract({
     abi: playerContract.abi,
@@ -324,7 +323,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   const contractConfigured = tournementContract.address.toLowerCase() !== ZERO_ADDRESS;
 
   const { data: tournaments = [], status, error, refetch } = useQuery<TournamentView[]>({
-    queryKey: ["tournament-feed", tournementContract.address, gameContract.address],
+    queryKey: ["tournament-feed", tournementContract.address],
     enabled: contractConfigured && !!publicClient,
     async queryFn() {
       if (!contractConfigured || !publicClient) return [];
@@ -402,243 +401,197 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         });
       }
 
-      type TournamentCreateMeta = {
-        name: string;
-        creator: string;
-        rounds: number;
-        entryFee: bigint;
-        minAttack: number;
-        minDefence: number;
-        maxAttack: number;
-        maxDefence: number;
-        includeTypes: number[];
-        excludeTypes: number[];
-      };
+      const storageScanContracts = Array.from({ length: MAX_TOURNEMENT_SCAN }, (_, index) => ({
+        address: tournementContract.address,
+        abi: tournementContract.abi,
+        functionName: "tournements" as const,
+        args: [BigInt(index + 1)],
+      }));
 
-      const createdTournamentMeta = new Map<string, TournamentCreateMeta>();
+      const storageScanResults = await publicClient.multicall({
+        contracts: storageScanContracts,
+        allowFailure: true,
+      });
 
-      let createdLogs: Awaited<ReturnType<typeof publicClient.getLogs>> = [];
-      try {
-        createdLogs = await publicClient.getLogs({
-          address: tournementContract.address,
-          event: tournementCreatedEvent,
-          fromBlock: 0n,
-          toBlock: "latest",
-        });
-      } catch (logError) {
-        console.error("Error fetching tournament create logs:", logError);
-      }
-
-      for (const log of createdLogs) {
-        if (!("args" in log) || log.args == null) {
+      for (let index = 0; index < storageScanResults.length; index += 1) {
+        const result = storageScanResults[index];
+        if (result.status !== "success") {
           continue;
         }
 
-        const args = log.args as {
-          tournamentId?: bigint;
-          creator?: string;
-          name?: string;
-          rounds?: number;
-          entryFee?: bigint;
-          minAttack?: number;
-          minDefence?: number;
-          maxAttack?: number;
-          maxDefence?: number;
-          includeTypes?: readonly number[];
-          excludeTypes?: readonly number[];
-        };
+        const id = String(index + 1);
+        const [
+          name,
+          rounds,
+          entryFee,
+          creator,
+          minAttack,
+          minDefence,
+          maxAttack,
+          maxDefence,
+          teamsEntered,
+          currentRound,
+          cancelled,
+          champion,
+        ] = result.result as unknown as [
+          string,
+          bigint,
+          bigint,
+          string,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+          bigint,
+          boolean,
+          string,
+        ];
 
-        if (args.tournamentId == null || args.name == null) {
+        const looksInitialized =
+          creator.toLowerCase() !== ZERO_ADDRESS || entryFee > 0n || rounds > 0n || champion.toLowerCase() !== ZERO_ADDRESS;
+
+        if (!looksInitialized) {
           continue;
         }
 
-        createdTournamentMeta.set(args.tournamentId.toString(), {
-          name: args.name,
-          creator: args.creator ?? ZERO_ADDRESS,
-          rounds: Number(args.rounds ?? 0),
-          entryFee: args.entryFee ?? 0n,
-          minAttack: Number(args.minAttack ?? 0),
-          minDefence: Number(args.minDefence ?? 0),
-          maxAttack: Number(args.maxAttack ?? 0),
-          maxDefence: Number(args.maxDefence ?? 0),
-          includeTypes: (args.includeTypes ?? []).map((value) => Number(value)),
-          excludeTypes: (args.excludeTypes ?? []).map((value) => Number(value)),
-        });
-      }
+        const existing = tournamentMap.get(id);
+        const maxTeams = rounds > 0n ? 2 ** Number(rounds) : 0;
+        const championAddress = champion.toLowerCase() !== ZERO_ADDRESS ? champion : undefined;
 
-      for (const tournament of tournamentMap.values()) {
-        const meta = createdTournamentMeta.get(tournament.id);
-        if (!meta) {
-          continue;
-        }
-
-        tournament.name = meta.name;
-      }
-
-      let completedSummaryLogs: Awaited<ReturnType<typeof publicClient.getLogs>> = [];
-      try {
-        completedSummaryLogs = await publicClient.getLogs({
-          address: tournementContract.address,
-          event: tournementCompletedSummaryEvent,
-          fromBlock: 0n,
-          toBlock: "latest",
-        });
-      } catch (logError) {
-        console.error("Error fetching completed tournament summary logs:", logError);
-      }
-
-      for (const log of completedSummaryLogs) {
-        if (!("args" in log) || log.args == null) {
-          continue;
-        }
-
-        const args = log.args as {
-          tournamentId?: bigint;
-          champion?: string;
-          championWinnings?: bigint;
-          executorFees?: bigint;
-        };
-
-        if (args.tournamentId == null) {
-          continue;
-        }
-
-        const tournamentId = args.tournamentId.toString();
-        const champion = args.champion ?? ZERO_ADDRESS;
-        const championWinnings = args.championWinnings ?? 0n;
-        const executorFees = args.executorFees ?? 0n;
-
-        const existing = tournamentMap.get(tournamentId);
         if (existing) {
-          existing.champion = champion !== ZERO_ADDRESS ? champion : existing.champion;
-          existing.championWinnings = championWinnings;
-          existing.executorFees = executorFees;
-          existing.activity.push({
-            id: `completed-${String(log.transactionHash ?? "0x")}-${String(log.logIndex ?? 0)}`,
-            blockNumber: log.blockNumber ?? 0n,
+          existing.name = name || existing.name;
+          existing.creator = creator;
+          existing.rounds = Number(rounds);
+          existing.entryFee = entryFee;
+          existing.minAttack = Number(minAttack);
+          existing.minDefence = Number(minDefence);
+          existing.maxAttack = Number(maxAttack);
+          existing.maxDefence = Number(maxDefence);
+          existing.teamsEntered = Number(teamsEntered);
+          existing.currentRound = Number(currentRound);
+          existing.cancelled = cancelled;
+          existing.maxTeams = maxTeams || existing.maxTeams;
+          existing.champion = championAddress ?? existing.champion;
+          continue;
+        }
+
+        const activity: TournamentActivity[] = [];
+        if (championAddress) {
+          activity.push({
+            id: `completed-${id}`,
             label: "Tournament completed",
-            detail: `Champion ${generateName(champion)} • Winnings ${formatPol(championWinnings)}`,
+            detail: `Champion ${generateName(championAddress)}`,
             tone: "success",
           });
-          continue;
+        } else if (cancelled) {
+          activity.push({
+            id: `cancelled-${id}`,
+            label: "Tournament cancelled",
+            tone: "warning",
+          });
+        } else {
+          activity.push({
+            id: `open-${id}`,
+            label: "Tournament discovered from contract storage",
+            detail: `${Number(teamsEntered)}/${maxTeams} teams entered`,
+            tone: "neutral",
+          });
         }
 
-        const createdMeta = createdTournamentMeta.get(tournamentId);
-
-        tournamentMap.set(tournamentId, {
-          id: tournamentId,
-          name: createdMeta?.name ?? `Tournament #${tournamentId}`,
-          creator: createdMeta?.creator,
-          rounds: createdMeta?.rounds ?? 0,
-          entryFee: createdMeta?.entryFee ?? 0n,
-          minAttack: createdMeta?.minAttack ?? 0,
-          minDefence: createdMeta?.minDefence ?? 0,
-          maxAttack: createdMeta?.maxAttack ?? 0,
-          maxDefence: createdMeta?.maxDefence ?? 0,
-          includeTypes: createdMeta?.includeTypes ?? [],
-          excludeTypes: createdMeta?.excludeTypes ?? [],
-          maxTeams: createdMeta && createdMeta.rounds > 0 ? 2 ** createdMeta.rounds : 0,
+        tournamentMap.set(id, {
+          id,
+          name: name || `Tournament #${id}`,
+          creator,
+          rounds: Number(rounds),
+          entryFee,
+          minAttack: Number(minAttack),
+          minDefence: Number(minDefence),
+          maxAttack: Number(maxAttack),
+          maxDefence: Number(maxDefence),
+          includeTypes: [],
+          excludeTypes: [],
+          maxTeams,
           matches: [],
-          champion: champion !== ZERO_ADDRESS ? champion : undefined,
-          championWinnings,
-          executorFees,
-          teamsEntered: 0,
+          champion: championAddress,
+          teamsEntered: Number(teamsEntered),
           entrants: [],
-          isReady: false,
-          cancelled: false,
-          currentRound: 0,
-          activity: [
-            {
-              id: `completed-${String(log.transactionHash ?? "0x")}-${String(log.logIndex ?? 0)}`,
-              blockNumber: log.blockNumber ?? 0n,
-              label: "Tournament completed",
-              detail: `Champion ${generateName(champion)} • Winnings ${formatPol(championWinnings)}`,
-              tone: "success",
-            },
-          ],
+          isReady: Number(teamsEntered) === maxTeams && maxTeams > 0,
+          cancelled,
+          currentRound: Number(currentRound),
+          activity,
+        });
+      }
+
+      const knownTournamentIds = [...tournamentMap.keys()].map((id) => BigInt(id));
+      if (knownTournamentIds.length > 0) {
+        const feeResults = await publicClient.multicall({
+          contracts: knownTournamentIds.map((tournamentId) => ({
+            address: tournementContract.address,
+            abi: tournementContract.abi,
+            functionName: "tournementExecutorFees" as const,
+            args: [tournamentId],
+          })),
+          allowFailure: true,
+        });
+
+        feeResults.forEach((result, index) => {
+          if (result.status !== "success") {
+            return;
+          }
+
+          const id = knownTournamentIds[index].toString();
+          const tournament = tournamentMap.get(id);
+          if (!tournament) {
+            return;
+          }
+
+          const fee = result.result as bigint;
+          if (fee > 0n) {
+            tournament.executorFees = fee;
+          }
         });
       }
 
       if (tournamentMap.size === 0) {
         return [];
       }
-
-      let tournamentMatchLogs: Awaited<ReturnType<typeof publicClient.getLogs>> = [];
-      try {
-        const tournamentsToFetch = [...tournamentMap.keys()].map((id) => BigInt(id));
-        const logsByTournament = await Promise.all(
-          tournamentsToFetch.map(async (tournamentId) => {
-            const logs = await publicClient.getLogs({
-              address: gameContract.address,
-              event: tournamentMatchPlayedEvent,
-              args: { tournamentId },
-              fromBlock: 0n,
-              toBlock: "latest",
-            });
-            return logs;
-          }),
-        );
-        tournamentMatchLogs = logsByTournament.flat();
-      } catch (logError) {
-        console.error("Error fetching tournament match logs from contract:", logError);
-      }
-
       const matchesByTournament = new Map<string, TournamentMatch[]>();
-      for (const log of tournamentMatchLogs) {
-        if (!("args" in log) || log.args == null) {
-          continue;
+
+      try {
+        const replayData = await fetchTournamentMatchResultsFromSubgraph();
+        for (const match of replayData.tournamentMatchPlayeds ?? []) {
+          const tournamentId = String(match.tournamentId);
+          const tournament = tournamentMap.get(tournamentId);
+          if (!tournament) {
+            continue;
+          }
+
+          const matches = matchesByTournament.get(tournamentId) ?? [];
+          matches.push({
+            id: match.id,
+            tournamentId,
+            tournamentMatchId: String(match.tournamentMatchId),
+            round: Number(match.round),
+            homeAddress: match.homeAddress,
+            awayAddress: match.awayAddress,
+            winner: match.winner,
+            homeScore: Number(match.homeScore),
+            awayScore: Number(match.awayScore),
+            blockNumber: BigInt(match.blockNumber ?? 0),
+          });
+          matchesByTournament.set(tournamentId, matches);
+
+          tournament.activity.push({
+            id: `match-played-${match.id}`,
+            blockNumber: BigInt(match.blockNumber ?? 0),
+            label: `Round ${String(match.round)} result`,
+            detail: "Replay available. Watch game to reveal score and winner.",
+            tone: "info",
+          });
         }
-
-        const args = log.args as {
-          tournamentId?: bigint;
-          tournamentMatchId?: bigint;
-          round?: number;
-          homeAddress?: string;
-          awayAddress?: string;
-          winner?: string;
-          homeScore?: number;
-          awayScore?: number;
-        };
-
-        if (args.tournamentId == null || args.tournamentMatchId == null) {
-          continue;
-        }
-
-        const tournamentId = args.tournamentId.toString();
-        const round = Number(args.round ?? 0);
-        const homeScore = Number(args.homeScore ?? 0);
-        const awayScore = Number(args.awayScore ?? 0);
-        const homeAddress = args.homeAddress ?? ZERO_ADDRESS;
-        const awayAddress = args.awayAddress ?? ZERO_ADDRESS;
-        const winner = args.winner ?? ZERO_ADDRESS;
-
-        const tournament = tournamentMap.get(tournamentId);
-        if (!tournament) {
-          continue;
-        }
-
-        const matches = matchesByTournament.get(tournamentId) ?? [];
-        matches.push({
-          id: `${String(log.transactionHash ?? "0x")}-${String(log.logIndex ?? 0)}`,
-          tournamentId,
-          tournamentMatchId: args.tournamentMatchId.toString(),
-          round,
-          homeAddress,
-          awayAddress,
-          winner,
-          homeScore,
-          awayScore,
-          blockNumber: log.blockNumber ?? 0n,
-        });
-        matchesByTournament.set(tournamentId, matches);
-
-        tournament.activity.push({
-          id: `match-played-${log.transactionHash ?? "0x"}-${String(log.logIndex ?? 0)}`,
-          blockNumber: log.blockNumber ?? 0n,
-          label: `Round ${round} result`,
-          detail: "Replay available. Watch game to reveal score and winner.",
-          tone: "info",
-        });
+      } catch (subgraphError) {
+        console.error("Error fetching tournament replay data from subgraph:", subgraphError);
       }
 
       for (const [id, matches] of matchesByTournament.entries()) {
@@ -696,6 +649,31 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     () => selectedTournament?.matches.find((m) => m.id === selectedMatchId),
     [selectedTournament, selectedMatchId],
   );
+
+  const selectedTournamentIdBigInt = selectedTournament ? BigInt(selectedTournament.id) : undefined;
+
+  const { data: claimedRewardData, refetch: refetchClaimedReward } = useReadContract({
+    abi: tournementContract.abi,
+    address: tournementContract.address,
+    functionName: "hasClaimedReward",
+    args: selectedTournamentIdBigInt !== undefined && !!address ? [selectedTournamentIdBigInt, address] : undefined,
+    query: {
+      enabled: !!selectedTournamentIdBigInt && !!address && !!selectedTournament?.champion,
+    },
+  });
+
+  const { data: academyFeeData } = useReadContract({
+    abi: tournementContract.abi,
+    address: tournementContract.address,
+    functionName: "tournementAcademyFees",
+    args: selectedTournamentIdBigInt !== undefined ? [selectedTournamentIdBigInt] : undefined,
+    query: {
+      enabled: !!selectedTournamentIdBigInt,
+    },
+  });
+
+  const hasClaimedReward = Boolean(claimedRewardData);
+  const academyFee = (academyFeeData as bigint | undefined) ?? 0n;
 
   const eligibleOwnedPlayers = useMemo(() => {
     if (!selectedTournament) {
@@ -787,6 +765,16 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       address: tournementContract.address,
       abi: tournementContract.abi,
       functionName: "claimCancelledEntry",
+      chainId: activeChain.id,
+      args: [BigInt(tournementId)],
+    });
+  }
+
+  function handleClaimReward(tournementId: string) {
+    writeClaimRewardContract({
+      address: tournementContract.address,
+      abi: tournementContract.abi,
+      functionName: "claimReward",
       chainId: activeChain.id,
       args: [BigInt(tournementId)],
     });
@@ -942,6 +930,16 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     !selectedTournament.champion &&
     selectedTournament.currentRound === 0;
   const canClaimRefund = !!selectedTournament && !!address && selectedTournament.cancelled;
+  const isSelectedChampion =
+    !!selectedTournament && !!selectedTournament.champion && !!address &&
+    selectedTournament.champion.toLowerCase() === address.toLowerCase();
+  const estimatedChampionReward = selectedTournament
+    ? (selectedTournament.entryFee * BigInt(selectedTournament.teamsEntered))
+      - (selectedTournament.executorFees ?? 0n)
+      - academyFee
+    : 0n;
+  const canClaimChampionReward =
+    !!selectedTournament?.champion && isSelectedChampion && !hasClaimedReward;
   const roundResults = useMemo(() => {
     if (!selectedTournament) {
       return [] as Array<{ round: number; matches: TournamentMatch[] }>;
@@ -1016,6 +1014,15 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       setSelectedCompletedRound(visibleCompletedRoundResults[0].round);
     }
   }, [isCompletedSection, selectedCompletedRound, visibleCompletedRoundResults]);
+
+  useEffect(() => {
+    if (!isClaimRewardConfirmed) {
+      return;
+    }
+
+    void refetch();
+    void refetchClaimedReward();
+  }, [isClaimRewardConfirmed, refetch, refetchClaimedReward]);
 
   const selectedCompletedRoundIndex = selectedCompletedRoundResult
     ? visibleCompletedRoundResults.findIndex((round) => round.round === selectedCompletedRoundResult.round)
@@ -1145,14 +1152,50 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           <h2>{sectionMeta.title}</h2>
           <p>{sectionMeta.copy}</p>
         </div>
-        {isCreateSection && (
-          <CreateTournamentButton
-            variant="primary"
-            size="medium"
-            onSuccess={() => refetch()}
-          />
-        )}
       </header>
+
+      {isCreateSection && contractConfigured && (
+        <div className="tab-panel">
+          <div className="start-game-section tournament-create-section">
+            <div className="start-game-hero">
+              <div className="start-game-hero-copy">
+                <span className="section-kicker">Tournament setup</span>
+                <h2>Start new tournament</h2>
+                <p className="tab-description">
+                  Define rounds, entry fee, and player filters to launch a bracket on-chain.
+                </p>
+              </div>
+              <div className="start-game-format-pills" aria-label="Tournament format and mode">
+                <div>
+                  <span>Format</span>
+                  <strong>Knockout</strong>
+                </div>
+                <div>
+                  <span>Mode</span>
+                  <strong>Entry Fee</strong>
+                </div>
+              </div>
+            </div>
+
+            <ol className="start-game-setup-rail" aria-label="Tournament setup steps">
+              <li>
+                <span>1</span>
+                <strong>Rules</strong>
+              </li>
+              <li>
+                <span>2</span>
+                <strong>Stake</strong>
+              </li>
+              <li>
+                <span>3</span>
+                <strong>Launch</strong>
+              </li>
+            </ol>
+
+            <CreateTournamentModal displayMode="inline" onSuccess={() => refetch()} />
+          </div>
+        </div>
+      )}
 
       {!contractConfigured && (
         <div className="matches-history-state">
@@ -1618,6 +1661,42 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
             {isCompletedSection && (
               <>
+                <section className="tournament-claim" aria-label="Champion reward claim">
+                  <h3>Champion Reward</h3>
+                  <p>
+                    Champion rewards are paid from the tournament pot and can be claimed once per completed tournament.
+                  </p>
+
+                  <div className="market-withdraw-amount">
+                    <span>Estimated claimable reward</span>
+                    <strong>{estimatedChampionReward > 0n ? formatPol(estimatedChampionReward) : "-"}</strong>
+                  </div>
+
+                  <button
+                    className="play-match-button"
+                    type="button"
+                    onClick={() => void handleClaimReward(selectedTournament.id)}
+                    disabled={!canClaimChampionReward || isClaimRewardPending || isClaimRewardConfirming}
+                    title={
+                      !address
+                        ? "Connect wallet to claim"
+                        : !selectedTournament.champion
+                          ? "Tournament is not completed"
+                          : !isSelectedChampion
+                            ? "Only the champion can claim this reward"
+                            : hasClaimedReward
+                              ? "Reward already claimed"
+                              : undefined
+                    }
+                  >
+                    {isClaimRewardPending || isClaimRewardConfirming ? "Claiming Reward..." : "Withdraw Champion Reward"}
+                  </button>
+
+                  {hasClaimedReward && <p className="market-step-label">Champion reward already claimed.</p>}
+                  {isClaimRewardConfirmed && <p className="market-step-label">Champion reward claimed.</p>}
+                  {claimRewardError && <p className="market-step-label">Reward claim failed: {claimRewardError.message}</p>}
+                </section>
+
                 <section className="tournament-activity" aria-label="Tournament round results">
                   <h3>Champions League Recap</h3>
                   {roundResults.length === 0 ? (

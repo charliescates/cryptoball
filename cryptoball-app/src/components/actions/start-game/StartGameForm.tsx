@@ -3,7 +3,7 @@ import type { FormEvent, ReactNode } from "react";
 import type { BaseError } from "viem";
 import { nativeTokenSymbol } from "../../../config/network";
 
-const MIN_WAGER = 3;
+const MIN_WAGER = 5;
 
 interface StartGameFormProps {
   awayAddress: string;
@@ -84,7 +84,7 @@ const StartGameForm = ({
               type="text"
               inputMode="decimal"
               min={MIN_WAGER}
-              placeholder="3"
+              placeholder="5"
               value={wager}
               onChange={(event) => onWagerChange(event.target.value)}
               disabled={!editable}

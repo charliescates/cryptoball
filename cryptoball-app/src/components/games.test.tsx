@@ -5,6 +5,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import Games from "./games";
 
+vi.mock("wagmi", () => ({
+  useAccount: () => ({ address: undefined }),
+  useReadContract: () => ({ data: 0n, refetch: vi.fn() }),
+  useWaitForTransactionReceipt: () => ({ isLoading: false, isSuccess: false }),
+  useWriteContract: () => ({
+    data: undefined,
+    isPending: false,
+    writeContract: vi.fn(),
+    reset: vi.fn(),
+    error: undefined,
+  }),
+}));
+
 vi.mock("./game-pages/start-game-page", () => ({
   default: () => <div>Start Game Page</div>,
 }));

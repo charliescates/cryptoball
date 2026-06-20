@@ -8,7 +8,7 @@ import { gameContract } from "../../contracts/gameContract";
 import MatchPreviewPanel from "./start-game/MatchPreviewPanel";
 import StartGameForm from "./start-game/StartGameForm";
 
-const MIN_WAGER = 3;
+const MIN_WAGER = 5;
 
 const StartGame = () => {
   const { address, chainId } = useAccount();

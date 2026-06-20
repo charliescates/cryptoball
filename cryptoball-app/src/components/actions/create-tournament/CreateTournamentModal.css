@@ -23,6 +23,17 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
 }
 
+.tournament-modal-content--inline {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  padding: clamp(16px, 2.2vw, 22px);
+  border-radius: 14px;
+  background: rgba(7, 12, 24, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
 .tournament-modal-header {
   display: flex;
   justify-content: space-between;
@@ -34,6 +45,10 @@
   margin: 0;
   color: #ffffff;
   font-size: 1.5rem;
+}
+
+.tournament-modal-content--inline .tournament-modal-header h2 {
+  font-size: 1.2rem;
 }
 
 .tournament-modal-close {

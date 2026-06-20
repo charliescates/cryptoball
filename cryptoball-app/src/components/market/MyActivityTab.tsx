@@ -1,13 +1,13 @@
 import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { gql, request } from 'graphql-request'
+import { gql } from 'graphql-request'
 import { formatEther, zeroAddress } from 'viem'
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { marketContract } from '../../contracts/marketContract'
 import { activeChain } from '../../config/network'
 import { nativeTokenSymbol } from '../../config/network'
 import { getPlayerName } from '../utils/playerName'
-import { MARKET_SUBGRAPH_URL, getGraphHeaders, mapListing, type SubgraphListing } from './marketSubgraph'
+import { mapListing, requestMarketSubgraph, type SubgraphListing } from './marketSubgraph'
 
 const MY_ACTIVITY_QUERY = gql`
   query MyActivity($buyer: Bytes!, $winner: Bytes!, $bidder: Bytes!) {
@@ -70,21 +70,18 @@ function toDateLabel(unixSeconds: string) {
 
 export default function MyActivityTab() {
   const { address } = useAccount()
-  const headers = getGraphHeaders()
 
   const { data, isLoading, error, refetch: refetchActivity } = useQuery({
     queryKey: ['market-my-activity', address?.toLowerCase()],
     enabled: !!address,
     queryFn: () =>
-      request<ActivityResponse>(
-        MARKET_SUBGRAPH_URL,
+      requestMarketSubgraph<ActivityResponse>(
         MY_ACTIVITY_QUERY,
         {
           buyer: address?.toLowerCase(),
           winner: address?.toLowerCase(),
           bidder: address?.toLowerCase(),
         },
-        headers,
       ),
     refetchInterval: 30_000,
   })

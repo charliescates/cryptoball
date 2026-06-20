@@ -8,7 +8,7 @@ dataSources:
     name: Market
     network: matic
     source:
-      address: "0x6baCaEFAc11828c3d5e80fCEaBf857530389e81a"
+      address: "0x90Ddbe623970294089Ee58374d429702cF123A00"
       abi: Market
       startBlock: 86388581
     mapping:
