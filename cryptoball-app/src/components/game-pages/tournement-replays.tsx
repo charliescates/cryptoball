@@ -1122,9 +1122,9 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
   const sectionMeta = isCreateSection
     ? {
-        kicker: "Tournament Control",
+        kicker: "Tournament Setup",
         title: "Create New Tournament",
-        copy: "Define the bracket and launch new tournaments. Use this tab when setting up competitions.",
+        copy: "Define rounds, entry fee, and player filters to launch a bracket on-chain.",
       }
     : isOpenSection
       ? {
@@ -1146,33 +1146,35 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
   return (
     <main className="tournament-panel">
-      <header className="tournament-header">
-        <div>
-          <span className="section-kicker">{sectionMeta.kicker}</span>
-          <h2>{sectionMeta.title}</h2>
-          <p>{sectionMeta.copy}</p>
-        </div>
-      </header>
+      {!isCreateSection && (
+        <header className="tournament-header">
+          <div>
+            <span className="section-kicker">{sectionMeta.kicker}</span>
+            <h2>{sectionMeta.title}</h2>
+            <p>{sectionMeta.copy}</p>
+          </div>
+        </header>
+      )}
 
       {isCreateSection && contractConfigured && (
         <div className="tab-panel">
           <div className="start-game-section tournament-create-section">
             <div className="start-game-hero">
               <div className="start-game-hero-copy">
-                <span className="section-kicker">Tournament setup</span>
-                <h2>Start new tournament</h2>
+                <span className="section-kicker">Tournament launch</span>
+                <h2>Create new tournament</h2>
                 <p className="tab-description">
-                  Define rounds, entry fee, and player filters to launch a bracket on-chain.
+                  Set bracket size, stake, and eligibility rules, then deploy the tournament on-chain in one step.
                 </p>
               </div>
-              <div className="start-game-format-pills" aria-label="Tournament format and mode">
+              <div className="start-game-format-pills" aria-label="Tournament setup mode and bracket style">
                 <div>
                   <span>Format</span>
                   <strong>Knockout</strong>
                 </div>
                 <div>
                   <span>Mode</span>
-                  <strong>Entry Fee</strong>
+                  <strong>Wager</strong>
                 </div>
               </div>
             </div>
@@ -1192,7 +1194,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
               </li>
             </ol>
 
-            <CreateTournamentModal displayMode="inline" onSuccess={() => refetch()} />
+            <CreateTournamentModal onSuccess={() => refetch()} />
           </div>
         </div>
       )}

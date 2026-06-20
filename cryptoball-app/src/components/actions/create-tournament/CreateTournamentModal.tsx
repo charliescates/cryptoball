@@ -10,19 +10,12 @@ import "./CreateTournamentModal.css";
 const MIN_ENTRY_FEE = 5;
 
 interface CreateTournamentModalProps {
-  isOpen?: boolean;
-  onClose?: () => void;
   onSuccess?: () => void;
-  displayMode?: "modal" | "inline";
 }
 
 export default function CreateTournamentModal({
-  isOpen = false,
-  onClose,
   onSuccess,
-  displayMode = "modal",
 }: CreateTournamentModalProps) {
-  const isInline = displayMode === "inline";
   const [name, setName] = useState("");
   const [rounds, setRounds] = useState("2");
   const [entryFee, setEntryFee] = useState("5");
@@ -95,41 +88,19 @@ export default function CreateTournamentModal({
   useEffect(() => {
     if (isConfirmed) {
       onSuccess?.();
-      if (!isInline) {
-        handleClose();
-      }
+      resetForm();
     }
-  }, [isConfirmed, isInline, onSuccess]);
-
-  const handleClose = () => {
-    resetForm();
-    onClose?.();
-  };
-
-  if (!isInline && !isOpen) return null;
+  }, [isConfirmed, onSuccess, reset]);
 
   const errorMessage = error ? (error as BaseError).shortMessage || error.message : null;
   const isLoading = isPending || isConfirming;
   const statusLabel = isConfirmed ? "Confirmed" : isConfirming ? "Confirming" : isPending ? "Submitting" : "Ready";
 
-  const formContent = (
-    <div className={`tournament-modal-content${isInline ? " tournament-modal-content--inline" : ""}`} onClick={(e) => e.stopPropagation()}>
-      <div className="tournament-modal-header">
-        <h2>Create New Tournament</h2>
-        {!isInline && (
-          <button
-            className="tournament-modal-close"
-            onClick={handleClose}
-            type="button"
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-
+  return (
+    <div className="tournament-modal-content tournament-modal-content--inline">
       <form onSubmit={handleSubmit} className="tournament-form">
         <div className="tournament-form-grid">
+
           <div className="form-field full-width">
             <label htmlFor="tournament-name">Tournament Name</label>
             <input
@@ -260,7 +231,7 @@ export default function CreateTournamentModal({
                 placeholder="Leave empty to exclude none"
               />
             </div>
-          </div>
+        </div>
 
         <div className="tournament-form-footer">
           <div className="tournament-form-status">
@@ -310,16 +281,6 @@ export default function CreateTournamentModal({
           )}
         </div>
       </form>
-    </div>
-  );
-
-  if (isInline) {
-    return formContent;
-  }
-
-  return (
-    <div className="tournament-modal-overlay" onClick={handleClose}>
-      {formContent}
     </div>
   );
 }

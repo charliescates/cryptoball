@@ -1,16 +1,3 @@
-.tournament-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
 .tournament-modal-content {
   background: linear-gradient(180deg, rgba(10, 14, 39, 0.95) 0%, rgba(17, 24, 39, 0.90) 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -27,60 +14,26 @@
   width: 100%;
   max-width: none;
   max-height: none;
-  padding: clamp(16px, 2.2vw, 22px);
-  border-radius: 14px;
-  background: rgba(7, 12, 24, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-.tournament-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.tournament-modal-header h2 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 1.5rem;
-}
-
-.tournament-modal-content--inline .tournament-modal-header h2 {
-  font-size: 1.2rem;
-}
-
-.tournament-modal-close {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1.5rem;
-  cursor: pointer;
+  overflow: visible;
   padding: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.tournament-modal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .tournament-form {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .tournament-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 16px;
 }
 
@@ -92,6 +45,14 @@
 
 .form-field.full-width {
   grid-column: 1 / -1;
+}
+
+.tournament-modal-content--inline .tournament-form {
+  background: rgba(7, 12, 24, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: clamp(16px, 2.2vw, 22px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .form-field label {
@@ -111,6 +72,16 @@
   transition: all 0.2s ease;
 }
 
+.tournament-modal-content--inline .form-field input,
+.tournament-modal-content--inline .form-field select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 13px 14px;
+  background-color: rgba(15, 23, 41, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 15px;
+}
+
 .form-field input::placeholder,
 .form-field select {
   color: rgba(255, 255, 255, 0.4);
@@ -122,6 +93,18 @@
   border-color: rgba(126, 240, 167, 0.6);
   background: rgba(126, 240, 167, 0.08);
   box-shadow: 0 0 0 2px rgba(126, 240, 167, 0.1);
+}
+
+.tournament-modal-content--inline .form-field input:hover:not(:disabled),
+.tournament-modal-content--inline .form-field select:hover:not(:disabled) {
+  border-color: rgba(0, 255, 109, 0.32);
+  background-color: rgba(15, 23, 41, 0.96);
+}
+
+.tournament-modal-content--inline .form-field input:focus,
+.tournament-modal-content--inline .form-field select:focus {
+  border-color: rgba(0, 255, 109, 0.66);
+  box-shadow: 0 0 0 3px rgba(0, 255, 109, 0.12);
 }
 
 .form-field input:disabled,
