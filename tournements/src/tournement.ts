@@ -14,6 +14,7 @@ import {
   TournementCompleted,
   TournementCreated,
   TeamEntered,
+  TournementEntrant,
   TournementMatchStarted,
   TournementRoundAdvanced,
   TournementReady,
@@ -96,6 +97,17 @@ export function handleTeamEntered(event: TeamEnteredEvent): void {
   entity.transactionHash = event.transaction.hash
 
   entity.save()
+
+  let entrantId = event.params.tournamentId.toString() + "-" + event.params.player.toHexString()
+  let entrant = new TournementEntrant(entrantId)
+  entrant.tournamentId = event.params.tournamentId
+  entrant.player = event.params.player
+  entrant.teamsEntered = event.params.teamsEntered
+  entrant.enteredAtBlockNumber = event.block.number
+  entrant.enteredAtBlockTimestamp = event.block.timestamp
+  entrant.enteredAtTransactionHash = event.transaction.hash
+
+  entrant.save()
 }
 
 export function handleTournementRoundAdvanced(event: TournementRoundAdvancedEvent): void {

@@ -5,8 +5,6 @@ import { activeChain } from "../../config/network";
 import { gameContract } from "../../contracts/gameContract";
 import type { Player } from "../player";
 
-const ADD_TEAM_GAS_LIMIT = 15_000_000n;
-
 type AddTeamProps = {
   matchId: string;
   attackingPlayers: Player[];
@@ -54,7 +52,6 @@ export const AddTeam = ({
       args: [matchId, attackingIds, midfieldIds, defensiveIds],
       chainId: activeChain.id,
       value: parseEther(wager),
-      gas: ADD_TEAM_GAS_LIMIT,
     });
   };
 

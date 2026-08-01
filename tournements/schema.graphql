@@ -37,6 +37,16 @@ type TeamEntered @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
+type TournementEntrant @entity(immutable: true) {
+  id: String! # "{tournamentId}-{player}"
+  tournamentId: BigInt! # uint256
+  player: Bytes! # address
+  teamsEntered: Int! # uint8
+  enteredAtBlockNumber: BigInt!
+  enteredAtBlockTimestamp: BigInt!
+  enteredAtTransactionHash: Bytes!
+}
+
 type TournementMatchStarted @entity(immutable: true) {
   id: Bytes!
   tournamentId: BigInt! # uint256

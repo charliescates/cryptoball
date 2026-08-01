@@ -21,6 +21,7 @@ dataSources:
         - TournementCompleted
         - TournementCreated
         - TeamEntered
+        - TournementEntrant
         - TournementMatchStarted
         - TournementRoundAdvanced
         - TournementReady

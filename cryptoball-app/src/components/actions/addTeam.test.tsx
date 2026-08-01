@@ -55,5 +55,6 @@ describe("AddTeam", () => {
         value: parseEther("1.25"),
       }),
     );
+    expect(writeContractSpy.mock.calls[0]?.[0]).not.toHaveProperty("gas");
   });
 });
