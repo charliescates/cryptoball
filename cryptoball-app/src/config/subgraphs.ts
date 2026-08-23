@@ -8,8 +8,8 @@ export const subgraphSource: SubgraphSource = rawSource === "local" ? "local" : 
 
 const PROD_DEFAULTS = {
   market: "https://api.studio.thegraph.com/query/1747934/cryptoball-market/version/latest",
-  matchResults: "https://api.studio.thegraph.com/query/1747934/match-results/version/latest",
-  tournaments: "https://api.studio.thegraph.com/query/1747934/tournements/version/latest",
+  matchResults: "https://api.studio.thegraph.com/query/1747934/match-results/v0.4.2",
+  tournaments: "https://api.studio.thegraph.com/query/1747934/tournements/v0.2.4",
 };
 
 const LOCAL_DEFAULTS = {
