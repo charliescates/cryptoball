@@ -691,7 +691,18 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     },
   });
 
+  const { data: hasEnteredData } = useReadContract({
+    abi: tournementContract.abi,
+    address: tournementContract.address,
+    functionName: "hasEntered",
+    args: selectedTournamentIdBigInt !== undefined && !!address ? [selectedTournamentIdBigInt, address] : undefined,
+    query: {
+      enabled: !!selectedTournamentIdBigInt && !!address,
+    },
+  });
+
   const hasClaimedReward = Boolean(claimedRewardData);
+  const hasEnteredTournament = Boolean(hasEnteredData);
   const academyFee = (academyFeeData as bigint | undefined) ?? 0n;
 
   const eligibleOwnedPlayers = useMemo(() => {
@@ -850,6 +861,11 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       return;
     }
 
+    if (hasEnteredTournament) {
+      setEntryValidationError("You already entered this tournament.");
+      return;
+    }
+
     if (!publicClient) {
       setEntryValidationError("Wallet client unavailable. Please refresh and try again.");
       return;
@@ -935,6 +951,11 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
     if (!address) {
       setEntryValidationError("Connect wallet before entering a tournament.");
+      return;
+    }
+
+    if (hasEnteredTournament) {
+      setEntryValidationError("You already entered this tournament.");
       return;
     }
 
@@ -1682,6 +1703,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                     !address ||
                     selectedTournament.cancelled ||
                     !!selectedTournament.champion ||
+                    hasEnteredTournament ||
                     eligibleOwnedPlayers.length < 5 ||
                     isEnterPending ||
                     isEnterConfirming
@@ -1691,6 +1713,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       ? "Connect wallet to enter"
                       : selectedTournament.cancelled
                         ? "Tournament cancelled"
+                        : hasEnteredTournament
+                          ? "You already entered this tournament"
                         : eligibleOwnedPlayers.length < 5
                           ? "Need at least 5 eligible players to enter"
                           : undefined
@@ -1733,6 +1757,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                         !address ||
                         selectedTournament.cancelled ||
                         !!selectedTournament.champion ||
+                        hasEnteredTournament ||
                         eligibleOwnedPlayers.length < 5 ||
                         !!customTeamRestrictionError ||
                         !formationBuilder.isFormationComplete ||
@@ -1744,6 +1769,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                           ? "Connect wallet to enter"
                           : selectedTournament.cancelled
                             ? "Tournament cancelled"
+                          : hasEnteredTournament
+                            ? "You already entered this tournament"
                           : eligibleOwnedPlayers.length < 5
                             ? "Need at least 5 eligible players to enter"
                             : customTeamRestrictionError
@@ -1768,6 +1795,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                 </button>
 
                 {isEnterConfirmed && <p className="market-step-label">Tournament entry confirmed.</p>}
+                {hasEnteredTournament && <p className="market-step-label">You already entered this tournament.</p>}
                 {customTeamRestrictionError && <p className="market-step-label">{customTeamRestrictionError}</p>}
                 {entryValidationError && <p className="market-step-label">{entryValidationError}</p>}
                 {enterError && <p className="market-step-label">Tournament entry failed: {enterError.message}</p>}
