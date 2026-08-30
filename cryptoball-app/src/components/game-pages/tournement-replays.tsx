@@ -171,6 +171,11 @@ function padPlayersTo3(players: Player[]): [bigint, bigint, bigint] {
   return [players[0]?.id ?? 0n, players[1]?.id ?? 0n, players[2]?.id ?? 0n];
 }
 
+function addGasBuffer(estimatedGas: bigint): bigint {
+  // Keep a small headroom to prevent underestimation-related rejections in wallet UIs.
+  return (estimatedGas * 12n) / 10n;
+}
+
 function getQuickRoleScore(player: Player, role: "attack" | "midfield" | "defense"): number {
   if (role === "attack") return Number(player.attack) * 1.2 + Number(player.potential) * 0.25;
   if (role === "defense") return Number(player.defense) * 1.2 + Number(player.potential) * 0.25;
@@ -780,6 +785,34 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     });
   }
 
+  async function estimateEnterGas(
+    tournamentId: bigint,
+    attackingPlayers: [bigint, bigint, bigint],
+    midfieldPlayers: [bigint, bigint, bigint],
+    defensivePlayers: [bigint, bigint, bigint],
+    entryFee: bigint,
+  ) {
+    if (!publicClient || !address) {
+      return null;
+    }
+
+    try {
+      const estimatedGas = await publicClient.estimateContractGas({
+        account: address,
+        address: tournementContract.address,
+        abi: tournementContract.abi,
+        functionName: "enter",
+        args: [tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers],
+        value: entryFee,
+      });
+
+      return addGasBuffer(estimatedGas);
+    } catch (gasError) {
+      console.error("Failed to estimate tournament entry gas", gasError);
+      return null;
+    }
+  }
+
   async function handleEnterTournament(tournament: TournamentView) {
     setEntryValidationError(null);
 
@@ -833,14 +866,29 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     const attackingPlayers = padPlayersTo3(formationBuilder.attackingPlayers);
     const midfieldPlayers = padPlayersTo3(formationBuilder.midfieldPlayers);
     const defensivePlayers = padPlayersTo3(formationBuilder.defensivePlayers);
+    const tournamentId = BigInt(tournament.id);
+
+    const gas = await estimateEnterGas(
+      tournamentId,
+      attackingPlayers,
+      midfieldPlayers,
+      defensivePlayers,
+      tournament.entryFee,
+    );
+
+    if (!gas) {
+      setEntryValidationError("Could not estimate network fee for this entry. Verify team eligibility and try again.");
+      return;
+    }
 
     writeEnterContract({
       address: tournementContract.address,
       abi: tournementContract.abi,
       functionName: "enter",
       chainId: activeChain.id,
-      args: [BigInt(tournament.id), attackingPlayers, midfieldPlayers, defensivePlayers],
+      args: [tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers],
       value: tournament.entryFee,
+      gas,
     });
   }
 
@@ -896,18 +944,30 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       return;
     }
 
+    const tournamentId = BigInt(tournament.id);
+    const attackingPlayers = padPlayersTo3(quickFormation.attackingPlayers);
+    const midfieldPlayers = padPlayersTo3(quickFormation.midfieldPlayers);
+    const defensivePlayers = padPlayersTo3(quickFormation.defensivePlayers);
+    const gas = await estimateEnterGas(tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers, tournament.entryFee);
+
+    if (!gas) {
+      setEntryValidationError("Could not estimate network fee for quick entry. Verify eligibility and try again.");
+      return;
+    }
+
     writeEnterContract({
       address: tournementContract.address,
       abi: tournementContract.abi,
       functionName: "enter",
       chainId: activeChain.id,
       args: [
-        BigInt(tournament.id),
-        padPlayersTo3(quickFormation.attackingPlayers),
-        padPlayersTo3(quickFormation.midfieldPlayers),
-        padPlayersTo3(quickFormation.defensivePlayers),
+        tournamentId,
+        attackingPlayers,
+        midfieldPlayers,
+        defensivePlayers,
       ],
       value: tournament.entryFee,
+      gas,
     });
   }
 
@@ -1583,7 +1643,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                           : undefined
                   }
                 >
-                  {isEnterPending || isEnterConfirming ? "Entering..." : `Quick Enter (${formatPol(selectedTournament.entryFee)})`}
+                  {isEnterPending || isEnterConfirming ? "Entering..." : `Quick Enter - Entry Fee ${formatPol(selectedTournament.entryFee)}`}
                 </button>
 
                 <button
@@ -1640,7 +1700,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                               : undefined
                       }
                     >
-                      {isEnterPending || isEnterConfirming ? "Entering..." : `Enter with Custom Team (${formatPol(selectedTournament.entryFee)})`}
+                      {isEnterPending || isEnterConfirming ? "Entering..." : `Enter with Custom Team - Entry Fee ${formatPol(selectedTournament.entryFee)}`}
                     </button>
                   </>
                 )}
