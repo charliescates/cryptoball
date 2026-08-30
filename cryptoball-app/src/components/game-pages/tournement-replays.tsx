@@ -876,20 +876,21 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       tournament.entryFee,
     );
 
-    if (!gas) {
-      setEntryValidationError("Could not estimate network fee for this entry. Verify team eligibility and try again.");
-      return;
-    }
-
-    writeEnterContract({
+    const enterRequest = {
       address: tournementContract.address,
       abi: tournementContract.abi,
       functionName: "enter",
       chainId: activeChain.id,
       args: [tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers],
       value: tournament.entryFee,
-      gas,
-    });
+      ...(gas ? { gas } : {}),
+    };
+
+    if (!gas) {
+      console.warn("Proceeding without explicit gas limit for tournament entry; wallet will estimate.");
+    }
+
+    writeEnterContract(enterRequest);
   }
 
   async function handleQuickEnterTournament(tournament: TournamentView) {
@@ -950,12 +951,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     const defensivePlayers = padPlayersTo3(quickFormation.defensivePlayers);
     const gas = await estimateEnterGas(tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers, tournament.entryFee);
 
-    if (!gas) {
-      setEntryValidationError("Could not estimate network fee for quick entry. Verify eligibility and try again.");
-      return;
-    }
-
-    writeEnterContract({
+    const enterRequest = {
       address: tournementContract.address,
       abi: tournementContract.abi,
       functionName: "enter",
@@ -967,8 +963,14 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         defensivePlayers,
       ],
       value: tournament.entryFee,
-      gas,
-    });
+      ...(gas ? { gas } : {}),
+    };
+
+    if (!gas) {
+      console.warn("Proceeding without explicit gas limit for quick tournament entry; wallet will estimate.");
+    }
+
+    writeEnterContract(enterRequest);
   }
 
   const requiredTeams = selectedTournament?.maxTeams ?? 0;
