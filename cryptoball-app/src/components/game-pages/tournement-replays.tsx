@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ContractFunctionZeroDataError, formatEther } from "viem";
+import { BaseError, ContractFunctionZeroDataError, formatEther, parseGwei } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
 import { tournementContract } from "../../contracts/tournementContract";
@@ -92,6 +92,8 @@ type TournementSummary = {
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const MAX_TOURNEMENT_SCAN = 128;
+const DEFAULT_ENTER_GAS_LIMIT = 1_000_000n;
+const MAX_REASONABLE_GAS_PRICE = parseGwei("300");
 
 function formatPol(wei: bigint) {
   const full = formatEther(wei);
@@ -174,6 +176,18 @@ function padPlayersTo3(players: Player[]): [bigint, bigint, bigint] {
 function addGasBuffer(estimatedGas: bigint): bigint {
   // Keep a small headroom to prevent underestimation-related rejections in wallet UIs.
   return (estimatedGas * 12n) / 10n;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof BaseError) {
+    return error.shortMessage;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Unknown error";
 }
 
 function getQuickRoleScore(player: Player, role: "attack" | "midfield" | "defense"): number {
@@ -797,6 +811,15 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     }
 
     try {
+      await publicClient.simulateContract({
+        account: address,
+        address: tournementContract.address,
+        abi: tournementContract.abi,
+        functionName: "enter",
+        args: [tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers],
+        value: entryFee,
+      });
+
       const estimatedGas = await publicClient.estimateContractGas({
         account: address,
         address: tournementContract.address,
@@ -806,10 +829,16 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         value: entryFee,
       });
 
-      return addGasBuffer(estimatedGas);
+      const gasPrice = await publicClient.getGasPrice();
+
+      return {
+        gas: addGasBuffer(estimatedGas),
+        gasPrice: gasPrice > MAX_REASONABLE_GAS_PRICE ? MAX_REASONABLE_GAS_PRICE : gasPrice,
+      };
     } catch (gasError) {
+      const message = getErrorMessage(gasError);
       console.error("Failed to estimate tournament entry gas", gasError);
-      return null;
+      return { error: message };
     }
   }
 
@@ -868,13 +897,18 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     const defensivePlayers = padPlayersTo3(formationBuilder.defensivePlayers);
     const tournamentId = BigInt(tournament.id);
 
-    const gas = await estimateEnterGas(
+    const gasEstimate = await estimateEnterGas(
       tournamentId,
       attackingPlayers,
       midfieldPlayers,
       defensivePlayers,
       tournament.entryFee,
     );
+
+    if (gasEstimate?.error) {
+      setEntryValidationError(`Tournament entry cannot be simulated: ${gasEstimate.error}`);
+      return;
+    }
 
     const enterRequest = {
       address: tournementContract.address,
@@ -883,11 +917,14 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       chainId: activeChain.id,
       args: [tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers],
       value: tournament.entryFee,
-      ...(gas ? { gas } : {}),
+      gas: gasEstimate?.gas ?? DEFAULT_ENTER_GAS_LIMIT,
+      ...(gasEstimate?.gasPrice ? { gasPrice: gasEstimate.gasPrice } : {}),
     };
 
-    if (!gas) {
-      console.warn("Proceeding without explicit gas limit for tournament entry; wallet will estimate.");
+    if (!gasEstimate?.gas) {
+      console.warn("Using fallback gas limit for tournament entry.", {
+        fallbackGas: DEFAULT_ENTER_GAS_LIMIT.toString(),
+      });
     }
 
     writeEnterContract(enterRequest);
@@ -949,7 +986,18 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     const attackingPlayers = padPlayersTo3(quickFormation.attackingPlayers);
     const midfieldPlayers = padPlayersTo3(quickFormation.midfieldPlayers);
     const defensivePlayers = padPlayersTo3(quickFormation.defensivePlayers);
-    const gas = await estimateEnterGas(tournamentId, attackingPlayers, midfieldPlayers, defensivePlayers, tournament.entryFee);
+    const gasEstimate = await estimateEnterGas(
+      tournamentId,
+      attackingPlayers,
+      midfieldPlayers,
+      defensivePlayers,
+      tournament.entryFee,
+    );
+
+    if (gasEstimate?.error) {
+      setEntryValidationError(`Quick entry cannot be simulated: ${gasEstimate.error}`);
+      return;
+    }
 
     const enterRequest = {
       address: tournementContract.address,
@@ -963,11 +1011,14 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         defensivePlayers,
       ],
       value: tournament.entryFee,
-      ...(gas ? { gas } : {}),
+      gas: gasEstimate?.gas ?? DEFAULT_ENTER_GAS_LIMIT,
+      ...(gasEstimate?.gasPrice ? { gasPrice: gasEstimate.gasPrice } : {}),
     };
 
-    if (!gas) {
-      console.warn("Proceeding without explicit gas limit for quick tournament entry; wallet will estimate.");
+    if (!gasEstimate?.gas) {
+      console.warn("Using fallback gas limit for quick tournament entry.", {
+        fallbackGas: DEFAULT_ENTER_GAS_LIMIT.toString(),
+      });
     }
 
     writeEnterContract(enterRequest);
