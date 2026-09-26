@@ -102,10 +102,6 @@ function formatPol(wei: bigint) {
   return shortDecimal ? `${intPart}.${shortDecimal} ${nativeTokenSymbol}` : `${intPart} ${nativeTokenSymbol}`;
 }
 
-function makeMatchId(tournementId: string, round: number, index: number) {
-  return `${tournementId}-${round}-${index}`;
-}
-
 function getReplayResultKey(match: Pick<TournamentMatch, "tournamentId" | "tournamentMatchId">) {
   return `${match.tournamentId}-${match.tournamentMatchId}`;
 }
@@ -623,11 +619,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           .sort((a, b) => {
             if (a.round !== b.round) return a.round - b.round;
             return Number(a.blockNumber - b.blockNumber);
-          })
-          .map((match, index) => ({
-            ...match,
-            id: makeMatchId(id, match.round, index),
-          }));
+          });
       }
 
       for (const tournament of tournamentMap.values()) {
@@ -665,7 +657,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   );
 
   const selectedMatch = useMemo(
-    () => selectedTournament?.matches.find((m) => m.id === selectedMatchId),
+    () => selectedTournament?.matches.find((m) => getReplayResultKey(m) === selectedMatchId),
     [selectedTournament, selectedMatchId],
   );
 
@@ -757,7 +749,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   }, [formationBuilder, selectedTournament, showAdvancedEntry]);
 
   function handleWatchLiveMatch(match: TournamentMatch) {
-    setSelectedMatchId(match.id);
+    setSelectedMatchId(getReplayResultKey(match));
     const replayKey = getReplayResultKey(match);
     setRevealedLiveReplayKeys((previous) => {
       if (previous.has(replayKey)) {
@@ -1168,7 +1160,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     }
 
     for (const round of roundResults) {
-      const match = round.matches.find((entry) => entry.id === selectedCompletedMatchId);
+      const match = round.matches.find((entry) => getReplayResultKey(entry) === selectedCompletedMatchId);
       if (match) {
         return match;
       }
@@ -1179,7 +1171,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
   function handleWatchCompletedMatch(match: TournamentMatch) {
     setSelectedCompletedRound(match.round);
-    setSelectedCompletedMatchId(match.id);
+    setSelectedCompletedMatchId(getReplayResultKey(match));
     const replayKey = getReplayResultKey(match);
     setRevealedCompletedReplayKeys((previous) => {
       if (previous.has(replayKey)) {
@@ -1544,11 +1536,12 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                   ) : (
                     <ol className="tournament-match-list">
                       {selectedTournament.matches.map((match) => {
-                        const isSelected = selectedMatch?.id === match.id;
+                        const replayKey = getReplayResultKey(match);
+                        const isSelected = selectedMatch ? getReplayResultKey(selectedMatch) === replayKey : false;
                         const isComplete = typeof match.homeScore === "number" && typeof match.awayScore === "number";
 
                         return (
-                          <li key={match.id} className={`tournament-match-item${isSelected ? " active" : ""}`}>
+                          <li key={replayKey} className={`tournament-match-item${isSelected ? " active" : ""}`}>
                             <div>
                               <div className="tournament-match-head">
                                 <span>Round {match.round}</span>
@@ -1558,7 +1551,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                               </div>
                               <p>
                                 {isComplete
-                                  ? revealedLiveReplayKeys.has(getReplayResultKey(match))
+                                  ? revealedLiveReplayKeys.has(replayKey)
                                     ? `${match.homeScore}-${match.awayScore} • Winner: ${generateName(match.winner || ZERO_ADDRESS)}`
                                     : "Result hidden. Watch replay to reveal score and winner."
                                   : "Awaiting result event"}
@@ -1570,7 +1563,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                                 onClick={() => handleWatchLiveMatch(match)}
                                 type="button"
                               >
-                                {revealedLiveReplayKeys.has(getReplayResultKey(match)) ? "Replay Opened" : "Watch Replay"}
+                                {revealedLiveReplayKeys.has(replayKey) ? "Replay Opened" : "Watch Replay"}
                               </button>
                             ) : (
                               <span className="matches-history-reveal-button" aria-disabled="true">
@@ -1593,6 +1586,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       Final score: {selectedMatch.homeScore} - {selectedMatch.awayScore} | Winner: {generateName(selectedMatch.winner || ZERO_ADDRESS)}
                     </p>
                     <ShowMatches
+                      key={getReplayResultKey(selectedMatch)}
                       embeddedMatchId={selectedMatch.tournamentMatchId}
                       embeddedTournamentId={selectedMatch.tournamentId}
                       hideHeader
@@ -1903,9 +1897,10 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
                     <ol className="tournament-match-list">
                       {selectedCompletedRoundResult.matches.map((match) => {
-                        const isSelected = selectedCompletedMatch?.id === match.id;
+                        const replayKey = getReplayResultKey(match);
+                        const isSelected = selectedCompletedMatch ? getReplayResultKey(selectedCompletedMatch) === replayKey : false;
                         return (
-                          <li key={match.id} className={`tournament-match-item${isSelected ? " active" : ""}`}>
+                          <li key={replayKey} className={`tournament-match-item${isSelected ? " active" : ""}`}>
                             <div>
                               <div className="tournament-match-head">
                                 <span>{getKnockoutRoundLabel(match.round, completedRoundsTotal, maxObservedRound)}</span>
@@ -1914,7 +1909,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                                 </strong>
                               </div>
                               <p>
-                                {revealedCompletedReplayKeys.has(getReplayResultKey(match))
+                                {revealedCompletedReplayKeys.has(replayKey)
                                   ? `${match.homeScore ?? 0}-${match.awayScore ?? 0} • Winner: ${generateName(match.winner || ZERO_ADDRESS)}`
                                   : "Result hidden. Watch replay to reveal score and winner."}
                               </p>
@@ -1924,7 +1919,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                               onClick={() => handleWatchCompletedMatch(match)}
                               type="button"
                             >
-                              {revealedCompletedReplayKeys.has(getReplayResultKey(match)) ? "Replay Opened" : "Watch Match"}
+                              {revealedCompletedReplayKeys.has(replayKey) ? "Replay Opened" : "Watch Match"}
                             </button>
                           </li>
                         );
@@ -1942,6 +1937,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       {getKnockoutRoundLabel(selectedCompletedMatch.round, completedRoundsTotal, maxObservedRound)} • Final score: {selectedCompletedMatch.homeScore ?? 0} - {selectedCompletedMatch.awayScore ?? 0}
                     </p>
                     <ShowMatches
+                      key={getReplayResultKey(selectedCompletedMatch)}
                       embeddedMatchId={selectedCompletedMatch.tournamentMatchId}
                       embeddedTournamentId={selectedCompletedMatch.tournamentId}
                       hideHeader
