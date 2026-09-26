@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BaseError, ContractFunctionZeroDataError, formatEther, parseGwei } from "viem";
 import { useAccount, usePublicClient, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
@@ -68,6 +68,25 @@ type TournamentView = {
 
 type TournamentSection = "create" | "open" | "live" | "completed";
 
+type TournamentFeedDebugSnapshot = {
+  network: string;
+  chainId: number;
+  contractAddress: string;
+  getTournementsIds: string[];
+  storageInitializedIds: string[];
+  storageMatchedExistingIds: string[];
+  storageNewlyDiscoveredIds: string[];
+  subgraphReplayTournamentIds: string[];
+  finalTournamentIds: string[];
+  counts: {
+    getTournements: number;
+    storageScanned: number;
+    storageScanSuccess: number;
+    storageInitialized: number;
+    final: number;
+  };
+};
+
 type TournementSummary = {
   tournamentId: bigint;
   name: string;
@@ -94,6 +113,8 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const MAX_TOURNEMENT_SCAN = 128;
 const DEFAULT_ENTER_GAS_LIMIT = 1_000_000n;
 const MAX_REASONABLE_GAS_PRICE = parseGwei("300");
+const SHOW_TOURNAMENT_DEBUG_PANEL =
+  import.meta.env.DEV || String(import.meta.env.VITE_DEBUG_TOURNAMENT_FEED || "").trim().toLowerCase() === "true";
 
 function formatPol(wei: bigint) {
   const full = formatEther(wei);
@@ -283,6 +304,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   const [revealedLiveReplayKeys, setRevealedLiveReplayKeys] = useState<Set<string>>(new Set());
   const [revealedCompletedReplayKeys, setRevealedCompletedReplayKeys] = useState<Set<string>>(new Set());
   const [playedOutCompletedReplayKeys, setPlayedOutCompletedReplayKeys] = useState<Set<string>>(new Set());
+  const tournamentFeedDebugRef = useRef<TournamentFeedDebugSnapshot | null>(null);
 
   const { data: enterHash, writeContract: writeEnterContract, isPending: isEnterPending, error: enterError } = useWriteContract();
   const { isLoading: isEnterConfirming, isSuccess: isEnterConfirmed } = useWaitForTransactionReceipt({
@@ -358,6 +380,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         throw queryError;
       }
 
+      const getTournementsIds = summaries.map((summary) => summary.tournamentId.toString());
+
       const tournamentMap = new Map<string, TournamentView>();
 
       for (const summary of summaries) {
@@ -420,7 +444,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         address: tournementContract.address,
         abi: tournementContract.abi,
         functionName: "tournements" as const,
-        args: [BigInt(index + 1)],
+        args: [BigInt(index)],
       }));
 
       const storageScanResults = await publicClient.multicall({
@@ -428,13 +452,20 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         allowFailure: true,
       });
 
+      let storageScanSuccessCount = 0;
+      const storageInitializedIds: string[] = [];
+      const storageMatchedExistingIds: string[] = [];
+      const storageNewlyDiscoveredIds: string[] = [];
+
       for (let index = 0; index < storageScanResults.length; index += 1) {
         const result = storageScanResults[index];
         if (result.status !== "success") {
           continue;
         }
 
-        const id = String(index + 1);
+        storageScanSuccessCount += 1;
+
+        const id = String(index);
         const [
           name,
           rounds,
@@ -470,11 +501,14 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           continue;
         }
 
+        storageInitializedIds.push(id);
+
         const existing = tournamentMap.get(id);
         const maxTeams = rounds > 0n ? 2 ** Number(rounds) : 0;
         const championAddress = champion.toLowerCase() !== ZERO_ADDRESS ? champion : undefined;
 
         if (existing) {
+          storageMatchedExistingIds.push(id);
           existing.name = name || existing.name;
           existing.creator = creator;
           existing.rounds = Number(rounds);
@@ -490,6 +524,8 @@ export default function TournementReplays({ section }: { section?: TournamentSec
           existing.champion = championAddress ?? existing.champion;
           continue;
         }
+
+        storageNewlyDiscoveredIds.push(id);
 
         const activity: TournamentActivity[] = [];
         if (championAddress) {
@@ -575,8 +611,10 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
       try {
         const replayData = await fetchTournamentMatchResultsFromSubgraph();
+        const replayTournamentIds = new Set<string>();
         for (const match of replayData.tournamentMatchPlayeds ?? []) {
           const tournamentId = String(match.tournamentId);
+          replayTournamentIds.add(tournamentId);
           const tournament = tournamentMap.get(tournamentId);
           if (!tournament) {
             continue;
@@ -605,8 +643,48 @@ export default function TournementReplays({ section }: { section?: TournamentSec
             tone: "info",
           });
         }
+
+        const finalTournamentIds = [...tournamentMap.keys()].sort((a, b) => Number(BigInt(a) - BigInt(b)));
+        tournamentFeedDebugRef.current = {
+          network: activeChain.id === 31337 ? "localhost" : "polygon",
+          chainId: activeChain.id,
+          contractAddress: tournementContract.address,
+          getTournementsIds,
+          storageInitializedIds: [...new Set(storageInitializedIds)].sort((a, b) => Number(BigInt(a) - BigInt(b))),
+          storageMatchedExistingIds: [...new Set(storageMatchedExistingIds)].sort((a, b) => Number(BigInt(a) - BigInt(b))),
+          storageNewlyDiscoveredIds: [...new Set(storageNewlyDiscoveredIds)].sort((a, b) => Number(BigInt(a) - BigInt(b))),
+          subgraphReplayTournamentIds: [...replayTournamentIds].sort((a, b) => Number(BigInt(a) - BigInt(b))),
+          finalTournamentIds,
+          counts: {
+            getTournements: getTournementsIds.length,
+            storageScanned: storageScanResults.length,
+            storageScanSuccess: storageScanSuccessCount,
+            storageInitialized: storageInitializedIds.length,
+            final: finalTournamentIds.length,
+          },
+        };
       } catch (subgraphError) {
         console.error("Error fetching tournament replay data from subgraph:", subgraphError);
+
+        const finalTournamentIds = [...tournamentMap.keys()].sort((a, b) => Number(BigInt(a) - BigInt(b)));
+        tournamentFeedDebugRef.current = {
+          network: activeChain.id === 31337 ? "localhost" : "polygon",
+          chainId: activeChain.id,
+          contractAddress: tournementContract.address,
+          getTournementsIds,
+          storageInitializedIds: [...new Set(storageInitializedIds)].sort((a, b) => Number(BigInt(a) - BigInt(b))),
+          storageMatchedExistingIds: [...new Set(storageMatchedExistingIds)].sort((a, b) => Number(BigInt(a) - BigInt(b))),
+          storageNewlyDiscoveredIds: [...new Set(storageNewlyDiscoveredIds)].sort((a, b) => Number(BigInt(a) - BigInt(b))),
+          subgraphReplayTournamentIds: [],
+          finalTournamentIds,
+          counts: {
+            getTournements: getTournementsIds.length,
+            storageScanned: storageScanResults.length,
+            storageScanSuccess: storageScanSuccessCount,
+            storageInitialized: storageInitializedIds.length,
+            final: finalTournamentIds.length,
+          },
+        };
       }
 
       for (const [id, matches] of matchesByTournament.entries()) {
@@ -650,6 +728,28 @@ export default function TournementReplays({ section }: { section?: TournamentSec
 
     return tournaments;
   }, [section, tournaments]);
+
+  useEffect(() => {
+    if (!SHOW_TOURNAMENT_DEBUG_PANEL || status !== "success") {
+      return;
+    }
+
+    // Temporary debug logging to correlate UI visibility with source data.
+    console.info("[tournament-feed-debug]", {
+      section,
+      status,
+      tournaments: tournaments.map((tournament) => ({
+        id: tournament.id,
+        teamsEntered: tournament.teamsEntered,
+        maxTeams: tournament.maxTeams,
+        currentRound: tournament.currentRound,
+        cancelled: tournament.cancelled,
+        champion: tournament.champion ?? null,
+      })),
+      filteredTournamentIds: filteredTournaments.map((tournament) => tournament.id),
+      sourceSnapshot: tournamentFeedDebugRef.current,
+    });
+  }, [filteredTournaments, section, status, tournaments]);
 
   const selectedTournament = useMemo(
     () => filteredTournaments.find((t) => t.id === selectedTournamentId) ?? filteredTournaments[0],
@@ -1189,8 +1289,21 @@ export default function TournementReplays({ section }: { section?: TournamentSec
     selectedCompletedRoundIndex >= 0 && selectedCompletedRoundIndex < visibleCompletedRoundResults.length - 1;
 
   function handlePlayRound(round: number) {
-    setSelectedCompletedRound(round);
-    setSelectedCompletedMatchId(null);
+    const targetRound = visibleCompletedRoundResults.find((entry) => entry.round === round);
+    if (!targetRound) {
+      setSelectedCompletedRound(round);
+      setSelectedCompletedMatchId(null);
+      return;
+    }
+
+    const firstMatch = targetRound.matches[0];
+    if (!firstMatch) {
+      setSelectedCompletedRound(round);
+      setSelectedCompletedMatchId(null);
+      return;
+    }
+
+    handleWatchCompletedMatch(firstMatch);
   }
 
   function handlePreviousRound() {
@@ -1198,16 +1311,21 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       return;
     }
 
-    setSelectedCompletedRound((currentRound) => {
-      const activeRound = currentRound ?? visibleCompletedRoundResults[0].round;
-      const activeIndex = visibleCompletedRoundResults.findIndex((round) => round.round === activeRound);
-      if (activeIndex <= 0) {
-        return activeRound;
-      }
+    const activeIndex = selectedCompletedRoundIndex >= 0 ? selectedCompletedRoundIndex : 0;
+    const previousIndex = activeIndex <= 0 ? 0 : activeIndex - 1;
+    const targetRound = visibleCompletedRoundResults[previousIndex];
+    if (!targetRound) {
+      return;
+    }
 
-      return visibleCompletedRoundResults[activeIndex - 1].round;
-    });
-    setSelectedCompletedMatchId(null);
+    const firstMatch = targetRound.matches[0];
+    if (!firstMatch) {
+      setSelectedCompletedRound(targetRound.round);
+      setSelectedCompletedMatchId(null);
+      return;
+    }
+
+    handleWatchCompletedMatch(firstMatch);
   }
 
   function handleNextRound() {
@@ -1215,16 +1333,24 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       return;
     }
 
-    setSelectedCompletedRound((currentRound) => {
-      const activeRound = currentRound ?? visibleCompletedRoundResults[0].round;
-      const activeIndex = visibleCompletedRoundResults.findIndex((round) => round.round === activeRound);
-      if (activeIndex < 0 || activeIndex >= visibleCompletedRoundResults.length - 1) {
-        return activeRound;
-      }
+    const activeIndex = selectedCompletedRoundIndex >= 0 ? selectedCompletedRoundIndex : 0;
+    const nextIndex =
+      activeIndex < 0 || activeIndex >= visibleCompletedRoundResults.length - 1
+        ? activeIndex
+        : activeIndex + 1;
+    const targetRound = visibleCompletedRoundResults[nextIndex];
+    if (!targetRound) {
+      return;
+    }
 
-      return visibleCompletedRoundResults[activeIndex + 1].round;
-    });
-    setSelectedCompletedMatchId(null);
+    const firstMatch = targetRound.matches[0];
+    if (!firstMatch) {
+      setSelectedCompletedRound(targetRound.round);
+      setSelectedCompletedMatchId(null);
+      return;
+    }
+
+    handleWatchCompletedMatch(firstMatch);
   }
 
   const finalRoundResult = roundResults.length > 0 ? roundResults[roundResults.length - 1] : undefined;
@@ -1965,6 +2091,20 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       <button className="matches-filter-toggle" onClick={() => void refetch()} type="button">
         Refresh Event Feed
       </button>
+
+      {SHOW_TOURNAMENT_DEBUG_PANEL && (
+        <details className="tournament-debug-panel">
+          <summary>Tournament feed debug</summary>
+          <pre>{JSON.stringify({
+            section,
+            status,
+            totalTournamentCount: tournaments.length,
+            filteredTournamentIds: filteredTournaments.map((tournament) => tournament.id),
+            selectedTournamentId: selectedTournament?.id ?? null,
+            sourceSnapshot: tournamentFeedDebugRef.current,
+          }, null, 2)}</pre>
+        </details>
+      )}
     </main>
   );
 }

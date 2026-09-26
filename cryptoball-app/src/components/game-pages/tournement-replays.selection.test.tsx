@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -86,8 +86,21 @@ vi.mock("./join-match/TeamBuilder", () => ({
 }));
 
 vi.mock("./show-matches", () => ({
-  default: ({ embeddedMatchId, embeddedTournamentId }: { embeddedMatchId?: string; embeddedTournamentId?: string }) => {
+  default: ({
+    embeddedMatchId,
+    embeddedTournamentId,
+    onReplayComplete,
+  }: {
+    embeddedMatchId?: string;
+    embeddedTournamentId?: string;
+    onReplayComplete?: () => void;
+  }) => {
     const [mountedReplay] = useState(`${embeddedTournamentId ?? "none"}:${embeddedMatchId ?? "none"}`);
+
+    useEffect(() => {
+      onReplayComplete?.();
+    }, [onReplayComplete]);
+
     return <div data-testid="selected-replay-props">{mountedReplay}</div>;
   },
 }));
@@ -275,5 +288,89 @@ describe("TournementReplays replay selection", () => {
     await user.click(watchButtons[1]);
 
     expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:202");
+  });
+
+  it("opens round replays from completed playback controls", async () => {
+    const user = userEvent.setup();
+    const completedTournament = [
+      {
+        id: "1",
+        name: "Summer Cup",
+        creator: HOME_ADDRESS_ONE,
+        rounds: 2,
+        entryFee: 0n,
+        minAttack: 0,
+        minDefence: 0,
+        maxAttack: 0,
+        maxDefence: 0,
+        includeTypes: [],
+        excludeTypes: [],
+        maxTeams: 4,
+        matches: [
+          {
+            id: "1-1-0",
+            tournamentId: "1",
+            tournamentMatchId: "101",
+            round: 1,
+            homeAddress: HOME_ADDRESS_ONE,
+            awayAddress: AWAY_ADDRESS_ONE,
+            winner: HOME_ADDRESS_ONE,
+            homeScore: 2,
+            awayScore: 1,
+            blockNumber: 10n,
+          },
+          {
+            id: "1-1-1",
+            tournamentId: "1",
+            tournamentMatchId: "102",
+            round: 1,
+            homeAddress: HOME_ADDRESS_TWO,
+            awayAddress: AWAY_ADDRESS_TWO,
+            winner: AWAY_ADDRESS_TWO,
+            homeScore: 0,
+            awayScore: 1,
+            blockNumber: 11n,
+          },
+          {
+            id: "1-2-0",
+            tournamentId: "1",
+            tournamentMatchId: "201",
+            round: 2,
+            homeAddress: HOME_ADDRESS_ONE,
+            awayAddress: AWAY_ADDRESS_TWO,
+            winner: AWAY_ADDRESS_TWO,
+            homeScore: 1,
+            awayScore: 2,
+            blockNumber: 12n,
+          },
+        ],
+        champion: AWAY_ADDRESS_TWO,
+        teamsEntered: 4,
+        entrants: [],
+        isReady: false,
+        cancelled: false,
+        currentRound: 2,
+        activity: [],
+      },
+    ];
+
+    useQueryMock.mockImplementation(() => ({
+      data: completedTournament,
+      error: undefined,
+      refetch: vi.fn(),
+      status: "success",
+    }));
+
+    render(<TournementReplays section="completed" />);
+
+    const playRoundButtons = await screen.findAllByRole("button", { name: /play round/i });
+    await user.click(playRoundButtons[0]);
+
+    expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:101");
+
+    const nextRoundButton = await screen.findByRole("button", { name: /next round/i });
+    await user.click(nextRoundButton);
+
+    expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:201");
   });
 });
