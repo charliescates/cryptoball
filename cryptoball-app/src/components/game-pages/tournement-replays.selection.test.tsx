@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -96,12 +96,16 @@ vi.mock("./show-matches", () => ({
     onReplayComplete?: () => void;
   }) => {
     const [mountedReplay] = useState(`${embeddedTournamentId ?? "none"}:${embeddedMatchId ?? "none"}`);
-
-    useEffect(() => {
-      onReplayComplete?.();
-    }, [onReplayComplete]);
-
-    return <div data-testid="selected-replay-props">{mountedReplay}</div>;
+    return (
+      <div>
+        <div data-testid="selected-replay-props">{mountedReplay}</div>
+        {onReplayComplete ? (
+          <button type="button" onClick={onReplayComplete}>
+            Complete Replay
+          </button>
+        ) : null}
+      </div>
+    );
   },
 }));
 
@@ -290,7 +294,7 @@ describe("TournementReplays replay selection", () => {
     expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:202");
   });
 
-  it("opens round replays from completed playback controls", async () => {
+  it("unlocks next completed round after replay completion from any match in prior round", async () => {
     const user = userEvent.setup();
     const completedTournament = [
       {
@@ -368,7 +372,21 @@ describe("TournementReplays replay selection", () => {
 
     expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:101");
 
+    let watchButtons = await screen.findAllByRole("button", { name: /watch match|replay opened/i });
+    await user.click(watchButtons[1]);
+
+    expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:102");
+
     const nextRoundButton = await screen.findByRole("button", { name: /next round/i });
+    expect(nextRoundButton).toBeDisabled();
+
+    const completeReplayButton = await screen.findByRole("button", { name: /complete replay/i });
+    await user.click(completeReplayButton);
+
+    watchButtons = await screen.findAllByRole("button", { name: /watch match|replay opened/i });
+    expect(watchButtons.length).toBeGreaterThan(0);
+
+    expect(nextRoundButton).toBeEnabled();
     await user.click(nextRoundButton);
 
     expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:201");

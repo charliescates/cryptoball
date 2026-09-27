@@ -127,6 +127,37 @@ function getReplayResultKey(match: Pick<TournamentMatch, "tournamentId" | "tourn
   return `${match.tournamentId}-${match.tournamentMatchId}`;
 }
 
+function getCompletedRoundUnlockKey(tournamentId: string, round: number) {
+  return `${tournamentId}-${round}`;
+}
+
+function parseNumericString(value: string): bigint | null {
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
+}
+
+function compareTournamentMatches(first: TournamentMatch, second: TournamentMatch) {
+  if (first.round !== second.round) {
+    return first.round - second.round;
+  }
+
+  const blockDelta = first.blockNumber - second.blockNumber;
+  if (blockDelta !== 0n) {
+    return blockDelta < 0n ? -1 : 1;
+  }
+
+  const firstMatchId = parseNumericString(first.tournamentMatchId);
+  const secondMatchId = parseNumericString(second.tournamentMatchId);
+  if (firstMatchId !== null && secondMatchId !== null && firstMatchId !== secondMatchId) {
+    return firstMatchId < secondMatchId ? -1 : 1;
+  }
+
+  return first.id.localeCompare(second.id);
+}
+
 function isOpenTournament(tournament: TournamentView) {
   return !tournament.cancelled && !tournament.champion && tournament.currentRound === 0 && tournament.teamsEntered < tournament.maxTeams;
 }
@@ -303,7 +334,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   const [showAdvancedEntry, setShowAdvancedEntry] = useState(false);
   const [revealedLiveReplayKeys, setRevealedLiveReplayKeys] = useState<Set<string>>(new Set());
   const [revealedCompletedReplayKeys, setRevealedCompletedReplayKeys] = useState<Set<string>>(new Set());
-  const [playedOutCompletedReplayKeys, setPlayedOutCompletedReplayKeys] = useState<Set<string>>(new Set());
+  const [playedOutCompletedRoundKeys, setPlayedOutCompletedRoundKeys] = useState<Set<string>>(new Set());
   const tournamentFeedDebugRef = useRef<TournamentFeedDebugSnapshot | null>(null);
 
   const { data: enterHash, writeContract: writeEnterContract, isPending: isEnterPending, error: enterError } = useWriteContract();
@@ -694,10 +725,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         }
 
         current.matches = matches
-          .sort((a, b) => {
-            if (a.round !== b.round) return a.round - b.round;
-            return Number(a.blockNumber - b.blockNumber);
-          });
+          .sort(compareTournamentMatches);
       }
 
       for (const tournament of tournamentMap.values()) {
@@ -1182,7 +1210,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
       .sort((a, b) => a[0] - b[0])
       .map(([round, matches]) => ({
         round,
-        matches: matches.sort((a, b) => Number(a.blockNumber - b.blockNumber)),
+        matches: matches.sort(compareTournamentMatches),
       }));
   }, [selectedTournament]);
 
@@ -1209,9 +1237,10 @@ export default function TournementReplays({ section }: { section?: TournamentSec
         return false;
       }
 
-      return playedOutCompletedReplayKeys.has(getReplayResultKey(firstPreviousRoundMatch));
+      const roundKey = getCompletedRoundUnlockKey(firstPreviousRoundMatch.tournamentId, previousRound.round);
+      return playedOutCompletedRoundKeys.has(roundKey);
     });
-  }, [isCompletedSection, playedOutCompletedReplayKeys, roundResults]);
+  }, [isCompletedSection, playedOutCompletedRoundKeys, roundResults]);
 
   const selectedCompletedRoundResult = useMemo(() => {
     if (!isCompletedSection || visibleCompletedRoundResults.length === 0) {
@@ -2068,14 +2097,17 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       embeddedTournamentId={selectedCompletedMatch.tournamentId}
                       hideHeader
                       onReplayComplete={() => {
-                        const replayKey = getReplayResultKey(selectedCompletedMatch);
-                        setPlayedOutCompletedReplayKeys((previous) => {
-                          if (previous.has(replayKey)) {
+                        const roundKey = getCompletedRoundUnlockKey(
+                          selectedCompletedMatch.tournamentId,
+                          selectedCompletedMatch.round,
+                        );
+                        setPlayedOutCompletedRoundKeys((previous) => {
+                          if (previous.has(roundKey)) {
                             return previous;
                           }
 
                           const next = new Set(previous);
-                          next.add(replayKey);
+                          next.add(roundKey);
                           return next;
                         });
                       }}

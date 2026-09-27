@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -158,6 +158,49 @@ describe("ShowMatches", () => {
     );
     expect(screen.getAllByText(generateName(HOME_ADDRESS)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(generateName(AWAY_ADDRESS)).length).toBeGreaterThan(0);
+  });
+
+  it("ignores stale scorer events from other transactions", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(useQuery).mockReturnValue({
+      status: "success",
+      data: {
+        playedMatches: [
+          {
+            id: "tx-scope-1",
+            matchId: "31",
+            tournamentId: "7",
+            transactionHash: "0xgood",
+            homeScore: 1,
+            awayScore: 1,
+            blockTimestamp: "1714300000",
+            homeAddress: HOME_ADDRESS,
+            awayAddress: AWAY_ADDRESS,
+            homeAttackingPlayers: ["1", "0", "2"],
+            homeMidfieldPlayers: ["0", "3", "0"],
+            homeDefensivePlayers: ["4", "0", "5"],
+            awayAttackingPlayers: ["6", "0", "7"],
+            awayMidfieldPlayers: ["0", "8", "0"],
+            awayDefensivePlayers: ["9", "0", "10"],
+            playerScoreds: [
+              { playerId: "1", goalOrder: 1, transactionHash: "0xgood" },
+              { playerId: "6", goalOrder: 2, transactionHash: "0xgood" },
+              { playerId: "7", goalOrder: 3, transactionHash: "0xstale" },
+              { playerId: "999", goalOrder: 4, transactionHash: "0xgood" },
+            ],
+          },
+        ],
+      },
+    } as never);
+
+    renderShowMatches("/games/recent?matchId=31&tournamentId=7&autoplay=1");
+
+    await user.click(await screen.findByRole("button", { name: /skip/i }));
+
+    const eventsPanel = screen.getByRole("region", { name: /events/i });
+    expect(within(eventsPanel).queryByText(/unknown team/i)).not.toBeInTheDocument();
+    expect(within(eventsPanel).getAllByRole("listitem")).toHaveLength(2);
   });
 
   it("auto-reveals the target match when launched from play match", () => {

@@ -68,8 +68,20 @@ function getGoalTimeline(match: PlayedMatch) {
     ...normalizePlayerIds(match.awayDefensivePlayers),
   ]);
 
-  return [...match.playerScoreds]
-    .sort((left, right) => left.goalOrder - right.goalOrder)
+  const expectedTotalGoals = Math.max(0, Number(match.homeScore) + Number(match.awayScore));
+  const scopedGoals = [...match.playerScoreds]
+    .filter((goal) => {
+      if (match.transactionHash && goal.transactionHash && goal.transactionHash !== match.transactionHash) {
+        return false;
+      }
+
+      return homePlayers.has(goal.playerId) || awayPlayers.has(goal.playerId);
+    })
+    .sort((left, right) => left.goalOrder - right.goalOrder);
+
+  const boundedGoals = expectedTotalGoals > 0 ? scopedGoals.slice(0, expectedTotalGoals) : scopedGoals;
+
+  return boundedGoals
     .map((goal, index) => {
       const teamLabel: "Home" | "Away" | "Unknown" = homePlayers.has(goal.playerId)
         ? "Home"
@@ -293,6 +305,10 @@ function getPlayerOfMatch(timeline: GoalEvent[]) {
 function getPlayerInfoMap(match: PlayedMatch) {
   const map = new Map<string, PlayerMatchInfo>();
   for (const info of match.playerMatchInfos ?? []) {
+    if (match.transactionHash && info.transactionHash && info.transactionHash !== match.transactionHash) {
+      continue;
+    }
+
     map.set(info.playerId, info);
   }
   return map;
@@ -302,6 +318,10 @@ function getTeamStatsMap(match: PlayedMatch) {
   const map = new Map<string, TeamStatsCalculated>();
 
   for (const stats of match.teamStatsCalculateds ?? []) {
+    if (match.transactionHash && stats.transactionHash && stats.transactionHash !== match.transactionHash) {
+      continue;
+    }
+
     map.set(stats.team.toLowerCase(), stats);
   }
 

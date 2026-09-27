@@ -4,6 +4,7 @@ import { MATCH_RESULTS_SUBGRAPH_URL } from "../../config/subgraphs";
 export type PlayerScored = {
   playerId: string;
   goalOrder: number;
+  transactionHash?: string;
 };
 
 export type PlayerMatchInfo = {
@@ -16,12 +17,14 @@ export type PlayerMatchInfo = {
   goals: string;
   playerType: number;
   position: string;
+  transactionHash?: string;
 };
 
 export type TeamStatsCalculated = {
   team: string;
   totalAttack: string;
   totalDefense: string;
+  transactionHash?: string;
 };
 
 export type WinningsDistributed = {
@@ -48,6 +51,7 @@ export type PlayedMatch = {
   matchId: string;
   tournamentId: string;
   pot?: string;
+  transactionHash?: string;
   homeScore: number;
   awayScore: number;
   blockTimestamp: string;
@@ -87,6 +91,7 @@ const playedMatchFields = `
   id
   matchId
   tournamentId
+  transactionHash
   homeScore
   awayScore
   blockTimestamp
@@ -101,6 +106,7 @@ const playedMatchFields = `
   playerScoreds(orderBy: goalOrder, orderDirection: asc) {
     playerId
     goalOrder
+    transactionHash
   }
   playerMatchInfos(orderBy: blockTimestamp, orderDirection: asc) {
     playerId
@@ -112,11 +118,13 @@ const playedMatchFields = `
     goals
     playerType
     position
+    transactionHash
   }
   teamStatsCalculateds(orderBy: blockTimestamp, orderDirection: asc) {
     team
     totalAttack
     totalDefense
+    transactionHash
   }
   winningsDistributeds(orderBy: blockTimestamp, orderDirection: asc) {
     winner
