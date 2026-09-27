@@ -391,4 +391,68 @@ describe("TournementReplays replay selection", () => {
 
     expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:201");
   });
+
+  it("keeps completed match score hidden until replay completion", async () => {
+    const user = userEvent.setup();
+    const completedTournament = [
+      {
+        id: "1",
+        name: "Summer Cup",
+        creator: HOME_ADDRESS_ONE,
+        rounds: 1,
+        entryFee: 0n,
+        minAttack: 0,
+        minDefence: 0,
+        maxAttack: 0,
+        maxDefence: 0,
+        includeTypes: [],
+        excludeTypes: [],
+        maxTeams: 2,
+        matches: [
+          {
+            id: "1-1-0",
+            tournamentId: "1",
+            tournamentMatchId: "101",
+            round: 1,
+            homeAddress: HOME_ADDRESS_ONE,
+            awayAddress: AWAY_ADDRESS_ONE,
+            winner: HOME_ADDRESS_ONE,
+            homeScore: 2,
+            awayScore: 1,
+            blockNumber: 10n,
+          },
+        ],
+        champion: HOME_ADDRESS_ONE,
+        teamsEntered: 2,
+        entrants: [],
+        isReady: false,
+        cancelled: false,
+        currentRound: 1,
+        activity: [],
+      },
+    ];
+
+    useQueryMock.mockImplementation(() => ({
+      data: completedTournament,
+      error: undefined,
+      refetch: vi.fn(),
+      status: "success",
+    }));
+
+    render(<TournementReplays section="completed" />);
+
+    const playRoundButtons = await screen.findAllByRole("button", { name: /play round/i });
+    await user.click(playRoundButtons[0]);
+
+    const watchButton = await screen.findByRole("button", { name: /watch match/i });
+    await user.click(watchButton);
+
+    expect(screen.getByTestId("selected-replay-props")).toHaveTextContent("1:101");
+    expect(screen.queryByText(/2-1 • Winner:/i)).not.toBeInTheDocument();
+
+    const completeReplayButton = await screen.findByRole("button", { name: /complete replay/i });
+    await user.click(completeReplayButton);
+
+    expect(screen.getByText(/2-1 • Winner:/i)).toBeInTheDocument();
+  });
 });

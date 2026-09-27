@@ -1301,6 +1301,9 @@ export default function TournementReplays({ section }: { section?: TournamentSec
   function handleWatchCompletedMatch(match: TournamentMatch) {
     setSelectedCompletedRound(match.round);
     setSelectedCompletedMatchId(getReplayResultKey(match));
+  }
+
+  function handleCompletedReplayReveal(match: TournamentMatch) {
     const replayKey = getReplayResultKey(match);
     setRevealedCompletedReplayKeys((previous) => {
       if (previous.has(replayKey)) {
@@ -2097,6 +2100,7 @@ export default function TournementReplays({ section }: { section?: TournamentSec
                       embeddedTournamentId={selectedCompletedMatch.tournamentId}
                       hideHeader
                       onReplayComplete={() => {
+                        handleCompletedReplayReveal(selectedCompletedMatch);
                         const roundKey = getCompletedRoundUnlockKey(
                           selectedCompletedMatch.tournamentId,
                           selectedCompletedMatch.round,

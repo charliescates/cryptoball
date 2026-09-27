@@ -5,9 +5,20 @@ import type { BaseError } from "viem";
 import { tournementContract } from "../../../contracts/tournementContract";
 import { activeChain } from "../../../config/network";
 import { nativeTokenSymbol } from "../../../config/network";
+import {
+  getPlayerTypeIcon,
+  getPlayerTypeName,
+  PlayerType,
+} from "../../utils/playerType";
 import "./CreateTournamentModal.css";
 
 const MIN_ENTRY_FEE = 5;
+const PLAYER_TYPE_OPTIONS: number[] = [
+  PlayerType.ENFORCER,
+  PlayerType.TARGET_MAN,
+  PlayerType.PLAYMAKER,
+  PlayerType.ANCHOR,
+];
 
 interface CreateTournamentModalProps {
   onSuccess?: () => void;
@@ -23,8 +34,8 @@ export default function CreateTournamentModal({
   const [minDefence, setMinDefence] = useState("0");
   const [maxAttack, setMaxAttack] = useState("99");
   const [maxDefence, setMaxDefence] = useState("99");
-  const [includeTypesInput, setIncludeTypesInput] = useState("");
-  const [excludeTypesInput, setExcludeTypesInput] = useState("");
+  const [includeTypes, setIncludeTypes] = useState<number[]>([]);
+  const [excludeTypes, setExcludeTypes] = useState<number[]>([]);
 
   const { data: hash, writeContract, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
@@ -44,8 +55,22 @@ export default function CreateTournamentModal({
     setMaxDefence("99");
     setMinAttack("0");
     setMinDefence("0");
-    setIncludeTypesInput("");
-    setExcludeTypesInput("");
+    setIncludeTypes([]);
+    setExcludeTypes([]);
+  };
+
+  const toggleIncludeType = (type: number) => {
+    setIncludeTypes((previous) =>
+      previous.includes(type) ? previous.filter((entry) => entry !== type) : [...previous, type],
+    );
+    setExcludeTypes((previous) => previous.filter((entry) => entry !== type));
+  };
+
+  const toggleExcludeType = (type: number) => {
+    setExcludeTypes((previous) =>
+      previous.includes(type) ? previous.filter((entry) => entry !== type) : [...previous, type],
+    );
+    setIncludeTypes((previous) => previous.filter((entry) => entry !== type));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -53,18 +78,6 @@ export default function CreateTournamentModal({
     if (!isEntryFeeValid || !isNameValid) {
       return;
     }
-
-    const includeTypes = includeTypesInput
-      .split(",")
-      .map((x) => x.trim())
-      .filter((x) => x)
-      .map((x) => parseInt(x, 10));
-
-    const excludeTypes = excludeTypesInput
-      .split(",")
-      .map((x) => x.trim())
-      .filter((x) => x)
-      .map((x) => parseInt(x, 10));
 
     writeContract({
       address: tournementContract.address,
@@ -209,27 +222,67 @@ export default function CreateTournamentModal({
             </div>
 
             <div className="form-field full-width">
-              <label htmlFor="include-types">Include Player Types (comma-separated, e.g., 1,2,3)</label>
-              <input
-                id="include-types"
-                type="text"
-                value={includeTypesInput}
-                onChange={(e) => setIncludeTypesInput(e.target.value)}
-                disabled={isLoading}
-                placeholder="Leave empty for all types"
-              />
+              <label>Include Chemistry Types</label>
+              <small className="form-field-hint">Leave empty for all types</small>
+              <div className="tournament-type-grid" role="group" aria-label="Include chemistry types">
+                {PLAYER_TYPE_OPTIONS.map((type) => {
+                  const inputId = `include-type-${type}`;
+                  const typeName = getPlayerTypeName(type);
+                  const isSelected = includeTypes.includes(type);
+                  return (
+                    <label
+                      key={inputId}
+                      htmlFor={inputId}
+                      className={`tournament-type-option tournament-type-option--include${isSelected ? " is-selected" : ""}`}
+                    >
+                      <input
+                        id={inputId}
+                        type="checkbox"
+                        aria-label={typeName}
+                        checked={isSelected}
+                        onChange={() => toggleIncludeType(type)}
+                        disabled={isLoading}
+                      />
+                      <span className="tournament-type-option-icon" aria-hidden="true">{getPlayerTypeIcon(type)}</span>
+                      <span className="tournament-type-option-content">
+                        <strong>{typeName}</strong>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="form-field full-width">
-              <label htmlFor="exclude-types">Exclude Player Types (comma-separated, e.g., 1,2,3)</label>
-              <input
-                id="exclude-types"
-                type="text"
-                value={excludeTypesInput}
-                onChange={(e) => setExcludeTypesInput(e.target.value)}
-                disabled={isLoading}
-                placeholder="Leave empty to exclude none"
-              />
+              <label>Exclude Chemistry Types</label>
+              <small className="form-field-hint">Leave empty to exclude none</small>
+              <div className="tournament-type-grid" role="group" aria-label="Exclude chemistry types">
+                {PLAYER_TYPE_OPTIONS.map((type) => {
+                  const inputId = `exclude-type-${type}`;
+                  const typeName = getPlayerTypeName(type);
+                  const isSelected = excludeTypes.includes(type);
+                  return (
+                    <label
+                      key={inputId}
+                      htmlFor={inputId}
+                      className={`tournament-type-option tournament-type-option--exclude${isSelected ? " is-selected" : ""}`}
+                    >
+                      <input
+                        id={inputId}
+                        type="checkbox"
+                        aria-label={typeName}
+                        checked={isSelected}
+                        onChange={() => toggleExcludeType(type)}
+                        disabled={isLoading}
+                      />
+                      <span className="tournament-type-option-icon" aria-hidden="true">{getPlayerTypeIcon(type)}</span>
+                      <span className="tournament-type-option-content">
+                        <strong>{typeName}</strong>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
         </div>
 
