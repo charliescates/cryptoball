@@ -1,11 +1,10 @@
 import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 export const HundredClub: React.FC = () => {
-
-      return (
+  return (
     <DndProvider backend={HTML5Backend}>
-      <div className="app">
-        
-      </div>
+      <div className="app"></div>
     </DndProvider>
-}
+  );
+};
